@@ -1,0 +1,206 @@
+import Foundation
+
+public struct HistoryEntry: Codable, Equatable, Sendable {
+    public var date: Date
+    public var weight: Double?
+    public var reps: Int?
+    public var targetHi: Int?
+    /// Reps left in the tank (v2).
+    public var rir: Int?
+
+    public init(date: Date, weight: Double?, reps: Int?, targetHi: Int?, rir: Int? = nil) {
+        self.date = date
+        self.weight = weight
+        self.reps = reps
+        self.targetHi = targetHi
+        self.rir = rir
+    }
+}
+
+public struct LiftRecord: Codable, Equatable, Sendable {
+    public var exerciseID: String
+    public var workingWeight: Double?
+    public var fails: Int
+    public var holds: Int
+    public var note: String?
+    /// Last 12 entries, oldest first.
+    public var history: [HistoryEntry]
+    /// First weight ever logged (history only keeps 12), for "heavier than where you started".
+    public var firstWeight: Double?
+
+    public init(exerciseID: String, workingWeight: Double? = nil, fails: Int = 0, holds: Int = 0,
+                note: String? = nil, history: [HistoryEntry] = [], firstWeight: Double? = nil) {
+        self.exerciseID = exerciseID
+        self.workingWeight = workingWeight
+        self.fails = fails
+        self.holds = holds
+        self.note = note
+        self.history = history
+        self.firstWeight = firstWeight
+    }
+}
+
+public struct Suggestion: Equatable, Sendable {
+    public var weight: Double?
+    public var reason: String
+}
+
+public enum Suggestions {
+    public static let bells: [Double] = [20, 35, 50]
+    public static let dumbbellMin: Double = 5
+    public static let dumbbellMax: Double = 35
+    public static let barbellMin: Double = 45
+
+    /// Related-lift ratios: lift -> (estimated from, ratio).
+    public static let related: [String: (from: String, ratio: Double)] = [
+        "fsquat": ("squat", 0.80),
+        "squat": ("fsquat", 1.25),
+        "incline": ("bench", 0.82),
+        "floorpress": ("bench", 0.90),
+        "bench": ("incline", 1.22),
+        "pushpress": ("ohp", 1.20),
+        "ohp": ("pushpress", 0.83),
+        "rdl": ("deadlift", 0.60),
+        "hipthrust": ("deadlift", 0.80),
+        "goodmorning": ("squat", 0.35),
+        "bbrow": ("pendlay", 1.05),
+        "pendlay": ("bbrow", 0.95),
+        "dbincline": ("dbfloor", 0.90),
+        "dbfloor": ("dbincline", 1.10),
+        "arnold": ("dbpress", 0.85),
+        "dbpress": ("arnold", 1.15),
+        "curl": ("hammer", 0.95),
+        "hammer": ("curl", 1.05),
+        "bulgarian": ("splitsq", 0.85),
+        "splitsq": ("bulgarian", 1.15),
+        "csrow": ("dbrow", 0.80),
+        "dbrow": ("csrow", 1.20),
+    ]
+
+    /// Kettlebell starting bells.
+    public static func defaultBell(_ id: String) -> Double {
+        switch id {
+        case "kbswingh", "kbswing", "gobletsq", "suitcase", "gorilla": return 50
+        case "kbbottoms": return 20
+        default: return 35
+        }
+    }
+
+    // MARK: Math
+
+    /// Epley, reps capped at 12.
+    public static func e1RM(weight: Double, reps: Int) -> Double {
+        weight * (1 + Double(min(reps, 12)) / 30)
+    }
+
+    /// Highest e1RM across the last 3 history entries that have both weight and reps.
+    public static func best1RM(_ record: LiftRecord?) -> Double? {
+        guard let record else { return nil }
+        let usable = record.history.filter { ($0.weight ?? 0) > 0 && ($0.reps ?? 0) > 0 }.suffix(3)
+        return usable.map { e1RM(weight: $0.weight!, reps: $0.reps!) }.max()
+    }
+
+    /// Weight for a rep target, leaving `reserve` reps in the tank (2 by default).
+    public static func weight(forReps reps: Int, e1RM: Double, reserve: Int = 2) -> Double {
+        e1RM / (1 + Double(reps + reserve) / 30)
+    }
+
+    public static func round5(_ w: Double) -> Double { (w / 5).rounded() * 5 }
+
+    public static func snapBell(_ w: Double) -> Double {
+        if w >= 43 { return 50 }
+        if w >= 28 { return 35 }
+        return 20
+    }
+
+    /// Clamp to real equipment.
+    public static func clamp(_ w: Double, equipment: Equipment) -> Double {
+        switch equipment {
+        case .bb: return max(barbellMin, round5(w))
+        case .db: return min(dumbbellMax, max(dumbbellMin, round5(w)))
+        case .kb: return snapBell(w)
+        case .bw: return round5(w)
+        }
+    }
+
+    /// Tapping the bell cycles 20, 35, 50.
+    public static func nextBellInCycle(_ w: Double) -> Double {
+        switch snapBell(w) {
+        case 20: return 35
+        case 35: return 50
+        default: return 20
+        }
+    }
+
+    // MARK: Suggestion
+
+    public static func suggest(item: SessionItem, lifts: [String: LiftRecord], lightenToday: Bool,
+                               catalog: Catalog = .bundled) -> Suggestion {
+        guard item.isLift, let id = item.exerciseID, let eq = item.equipment else {
+            return Suggestion(weight: nil, reason: "")
+        }
+        let record = lifts[id]
+        switch eq {
+        case .bw:
+            return Suggestion(weight: nil, reason: record?.note ?? "")
+        case .kb:
+            return kettlebell(id: id, record: record, lightenToday: lightenToday)
+        case .bb, .db:
+            break
+        }
+
+        let target = item.high
+        let base: Double
+        var reason: String
+        if let stored = record?.workingWeight, let last = record?.history.last, last.targetHi == target {
+            base = stored
+            reason = ""
+            if let lw = last.weight, let lr = last.reps { reason = "Last time \(Fmt.lb(lw)) × \(lr). " }
+            let lastWeight = last.weight ?? stored
+            if stored > lastWeight {
+                reason += "You earned the bump."
+            } else if stored < lastWeight {
+                reason += "Reset lower to build back."
+            } else {
+                reason += "Same weight, beat your reps."
+            }
+        } else if let best = best1RM(record) {
+            base = weight(forReps: target, e1RM: best)
+            reason = "From your recent best (estimated max \(Fmt.lb(round5(best))) lb)."
+        } else if let rel = related[id], let relBest = best1RM(lifts[rel.from]) {
+            base = weight(forReps: target, e1RM: relBest * rel.ratio)
+            reason = "Estimated from your \(catalog.exercise(rel.from)?.name ?? rel.from)."
+        } else if let stored = record?.workingWeight {
+            base = stored
+            reason = "Last used \(Fmt.lb(stored)) lb."
+        } else {
+            return Suggestion(weight: nil, reason: "Pick a weight you could lift for 2 more reps than the target.")
+        }
+
+        var w = clamp(base, equipment: eq)
+        if lightenToday {
+            w = clamp(w * 0.9, equipment: eq)
+            reason += " Lightened 10% for today."
+        }
+        return Suggestion(weight: w, reason: reason)
+    }
+
+    static func kettlebell(id: String, record: LiftRecord?, lightenToday: Bool) -> Suggestion {
+        var bell: Double
+        var reason: String
+        if let stored = record?.workingWeight {
+            bell = snapBell(stored)
+            reason = bell >= 50
+                ? "Once you own every rep here, add reps."
+                : "Your \(Fmt.lb(bell)) lb. Hit every rep and it moves you to the next bell."
+        } else {
+            bell = defaultBell(id)
+            reason = "Start with the \(Fmt.lb(bell)) lb bell."
+        }
+        if lightenToday {
+            bell = snapBell(bell * 0.9)
+            reason += " Lightened 10% for today."
+        }
+        return Suggestion(weight: bell, reason: reason)
+    }
+}

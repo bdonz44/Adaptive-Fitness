@@ -1,0 +1,68 @@
+{
+  "main": [
+    { "id": "squat", "name": "Back Squat", "category": "main", "eq": "bb", "inc": 10, "unit": "reps", "side": false, "cue": "Brace hard, sit between the hips, drive up through midfoot." },
+    { "id": "fsquat", "name": "Front Squat", "category": "main", "eq": "bb", "inc": 10, "unit": "reps", "side": false, "cue": "Elbows high, chest tall, stay upright." },
+    { "id": "bench", "name": "Bench Press", "category": "main", "eq": "bb", "inc": 5, "unit": "reps", "side": false, "cue": "Set the rack safeties. Shoulder blades pinned, bar to lower chest." },
+    { "id": "incline", "name": "Incline Bench Press", "category": "main", "eq": "bb", "inc": 5, "unit": "reps", "side": false, "cue": "Bench around 30 degrees. This is your upper-chest builder." },
+    { "id": "floorpress", "name": "Floor Press", "category": "main", "eq": "bb", "inc": 5, "unit": "reps", "side": false, "cue": "Let the elbows touch the floor and pause each rep." },
+    { "id": "ohp", "name": "Overhead Press", "category": "main", "eq": "bb", "inc": 5, "unit": "reps", "side": false, "cue": "Squeeze the glutes, press, then push your head through." },
+    { "id": "pushpress", "name": "Push Press", "category": "main", "eq": "bb", "inc": 5, "unit": "reps", "side": false, "cue": "Short dip with the legs, then punch the bar overhead." },
+    { "id": "deadlift", "name": "Deadlift", "category": "main", "eq": "bb", "inc": 10, "unit": "reps", "side": false, "cue": "Bar over midfoot, pull the slack out, push the floor away." }
+  ],
+  "accessories": [
+    { "id": "rdl", "name": "Romanian Deadlift", "category": "hinge", "eq": "bb", "inc": 10, "unit": "reps", "side": false, "cue": "Soft knees, push the hips back until the hamstrings load." },
+    { "id": "slrdl", "name": "KB Single-Leg RDL", "category": "hinge", "eq": "kb", "unit": "reps", "side": true, "cue": "Keep the hips square and reach the bell toward the floor." },
+    { "id": "hipthrust", "name": "Barbell Hip Thrust", "category": "hinge", "eq": "bb", "inc": 10, "unit": "reps", "side": false, "cue": "Upper back on the bench, pause at the top." },
+    { "id": "kbswingh", "name": "Heavy KB Swing", "category": "hinge", "eq": "kb", "unit": "reps", "side": false, "cue": "Hike the bell back, snap the hips, float it to chest height." },
+    { "id": "goodmorning", "name": "Good Morning", "category": "hinge", "eq": "bb", "inc": 5, "unit": "reps", "side": false, "cue": "Light bar. Flat back, hips back, stand tall." },
+
+    { "id": "splitsq", "name": "DB Split Squat", "category": "quad", "eq": "db", "unit": "reps", "side": true, "cue": "Back knee drops straight down, front heel stays planted." },
+    { "id": "gobletsq", "name": "KB Goblet Squat", "category": "quad", "eq": "kb", "unit": "reps", "side": false, "cue": "Bell at the chest, elbows inside the knees at the bottom." },
+    { "id": "stepup", "name": "DB Step-Up", "category": "quad", "eq": "db", "unit": "reps", "side": true, "cue": "Drive through the top foot. No push from the back leg." },
+    { "id": "lunge", "name": "DB Walking Lunge", "category": "quad", "eq": "db", "unit": "reps", "side": true, "cue": "Long steps, torso tall." },
+    { "id": "bulgarian", "name": "DB Bulgarian Split Squat", "category": "quad", "eq": "db", "unit": "reps", "side": true, "cue": "Rear foot on the bench. Slow on the way down." },
+    { "id": "revlunge", "name": "Goblet Reverse Lunge", "category": "quad", "eq": "kb", "unit": "reps", "side": true, "cue": "Step back softly, knee kisses the floor." },
+
+    { "id": "plank", "name": "Plank", "category": "core", "eq": "bw", "unit": "sec", "side": false, "cue": "Squeeze glutes and quads. Ribs down." },
+    { "id": "deadbug", "name": "Dead Bug", "category": "core", "eq": "bw", "unit": "reps", "side": true, "cue": "Low back glued to the floor." },
+    { "id": "hollow", "name": "Hollow Hold", "category": "core", "eq": "bw", "unit": "sec", "side": false, "cue": "Arms overhead, shoulders and feet just off the floor." },
+    { "id": "sideplank", "name": "Side Plank", "category": "core", "eq": "bw", "unit": "sec", "side": true, "cue": "Straight line from head to heels." },
+    { "id": "suitcase", "name": "KB Suitcase Carry", "category": "core", "eq": "kb", "unit": "yd", "side": true, "cue": "Heavy bell in one hand. Do not lean." },
+    { "id": "bearcrawl", "name": "Bear Crawl", "category": "core", "eq": "bw", "unit": "yd", "side": false, "cue": "Knees an inch off the ground, back flat." },
+
+    { "id": "lateral", "name": "DB Lateral Raise", "category": "delt", "eq": "db", "unit": "reps", "side": false, "cue": "Lead with the elbows and stop at shoulder height." },
+    { "id": "arnold", "name": "DB Arnold Press", "category": "delt", "eq": "db", "unit": "reps", "side": false, "cue": "Rotate palms out as you press." },
+    { "id": "reardelt", "name": "DB Rear Delt Fly", "category": "delt", "eq": "db", "unit": "reps", "side": false, "cue": "Hinge over, sweep the bells wide. Light and strict." },
+    { "id": "dbpress", "name": "Seated DB Shoulder Press", "category": "delt", "eq": "db", "unit": "reps", "side": false, "cue": "Bench upright, press without arching." },
+    { "id": "kbbottoms", "name": "KB Bottoms-Up Press", "category": "delt", "eq": "kb", "unit": "reps", "side": true, "cue": "Grip hard and keep the bell balanced upside down." },
+
+    { "id": "pushup", "name": "Push-Up", "category": "chest", "eq": "bw", "unit": "reps", "side": false, "cue": "Body in one line, chest to the floor." },
+    { "id": "dbincline", "name": "DB Incline Press", "category": "chest", "eq": "db", "unit": "reps", "side": false, "cue": "Low incline, full stretch at the bottom." },
+    { "id": "dbfly", "name": "DB Fly", "category": "chest", "eq": "db", "unit": "reps", "side": false, "cue": "Slight bend in the elbows, big stretch, squeeze at the top." },
+    { "id": "dbfloor", "name": "DB Floor Press", "category": "chest", "eq": "db", "unit": "reps", "side": false, "cue": "Pause the elbows on the floor." },
+    { "id": "deficitpu", "name": "Deficit Push-Up", "category": "chest", "eq": "bw", "unit": "reps", "side": false, "cue": "Hands on dumbbells, sink below them." },
+
+    { "id": "curl", "name": "DB Curl", "category": "bicep", "eq": "db", "unit": "reps", "side": false, "cue": "Elbows pinned, turn the pinkies up at the top." },
+    { "id": "hammer", "name": "DB Hammer Curl", "category": "bicep", "eq": "db", "unit": "reps", "side": false, "cue": "Neutral grip, no swinging." },
+    { "id": "bbcurl", "name": "Barbell Curl", "category": "bicep", "eq": "bb", "inc": 5, "unit": "reps", "side": false, "cue": "Strict. Stop before the elbows drift forward." },
+    { "id": "inclinecurl", "name": "DB Incline Curl", "category": "bicep", "eq": "db", "unit": "reps", "side": false, "cue": "Arms hang behind you for a long stretch." },
+
+    { "id": "ohtri", "name": "DB Overhead Triceps Extension", "category": "tricep", "eq": "db", "unit": "reps", "side": false, "cue": "Elbows point up, deep stretch behind the head." },
+    { "id": "skull", "name": "DB Skull Crusher", "category": "tricep", "eq": "db", "unit": "reps", "side": false, "cue": "Lower to the sides of the head, elbows still." },
+    { "id": "cgpushup", "name": "Close-Grip Push-Up", "category": "tricep", "eq": "bw", "unit": "reps", "side": false, "cue": "Hands under the shoulders, elbows brush the ribs." },
+    { "id": "kickback", "name": "DB Triceps Kickback", "category": "tricep", "eq": "db", "unit": "reps", "side": false, "cue": "Upper arm parallel to the floor, lock out and squeeze." },
+
+    { "id": "bbrow", "name": "Barbell Row", "category": "row", "eq": "bb", "inc": 5, "unit": "reps", "side": false, "cue": "Hinge to about 45 degrees, pull to the belly button." },
+    { "id": "dbrow", "name": "One-Arm DB Row", "category": "row", "eq": "db", "unit": "reps", "side": true, "cue": "Pull the elbow to the hip pocket." },
+    { "id": "pendlay", "name": "Pendlay Row", "category": "row", "eq": "bb", "inc": 5, "unit": "reps", "side": false, "cue": "Bar from the floor each rep, back flat." },
+    { "id": "gorilla", "name": "KB Gorilla Row", "category": "row", "eq": "kb", "unit": "reps", "side": true, "cue": "Wide stance, alternate arms, no twisting." },
+    { "id": "csrow", "name": "Chest-Supported DB Row", "category": "row", "eq": "db", "unit": "reps", "side": false, "cue": "Chest on an incline bench, squeeze the shoulder blades." },
+    { "id": "renegade", "name": "Renegade Row", "category": "row", "eq": "db", "unit": "reps", "side": true, "cue": "Plank on the dumbbells, row without rotating." },
+
+    { "id": "thruster", "name": "DB Thruster", "category": "full", "eq": "db", "unit": "reps", "side": false, "cue": "Front squat straight into a press, one smooth motion." },
+    { "id": "kbcp", "name": "KB Clean & Press", "category": "full", "eq": "kb", "unit": "reps", "side": true, "cue": "Clean to the rack, then press." },
+    { "id": "squatpress", "name": "DB Squat to Press", "category": "full", "eq": "db", "unit": "reps", "side": false, "cue": "Squat deep, stand and press." },
+    { "id": "kbswing", "name": "KB Swing", "category": "full", "eq": "kb", "unit": "reps", "side": false, "cue": "Snap the hips, arms are just ropes." },
+    { "id": "burpee", "name": "Burpee", "category": "full", "eq": "bw", "unit": "reps", "side": false, "cue": "Chest to the floor, jump at the top." }
+  ]
+}
