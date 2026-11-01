@@ -7,8 +7,8 @@ A 12-week home-gym program app for iPhone. It picks each session, suggests every
 | Milestone | What | Status |
 |---|---|---|
 | 1 | Engine and data: exercise JSON, program math, session builder, suggestions, progression, warm-up, coach check, with tests | **Built** |
-| 2 | Today tab | Next |
-| 3 | Progress and Plan tabs | |
+| 2 | Today tab: session chips, readiness, set rows with suggested weights, warm-up ramp, bell button, swaps, rest timer, Finish summary, Skip, saved draft | **Built** |
+| 3 | Progress and Plan tabs | Next |
 | 4 | Import web app data, iCloud sync | |
 | 5 | Live Activity rest timer, notifications, HealthKit | |
 | 6 | Adaptive layer (RIR, time-boxed sessions, re-entry, readiness, back-off timing, weekly review, nutrition, equipment) | |
@@ -31,6 +31,28 @@ Tests/EngineTests/       Swift Testing tests for every rule
 ```
 
 The spec's project structure puts the JSON in `Data/`. Here it lives in `Engine/Resources/` so the package can bundle it. The SwiftData models (milestone 2) will sit in the app target and convert to and from the Engine's plain value types.
+
+## Run the app on your Mac
+
+One-time setup:
+
+```bash
+brew install xcodegen
+git clone https://github.com/bdonz44/Adaptive-Fitness.git
+```
+
+Then, in the `Adaptive-Fitness` folder (do this again whenever new code is pulled):
+
+```bash
+git pull
+xcodegen generate
+open Hybrid12.xcodeproj
+```
+
+In Xcode pick an iPhone simulator (or your plugged-in iPhone) at the top and press Cmd-R.
+Bundle ID `com.bdonz44.hybrid12`, team `9AY7PD87RL`.
+
+App code: `App/` (entry point, tabs), `Data/` (SwiftData models and `AppStore`, which connects the Engine to storage), `Features/Today/` (the Today tab), `Services/` (rest timer).
 
 ## Run the tests
 
