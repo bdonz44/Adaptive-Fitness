@@ -40,26 +40,30 @@ import Testing
         var d = SessionDraft(slot: .A, week: 1)
         d.entries["p0c0"] = LoggedItem(sets: [LoggedSet(weight: 95, reps: 10, ticked: true)])
         let s = SessionBuilder.build(slot: .A, context: d.context(runMinutes: 25))
-        #expect(d.swap("p0c0", in: s))
+        let swapped1 = d.swap("p0c0", in: s)
+        #expect(swapped1)
         #expect(d.swaps["p0c0"] == "slrdl")
         #expect(d.entries["p0c0"] == nil)
         let s2 = SessionBuilder.build(slot: .A, context: d.context(runMinutes: 25))
         #expect(s2.item("p0c0")?.exerciseID == "slrdl")
         // Swapping again moves on from the swapped exercise.
-        #expect(d.swap("p0c0", in: s2))
+        let swapped2 = d.swap("p0c0", in: s2)
+        #expect(swapped2)
         #expect(d.swaps["p0c0"] == "hipthrust")
     }
 
     @Test func engineAndFinisherSwapsStepTheIndex() {
         var c = SessionDraft(slot: .C, week: 1)
         let cs = SessionBuilder.build(slot: .C, context: c.context(runMinutes: 25))
-        #expect(c.swap("engine", in: cs))
+        let swapped3 = c.swap("engine", in: cs)
+        #expect(swapped3)
         #expect(c.condSwap == 1)
         #expect(SessionBuilder.build(slot: .C, context: c.context(runMinutes: 25)).item("engine")?.name == "Treadmill Hill Intervals")
 
         var a = SessionDraft(slot: .A, week: 1)
         let s = SessionBuilder.build(slot: .A, context: a.context(runMinutes: 25))
-        #expect(a.swap("finisher", in: s))
+        let swapped4 = a.swap("finisher", in: s)
+        #expect(swapped4)
         #expect(a.finSwap == 1)
         #expect(SessionBuilder.build(slot: .A, context: a.context(runMinutes: 25)).item("finisher")?.name == "Goblet Squat + Swing Ladder")
         // Wraps around after the last one.
@@ -72,7 +76,8 @@ import Testing
     @Test func mainLiftCannotBeSwapped() {
         var d = SessionDraft(slot: .A, week: 1)
         let s = SessionBuilder.build(slot: .A, context: d.context(runMinutes: 25))
-        #expect(!d.swap("main", in: s))
+        let swapped5 = d.swap("main", in: s)
+        #expect(!swapped5)
     }
 
     @Test func bellAppliesToThatSetAndLaterUnfinishedSets() throws {
