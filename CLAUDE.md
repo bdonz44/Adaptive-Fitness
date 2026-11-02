@@ -5,8 +5,10 @@ Brandon's own 12-week home-gym program app for iPhone (separate from Bray-Ray, h
 ## Status (Nov 2, 2026)
 
 - **Milestone 1 (Engine) done:** `Engine/` Swift package, bundled JSON in `Engine/Resources/`, Swift Testing tests in `Tests/EngineTests/` (all pass on GitHub's Mac runner).
-- **Milestone 2 (Today tab) done:** `App/`, `Data/` (SwiftData models + `AppStore`), `Features/Today/`, `Services/RestTimer.swift`. Compiles on GitHub (`.github/workflows/app-build.yml`), but **nobody has run it in the simulator yet**. First job on the Mac: build, run, and fix anything that looks or behaves wrong.
-- **Next: milestone 3** (Progress and Plan tabs). Then 4 import + CloudKit, 5 Live Activity/notifications/HealthKit, 6 adaptive layer, 7 TestFlight.
+- **Milestone 2 (Today tab) done** and checked in the simulator.
+- **Milestone 3 (Progress and Plan tabs) done:** `Features/Progress/`, `Features/Plan/`, `Engine/Tracking.swift`, `Engine/PlanText.swift`. Checked in the simulator with `-seedDemo` (see README).
+- **TestFlight upload works:** `.github/workflows/testflight.yml` uploads on every push to `main`. Secrets ASC_KEY_P8 / ASC_KEY_ID / ASC_ISSUER_ID are set; the key must be an **Admin** key (App Manager fails cloud signing). App record exists.
+- **Next: milestone 4** (import web app JSON + CloudKit). Then 5 Live Activity/notifications/HealthKit, 6 adaptive layer.
 
 ## Run
 

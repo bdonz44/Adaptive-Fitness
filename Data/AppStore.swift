@@ -11,6 +11,14 @@ struct FinishSummary: Identifiable {
     let weekMessage: String?
 }
 
+/// One row in "Recent sessions".
+struct RecentLog: Identifiable, Equatable {
+    let date: Date
+    let title: String
+    let week: Int
+    var id: Date { date }
+}
+
 /// Connects the Engine's pure functions to SwiftData storage and the screens.
 @Observable
 final class AppStore {
@@ -23,6 +31,11 @@ final class AppStore {
     private(set) var logs: [LogStamp]
     private(set) var cardioByWeek: [Int: Int]
     private(set) var draft: SessionDraft
+    private(set) var recentLogs: [RecentLog]
+    /// Oldest first.
+    private(set) var weighIns: [WeighIn]
+    /// Oldest first.
+    private(set) var waist: [WaistEntry]
 
     init(context: ModelContext) {
         self.context = context
@@ -48,6 +61,12 @@ final class AppStore {
         let storedLogs = (try? context.fetch(logDescriptor)) ?? []
         let stamps = storedLogs.compactMap { log in Slot(rawValue: log.slot).map { LogStamp(slot: $0, date: log.date) } }
         logs = stamps
+        recentLogs = storedLogs.prefix(Tracking.recentSessionLimit).map { RecentLog(date: $0.date, title: $0.title, week: $0.week) }
+
+        weighIns = ((try? context.fetch(FetchDescriptor<StoredWeighIn>())) ?? [])
+            .map { WeighIn(date: $0.date, pounds: $0.pounds) }.sorted { $0.date < $1.date }
+        waist = ((try? context.fetch(FetchDescriptor<StoredWaist>())) ?? [])
+            .map { WaistEntry(date: $0.date, inches: $0.inches) }.sorted { $0.date < $1.date }
 
         var cardio: [Int: Int] = [:]
         for week in (try? context.fetch(FetchDescriptor<StoredCardioWeek>())) ?? [] {
@@ -78,6 +97,13 @@ final class AppStore {
     var nextSlot: Slot { Program.nextSlot(state: program, logs: logs, now: Date()) }
 
     var cardioThisWeek: Int { cardioByWeek[program.week] ?? 0 }
+
+    func coachNotes(now: Date = Date()) -> [CoachNote] {
+        Coach.coachNotes(weighIns: weighIns, cardioByWeek: cardioByWeek, week: program.week,
+                         lifts: lifts, now: now, catalog: catalog)
+    }
+
+    var workingWeights: [Tracking.WorkingWeight] { Tracking.workingWeights(lifts: lifts, catalog: catalog) }
 
     func suggestion(for item: SessionItem, in session: Session) -> Suggestion {
         Suggestions.suggest(item: item, lifts: lifts, lightenToday: session.isLightDay, catalog: catalog)
@@ -146,6 +172,8 @@ final class AppStore {
                                  title: s.title, readiness: s.readiness.rawValue,
                                  cardioMinutes: result.cardioMinutes, entries: Self.encode(draft.entries)))
         logs.insert(LogStamp(slot: s.slot, date: now), at: 0)
+        recentLogs.insert(RecentLog(date: now, title: s.title, week: program.week), at: 0)
+        recentLogs = Array(recentLogs.prefix(Tracking.recentSessionLimit))
 
         var state = program
         state.runMinutes = result.runMinutes
@@ -175,7 +203,82 @@ final class AppStore {
         return advance.message
     }
 
+    // MARK: Progress tab
+
+    func addWeighIn(_ pounds: Double, date: Date = Date()) {
+        weighIns = Tracking.adding(WeighIn(date: date, pounds: pounds), to: weighIns)
+        syncWeighIns()
+    }
+
+    func removeWeighIn(_ entry: WeighIn) {
+        weighIns.removeAll { $0 == entry }
+        syncWeighIns()
+    }
+
+    func addWaist(_ inches: Double, date: Date = Date()) {
+        waist = Tracking.adding(WaistEntry(date: date, inches: inches), to: waist)
+        syncWaist()
+    }
+
+    func removeWaist(_ entry: WaistEntry) {
+        waist.removeAll { $0 == entry }
+        syncWaist()
+    }
+
+    // MARK: Plan controls
+
+    /// Jump to week 1-12 within the current cycle. Clears done and the draft.
+    func jump(toWeekInCycle n: Int) {
+        setProgram(Program.jump(toWeekInCycle: n, state: program))
+        resetDraft()
+    }
+
+    /// Erases the program state and every log: lifts, sessions, cardio, weigh-ins and waist.
+    func startOver() {
+        try? context.delete(model: StoredLift.self)
+        try? context.delete(model: StoredLog.self)
+        try? context.delete(model: StoredDraft.self)
+        try? context.delete(model: StoredCardioWeek.self)
+        try? context.delete(model: StoredWeighIn.self)
+        try? context.delete(model: StoredWaist.self)
+        lifts = [:]
+        logs = []
+        recentLogs = []
+        cardioByWeek = [:]
+        weighIns = []
+        waist = []
+        setProgram(ProgramState())
+        resetDraft()
+    }
+
     // MARK: Saving
+
+    /// Makes stored weigh-ins match `weighIns` (adds new ones, deletes removed or trimmed ones).
+    private func syncWeighIns() {
+        var keep = weighIns
+        for stored in (try? context.fetch(FetchDescriptor<StoredWeighIn>())) ?? [] {
+            if let i = keep.firstIndex(of: WeighIn(date: stored.date, pounds: stored.pounds)) {
+                keep.remove(at: i)
+            } else {
+                context.delete(stored)
+            }
+        }
+        for new in keep { context.insert(StoredWeighIn(date: new.date, pounds: new.pounds)) }
+        save()
+    }
+
+    private func syncWaist() {
+        var keep = waist
+        for stored in (try? context.fetch(FetchDescriptor<StoredWaist>())) ?? [] {
+            if let i = keep.firstIndex(of: WaistEntry(date: stored.date, inches: stored.inches)) {
+                keep.remove(at: i)
+            } else {
+                context.delete(stored)
+            }
+        }
+        for new in keep { context.insert(StoredWaist(date: new.date, inches: new.inches)) }
+        save()
+    }
 
     private func resetDraft() {
         draft = SessionDraft(slot: nextSlot, week: program.week)
@@ -233,4 +336,39 @@ final class AppStore {
     private static func decode<T: Decodable>(_ type: T.Type, _ data: Data) -> T? {
         try? JSONDecoder().decode(type, from: data)
     }
+
+    #if DEBUG
+    /// Sample data for simulator screenshots (launch argument `-seedDemo`). Debug builds only.
+    func seedDemo(now: Date = Date()) {
+        startOver()
+        let d: TimeInterval = 86400
+        for (i, lb) in [246.0, 245.2, 244.6, 243.0, 242.4, 241.8, 240.6].enumerated() {
+            addWeighIn(lb, date: now.addingTimeInterval(Double(i - 6) * 4 * d))
+        }
+        addWaist(42.5, date: now.addingTimeInterval(-21 * d))
+        addWaist(41.75, date: now.addingTimeInterval(-7 * d))
+        func rec(_ id: String, _ weights: [Double], reps: Int = 5) -> LiftRecord {
+            let history = weights.enumerated().map { i, w in
+                HistoryEntry(date: now.addingTimeInterval(Double(i - weights.count) * 7 * d), weight: w, reps: reps, targetHi: reps)
+            }
+            return LiftRecord(exerciseID: id, workingWeight: weights.last.map { $0 + 5 }, history: history, firstWeight: weights.first)
+        }
+        let seeded = [rec("squat", [205, 215, 225]), rec("bench", [165, 170, 175]), rec("ohp", [95, 100, 100]),
+                      rec("deadlift", [255, 265, 275]), rec("kbswing", [35, 50], reps: 15)]
+        for r in seeded { lifts[r.exerciseID] = r; saveLift(r.exerciseID, r) }
+        setProgram(ProgramState(week: 3, doneSlots: ["B", "C"], startDate: now.addingTimeInterval(-16 * d), runMinutes: 30))
+        addCardio(95, week: 2)
+        addCardio(40, week: 3)
+        for (i, slot) in [Slot.C, .B, .E, .D, .A].enumerated() {
+            let date = now.addingTimeInterval(Double(-i - 1) * 1.6 * d)
+            let title = Program.plan(slot).name
+            let week = i < 2 ? 3 : 2
+            context.insert(StoredLog(date: date, week: week, phase: 0, slot: slot.rawValue, title: title,
+                                     readiness: "normal", cardioMinutes: 0, entries: Data()))
+            logs.append(LogStamp(slot: slot, date: date))
+            recentLogs.append(RecentLog(date: date, title: title, week: week))
+        }
+        resetDraft()
+    }
+    #endif
 }

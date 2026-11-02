@@ -1,35 +1,31 @@
 import SwiftUI
 
 struct RootTabView: View {
+    @State private var tab = RootTabView.launchTab
+
     var body: some View {
-        TabView {
+        TabView(selection: $tab) {
             TodayView()
                 .tabItem { Label("Today", systemImage: "dumbbell") }
-            ComingSoonView(title: "Progress", detail: "Weigh-ins, waist, cardio, charts and the coach check arrive in milestone 3.")
+                .tag(0)
+            ProgressTab()
                 .tabItem { Label("Progress", systemImage: "chart.line.uptrend.xyaxis") }
-            ComingSoonView(title: "Plan", detail: "The 12-week plan, jump to week and start over arrive in milestone 3.")
+                .tag(1)
+            PlanTab()
                 .tabItem { Label("Plan", systemImage: "calendar") }
+                .tag(2)
         }
     }
 }
 
-struct ComingSoonView: View {
-    let title: String
-    let detail: String
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 12) {
-                Image(systemName: "hammer")
-                    .font(.largeTitle)
-                    .foregroundStyle(.secondary)
-                Text(detail)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(32)
-            .navigationTitle(title)
-        }
+extension RootTabView {
+    /// Debug builds: `-tab 1` opens Progress, `-tab 2` opens Plan (for simulator screenshots).
+    static var launchTab: Int {
+        #if DEBUG
+        return UserDefaults.standard.integer(forKey: "tab")
+        #else
+        return 0
+        #endif
     }
 }
 

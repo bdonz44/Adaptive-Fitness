@@ -16,7 +16,11 @@ struct Hybrid12App: App {
             fatalError("Could not open the database: \(error)")
         }
         self.container = container
-        _store = State(initialValue: AppStore(context: ModelContext(container)))
+        let store = AppStore(context: ModelContext(container))
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-seedDemo") { store.seedDemo() }
+        #endif
+        _store = State(initialValue: store)
     }
 
     var body: some Scene {

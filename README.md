@@ -8,11 +8,11 @@ A 12-week home-gym program app for iPhone. It picks each session, suggests every
 |---|---|---|
 | 1 | Engine and data: exercise JSON, program math, session builder, suggestions, progression, warm-up, coach check, with tests | **Built** |
 | 2 | Today tab: session chips, readiness, set rows with suggested weights, warm-up ramp, bell button, swaps, rest timer, Finish summary, Skip, saved draft | **Built** |
-| 3 | Progress and Plan tabs | Next |
-| 4 | Import web app data, iCloud sync | |
+| 3 | Progress tab (coach check, cardio, bodyweight and waist with charts, working weights, recent sessions) and Plan tab (phases, 12-week grid, sessions, jump to week, start over) | **Built** |
+| 4 | Import web app data, iCloud sync | Next |
 | 5 | Live Activity rest timer, notifications, HealthKit | |
 | 6 | Adaptive layer (RIR, time-boxed sessions, re-entry, readiness, back-off timing, weekly review, nutrition, equipment) | |
-| 7 | TestFlight | |
+| 7 | TestFlight | Upload works: every push to `main` sends a build (`.github/workflows/testflight.yml`) |
 
 ## Layout
 
@@ -25,6 +25,8 @@ Engine/                  Pure, UI-free program logic
   Progression.swift      reading the log, next weights, counters, cardio minutes, run length
   WarmUp.swift           main-lift warm-up ramp and plate math
   Coach.swift            coach check (weight trend, cardio, strength)
+  Tracking.swift         bodyweight and waist lists, change since first, working-weights list
+  PlanText.swift         Plan tab text: phases, schemes, the 12 weeks, session lines
   Catalog.swift          loads the bundled JSON
   Resources/             exercises.json, engine.json, finishers.json (edit these, not code, to add moves)
 Tests/EngineTests/       Swift Testing tests for every rule
@@ -52,7 +54,9 @@ open Hybrid12.xcodeproj
 In Xcode pick an iPhone simulator (or your plugged-in iPhone) at the top and press Cmd-R.
 Bundle ID `com.bdonz44.hybrid12`, team `9AY7PD87RL`.
 
-App code: `App/` (entry point, tabs), `Data/` (SwiftData models and `AppStore`, which connects the Engine to storage), `Features/Today/` (the Today tab), `Services/` (rest timer).
+App code: `App/` (entry point, tabs), `Data/` (SwiftData models and `AppStore`, which connects the Engine to storage), `Features/Today/`, `Features/Progress/`, `Features/Plan/` (the three tabs), `Services/` (rest timer).
+
+Debug builds only (never TestFlight): launch with `-seedDemo` to fill the app with sample data, and `-tab 1` or `-tab 2` to open on Progress or Plan. Handy for simulator screenshots, e.g. `xcrun simctl launch booted com.bdonz44.hybrid12 -seedDemo -tab 1`. `-seedDemo` erases what is there first.
 
 ## Run the tests
 
@@ -73,3 +77,7 @@ Or open `Package.swift` in Xcode and press Cmd-U. GitHub also runs them on every
 - **Light days (deload, Beat up)** still store a weight the first time a lift is ever logged.
 - **`firstWeight`** was added to the lift record so "heavier than where you started" survives the 12-entry history limit.
 - **Lateral Raise Burnout** logs its weight but does not progress.
+- **Start over** erases everything, including weigh-ins and waist entries, after two confirms.
+- **Waist** shows the last 5 entries with Remove, like bodyweight, so a typo can be fixed.
+- **Jump to week** is done by tapping a week in the Plan tab's 12-week grid; past weeks show a check.
+- **Recent sessions** show the week within the cycle (1-12).
