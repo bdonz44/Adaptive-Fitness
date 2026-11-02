@@ -10,6 +10,7 @@ struct Hybrid12App: App {
     @State private var timer = RestTimer()
 
     init() {
+        RestAlerts.endLeftovers()
         let schema = Schema(Schema12.models)
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-initCloudKitSchema") {

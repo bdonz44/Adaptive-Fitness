@@ -161,6 +161,10 @@ final class AppStore {
         let s = session
         let result = Progression.progress(session: s, entries: draft.entries, lifts: lifts, date: now,
                                           runMinutes: program.runMinutes, catalog: catalog)
+        if let workout = Workouts.record(session: s, entries: draft.entries, startedAt: draft.startedAt,
+                                         finishedAt: now, cardioMinutes: result.cardioMinutes) {
+            Task { await HealthService.shared.save(workout) }
+        }
         for (id, rec) in result.lifts where rec != lifts[id] {
             saveLift(id, rec)
         }
@@ -322,6 +326,7 @@ final class AppStore {
     }
 
     private func saveDraft() {
+        draft.noteStart(at: Date())
         let data = Self.encode(draft)
         if let stored = (try? context.fetch(FetchDescriptor<StoredDraft>()))?.first {
             stored.json = data

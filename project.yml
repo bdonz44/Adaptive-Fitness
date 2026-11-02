@@ -12,6 +12,10 @@ settings:
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_VERSION: "5.0"
+    # The widget extension's bundle ID is built from this, so CI overrides
+    # APP_BUNDLE_ID rather than PRODUCT_BUNDLE_IDENTIFIER.
+    APP_BUNDLE_ID: com.bdonz44.hybrid12
+    DEVELOPMENT_TEAM: 9AY7PD87RL
 packages:
   Hybrid12Engine:
     path: .
@@ -24,8 +28,10 @@ targets:
       - path: Data
       - path: Features
       - path: Services
+      - path: Shared
     dependencies:
       - package: Hybrid12Engine
+      - target: Hybrid12Widgets
     info:
       path: App/Info.plist
       properties:
@@ -38,19 +44,43 @@ targets:
         UIRequiresFullScreen: true
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIBackgroundModes: [remote-notification]
+        NSSupportsLiveActivities: true
+        NSHealthUpdateUsageDescription: Hybrid 12 saves each finished session to Health as a workout so it shows in the Fitness app.
     entitlements:
       path: App/Hybrid12.entitlements
       properties:
         com.apple.developer.icloud-container-identifiers: [iCloud.com.bdonz44.hybrid12]
         com.apple.developer.icloud-services: [CloudKit]
         aps-environment: development
+        com.apple.developer.healthkit: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.bdonz44.hybrid12
-        DEVELOPMENT_TEAM: 9AY7PD87RL
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     scheme: {}
+  Hybrid12Widgets:
+    # Rest timer Live Activity (Lock Screen and Dynamic Island).
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Hybrid12Widgets
+      - path: Shared
+    info:
+      path: Hybrid12Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: Hybrid 12
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).widgets
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES

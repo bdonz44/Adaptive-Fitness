@@ -7,7 +7,8 @@
 #   ASC_ISSUER_ID   App Store Connect API issuer ID
 #   ASC_KEY_P8      Full contents of the AuthKey_XXXX.p8 file
 # Optional (defaults shown): APPLE_TEAM_ID secret (9AY7PD87RL),
-#   IOS_BUNDLE_ID variable (com.bdonz44.hybrid12).
+#   IOS_BUNDLE_ID variable (com.bdonz44.hybrid12; the Live Activity extension
+#   is that plus ".widgets").
 
 name: TestFlight
 
@@ -82,7 +83,7 @@ jobs:
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/Hybrid12.xcarchive" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
+            APP_BUNDLE_ID="$BUNDLE_ID" \
             CURRENT_PROJECT_VERSION="$build" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
@@ -92,9 +93,12 @@ jobs:
         run: |
           # The unsigned archive carries no entitlements, so export would sign
           # without iCloud. An ad-hoc signature stores them for export to keep.
+          # The widget extension inside is signed first (an app can't be signed
+          # around unsigned code).
+          app="$RUNNER_TEMP/Hybrid12.xcarchive/Products/Applications/Hybrid12.app"
+          codesign --force --sign - --timestamp=none "$app/PlugIns/Hybrid12Widgets.appex"
           codesign --force --sign - --timestamp=none \
-            --entitlements App/Hybrid12.entitlements \
-            "$RUNNER_TEMP/Hybrid12.xcarchive/Products/Applications/Hybrid12.app"
+            --entitlements App/Hybrid12.entitlements "$app"
 
       - name: Upload to TestFlight
         run: |

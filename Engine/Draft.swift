@@ -15,6 +15,8 @@ public struct SessionDraft: Codable, Equatable, Sendable {
     public var warmTicks: [Int]
     /// Minutes available today (v2, time-boxed sessions).
     public var timeBudget: Int?
+    /// When the first set or warm-up step was ticked (start of the Health workout).
+    public var startedAt: Date?
 
     public init(slot: Slot, week: Int, readiness: Readiness = .normal) {
         self.slot = slot
@@ -26,6 +28,12 @@ public struct SessionDraft: Codable, Equatable, Sendable {
         self.entries = [:]
         self.warmTicks = []
         self.timeBudget = nil
+        self.startedAt = nil
+    }
+
+    /// Records the start time the first time any work or warm-up step is logged.
+    public mutating func noteStart(at date: Date) {
+        if startedAt == nil, hasWork || !warmTicks.isEmpty { startedAt = date }
     }
 
     public func context(runMinutes: Int) -> SessionContext {
