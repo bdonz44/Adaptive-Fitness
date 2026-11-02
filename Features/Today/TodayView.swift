@@ -15,6 +15,7 @@ struct TodayView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    if store.isEmpty { ImportPromptCard() }
                     WeekHeader()
                     SlotChips()
                     ReadinessPicker()

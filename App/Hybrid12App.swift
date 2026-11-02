@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Hybrid12Engine
 
 @main
 struct Hybrid12App: App {
@@ -19,6 +20,11 @@ struct Hybrid12App: App {
         let store = AppStore(context: ModelContext(container))
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-seedDemo") { store.seedDemo() }
+        // `-importFile /path/to/hybrid12-data.json` imports a web app export at launch.
+        if let path = UserDefaults.standard.string(forKey: "importFile"),
+           let data = FileManager.default.contents(atPath: path) {
+            do { store.importWebData(try Importer.parse(data)) } catch { print("Import failed: \(error)") }
+        }
         #endif
         _store = State(initialValue: store)
     }

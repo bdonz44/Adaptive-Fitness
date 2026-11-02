@@ -31,6 +31,13 @@ struct PlanTab: View {
                             .font(.subheadline)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    Card(title: "Web app data") {
+                        Text("Bring over your week, weights, sessions, weigh-ins, waist and cardio from the web app's export file.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        ImportButton()
+                    }
                     startOverButton
                 }
                 .padding()

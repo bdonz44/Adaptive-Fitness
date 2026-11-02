@@ -251,6 +251,33 @@ final class AppStore {
         resetDraft()
     }
 
+    // MARK: Import
+
+    /// Nothing logged yet (offer the web app import).
+    var isEmpty: Bool { lifts.isEmpty && logs.isEmpty && weighIns.isEmpty && waist.isEmpty }
+
+    /// Replaces everything with the web app's data.
+    func importWebData(_ r: Importer.Result) {
+        startOver()
+        for (id, rec) in r.lifts { saveLift(id, rec) }
+        lifts = r.lifts
+        weighIns = r.weighIns
+        syncWeighIns()
+        waist = r.waist
+        syncWaist()
+        for (week, minutes) in r.cardioByWeek { addCardio(minutes, week: week) }
+        for log in r.logs {
+            context.insert(StoredLog(date: log.date, week: log.week, phase: log.phase, slot: log.slot.rawValue,
+                                     title: log.title, readiness: log.readiness, cardioMinutes: 0,
+                                     entries: Self.encode(log.entries)))
+        }
+        let newestFirst = r.logs.reversed()
+        logs = newestFirst.map { LogStamp(slot: $0.slot, date: $0.date) }
+        recentLogs = newestFirst.prefix(Tracking.recentSessionLimit).map { RecentLog(date: $0.date, title: $0.title, week: $0.week) }
+        setProgram(r.program)
+        resetDraft()
+    }
+
     // MARK: Saving
 
     /// Makes stored weigh-ins match `weighIns` (adds new ones, deletes removed or trimmed ones).

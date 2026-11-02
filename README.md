@@ -56,7 +56,7 @@ Bundle ID `com.bdonz44.hybrid12`, team `9AY7PD87RL`.
 
 App code: `App/` (entry point, tabs), `Data/` (SwiftData models and `AppStore`, which connects the Engine to storage), `Features/Today/`, `Features/Progress/`, `Features/Plan/` (the three tabs), `Services/` (rest timer).
 
-Debug builds only (never TestFlight): launch with `-seedDemo` to fill the app with sample data, and `-tab 1` or `-tab 2` to open on Progress or Plan. Handy for simulator screenshots, e.g. `xcrun simctl launch booted com.bdonz44.hybrid12 -seedDemo -tab 1`. `-seedDemo` erases what is there first.
+Debug builds only (never TestFlight): launch with `-seedDemo` to fill the app with sample data, and `-tab 1` or `-tab 2` to open on Progress or Plan. Handy for simulator screenshots, e.g. `xcrun simctl launch booted com.bdonz44.hybrid12 -seedDemo -tab 1`. `-seedDemo` erases what is there first. `-importFile /path/to/hybrid12-data.json` imports a web app export at launch (replaces everything).
 
 ## Run the tests
 
