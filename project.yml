@@ -37,6 +37,13 @@ targets:
         UILaunchScreen: {}
         UIRequiresFullScreen: true
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIBackgroundModes: [remote-notification]
+    entitlements:
+      path: App/Hybrid12.entitlements
+      properties:
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.bdonz44.hybrid12]
+        com.apple.developer.icloud-services: [CloudKit]
+        aps-environment: development
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.bdonz44.hybrid12

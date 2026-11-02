@@ -88,6 +88,14 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
 
+      - name: Keep iCloud entitlements
+        run: |
+          # The unsigned archive carries no entitlements, so export would sign
+          # without iCloud. An ad-hoc signature stores them for export to keep.
+          codesign --force --sign - --timestamp=none \
+            --entitlements App/Hybrid12.entitlements \
+            "$RUNNER_TEMP/Hybrid12.xcarchive/Products/Applications/Hybrid12.app"
+
       - name: Upload to TestFlight
         run: |
           sed "s/TEAM_ID_PLACEHOLDER/$TEAM_ID/" ExportOptions.plist > "$RUNNER_TEMP/ExportOptions.plist"

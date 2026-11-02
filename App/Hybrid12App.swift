@@ -4,17 +4,32 @@ import Hybrid12Engine
 
 @main
 struct Hybrid12App: App {
+    static let iCloudContainer = "iCloud.com.bdonz44.hybrid12"
     private let container: ModelContainer
     @State private var store: AppStore
     @State private var timer = RestTimer()
 
     init() {
         let schema = Schema(Schema12.models)
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-initCloudKitSchema") {
+            CloudKitSchema.initialize(schema: schema, containerID: Self.iCloudContainer)
+        }
+        #endif
         let container: ModelContainer
         do {
-            container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema))
+            // Syncs through the private iCloud database when signed in to iCloud.
+            container = try ModelContainer(for: schema, configurations: ModelConfiguration(
+                schema: schema, cloudKitDatabase: .private(Self.iCloudContainer)))
         } catch {
-            fatalError("Could not open the database: \(error)")
+            // Without iCloud the same on-device store still works.
+            print("iCloud sync unavailable, using on-device storage: \(error)")
+            do {
+                container = try ModelContainer(for: schema, configurations: ModelConfiguration(
+                    schema: schema, cloudKitDatabase: .none))
+            } catch {
+                fatalError("Could not open the database: \(error)")
+            }
         }
         self.container = container
         let store = AppStore(context: ModelContext(container))
