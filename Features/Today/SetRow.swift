@@ -59,7 +59,7 @@ struct SetRow: View {
             .accessibilityHint("Tap to change the bell")
         case .bb, .db:
             HStack(spacing: 4) {
-                NumberField(placeholder: suggestion.weight.map { lb($0) } ?? "lb", value: set.weight) { value in
+                NumberField(placeholder: suggestion.weight.map { lb($0) } ?? "–", value: set.weight) { value in
                     store.setWeight(value, item: item, set: index)
                 }
                 Text("lb").font(.caption).foregroundStyle(.secondary)
