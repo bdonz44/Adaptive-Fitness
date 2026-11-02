@@ -9,7 +9,7 @@ A 12-week home-gym program app for iPhone. It picks each session, suggests every
 | 1 | Engine and data: exercise JSON, program math, session builder, suggestions, progression, warm-up, coach check, with tests | **Built** |
 | 2 | Today tab: session chips, readiness, set rows with suggested weights, warm-up ramp, bell button, swaps, rest timer, Finish summary, Skip, saved draft | **Built** |
 | 3 | Progress tab (coach check, cardio, bodyweight and waist with charts, working weights, recent sessions) and Plan tab (phases, 12-week grid, sessions, jump to week, start over) | **Built** |
-| 4 | Import web app data, iCloud sync | Next |
+| 4 | Import web app data, iCloud sync | **Built** (two-device sync test still to do) |
 | 5 | Live Activity rest timer, notifications, HealthKit | |
 | 6 | Adaptive layer (RIR, time-boxed sessions, re-entry, readiness, back-off timing, weekly review, nutrition, equipment) | |
 | 7 | TestFlight | Upload works: every push to `main` sends a build (`.github/workflows/testflight.yml`) |
