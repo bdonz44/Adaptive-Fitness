@@ -7,3 +7,4 @@ xcuserdata/
 
 Hybrid12.xcodeproj/
 App/Info.plist
+.claude/settings.local.json
