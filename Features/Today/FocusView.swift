@@ -10,6 +10,7 @@ struct FocusView: View {
     @State private var reps: Int?
     @State private var weight: Double?
     @State private var shownKey = ""
+    @State private var effort: CoachCues.Effort?
 
     var body: some View {
         let look = Theme.look
@@ -49,6 +50,12 @@ struct FocusView: View {
                              color: look.accent)
                 Text(look.uppercaseTitles ? item.name.uppercased() : item.name)
                     .font(look.title(44)).lineLimit(2).minimumScaleFactor(0.6)
+                if let line = coachLine(item, set: open.set, session: session) {
+                    Label(line, systemImage: "flame.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(look.accent)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             if item.equipment != .bw, let w = shownWeight {
@@ -89,11 +96,16 @@ struct FocusView: View {
             }
 
             Spacer(minLength: 0)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("How did it feel?").font(.caption).foregroundStyle(look.secondary)
+                EffortPicker(effort: $effort)
+            }
             Button {
                 SetTick.toggle(item, set: open.set, in: session, store: store, timer: timer,
-                               reps: shownReps, weight: item.equipment == .bw ? nil : shownWeight)
+                               reps: shownReps, weight: item.equipment == .bw ? nil : shownWeight, effort: effort)
                 reps = nil
                 weight = nil
+                effort = nil
             } label: {
                 Text(doneLabel(item)).accentButton(height: 64)
             }
@@ -104,6 +116,12 @@ struct FocusView: View {
         .onChange(of: key) { _, newKey in
             if newKey != shownKey { reps = nil; weight = nil; shownKey = newKey }
         }
+    }
+
+    private func coachLine(_ item: SessionItem, set: Int, session: Session) -> String? {
+        if set == item.sets - 1, let push = CoachCues.lastSetPush(item: item, lightDay: session.isLightDay) { return push }
+        if set == 0 { return store.coachTarget(for: item, in: session) }
+        return nil
     }
 
     private var doneScreen: some View {

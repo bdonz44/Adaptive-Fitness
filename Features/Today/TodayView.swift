@@ -43,7 +43,10 @@ struct TodayView: View {
             .scrollDismissesKeyboard(.interactively)
             .safeAreaInset(edge: .bottom) {
                 if timer.isActive && !showFocus {
-                    RestTimerBar(expand: { showRest = true })
+                    VStack(spacing: 0) {
+                        CoachCueCard(compact: true).padding(.horizontal).padding(.bottom, 8)
+                        RestTimerBar(expand: { showRest = true })
+                    }
                 }
             }
             .toolbar {

@@ -52,6 +52,8 @@ final class AppStore {
     private(set) var weighIns: [WeighIn]
     /// Oldest first.
     private(set) var waist: [WaistEntry]
+    /// The coach's call after the last set ticked.
+    private(set) var coachCue: (key: String, cue: CoachCues.Cue)?
 
     init(context: ModelContext) {
         self.context = context
@@ -268,6 +270,41 @@ final class AppStore {
         saveDraft()
     }
 
+    // MARK: Coach
+
+    /// What to beat today for this lift.
+    func coachTarget(for item: SessionItem, in session: Session) -> String? {
+        guard let id = item.exerciseID else { return nil }
+        let open = nextOpenSet
+        let set = open?.key == item.key ? open!.set : 0
+        return CoachCues.target(item: item, record: lifts[id], weight: weight(for: item, set: set, in: session),
+                                lightDay: session.isLightDay)
+    }
+
+    /// The call after a set; shown on the rest screens until the next set.
+    func coachAfterSet(_ item: SessionItem, set index: Int, effort: CoachCues.Effort?, in session: Session) {
+        let sets = entry(item.key).sets
+        guard index < sets.count else { return }
+        if let effort {
+            update(item.key, sets: item.sets) { $0.rir = effort.rir }
+        }
+        let left = sets.prefix(item.sets).enumerated().filter { $0.offset > index && !$0.element.isDone }.count
+        let cue = CoachCues.afterSet(item: item, reps: sets[index].reps, weight: sets[index].weight, effort: effort,
+                                     setsLeft: left, lightDay: session.isLightDay)
+        coachCue = (item.key, cue)
+    }
+
+    /// The coach's "Use 240" button: later unfinished sets take the new weight.
+    func applyCoachWeight() {
+        guard let (key, cue) = coachCue, let w = cue.newWeight, let item = session.item(key) else { return }
+        update(key, sets: item.sets) { e in
+            for i in e.sets.indices where !e.sets[i].isDone { e.sets[i].weight = w }
+        }
+        coachCue = (key, CoachCues.Cue(tone: cue.tone, text: "Set to \(lb(w)) lb. Make it count.", newWeight: nil))
+    }
+
+    func clearCoachCue() { coachCue = nil }
+
     /// Fills the item's later blank sets from a finished set.
     func carryForward(_ item: SessionItem, from index: Int) {
         draft.carryForward(key: item.key, from: index, setCount: item.sets)
@@ -299,6 +336,7 @@ final class AppStore {
         let workout = Workouts.record(session: s, entries: draft.entries, startedAt: draft.startedAt,
                                       finishedAt: now, cardioMinutes: result.cardioMinutes)
         if let workout { Task { await HealthService.shared.save(workout) } }
+        coachCue = nil
         let stats = SessionInsights.stats(session: s, entries: draft.entries)
         let records = SessionInsights.records(lifts: result.lifts, date: now).map { r in
             FinishSummary.PR(id: r.exerciseID, name: catalog.exercise(r.exerciseID)?.name ?? r.exerciseID,
@@ -324,6 +362,7 @@ final class AppStore {
         let advance = Program.markDone(s.slot, state: state)
         setProgram(advance.state)
         resetDraft()
+        Nudges.schedule(CoachCues.nudge(after: now, next: nextSlot))
 
         return FinishSummary(title: s.title, changes: result.changes, cardioMinutes: result.cardioMinutes,
                              weekMessage: advance.message, minutes: workout?.minutes, setsDone: stats.setsDone,

@@ -32,6 +32,12 @@ struct NowCard: View {
                 if item.equipment == .bb, let weight {
                     Text("Per side: \(Plates.text(weight))").font(.subheadline).foregroundStyle(look.secondary)
                 }
+                if let line = coachLine(item, set: open.set) {
+                    Label(line, systemImage: "flame.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(look.accent)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 SetProgress(done: doneCount(item), total: item.sets)
                 HStack(spacing: 10) {
                     Button {
@@ -66,6 +72,13 @@ struct NowCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .lookCard()
         }
+    }
+
+    /// Last set of a main lift: the push. First set: what to beat today.
+    private func coachLine(_ item: SessionItem, set: Int) -> String? {
+        if set == item.sets - 1, let push = CoachCues.lastSetPush(item: item, lightDay: session.isLightDay) { return push }
+        if set == 0 { return store.coachTarget(for: item, in: session) }
+        return nil
     }
 
     private func doneCount(_ item: SessionItem) -> Int {

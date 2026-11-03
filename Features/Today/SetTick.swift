@@ -6,7 +6,8 @@ enum SetTick {
     /// Ticks (or unticks) a set. Ticking fills a blank weight with the suggestion,
     /// stores `reps` when given, and starts the rest (or the superset transition).
     static func toggle(_ item: SessionItem, set index: Int, in session: Session, store: AppStore,
-                       timer: RestTimer, reps: Int? = nil, weight: Double? = nil) {
+                       timer: RestTimer, reps: Int? = nil, weight: Double? = nil,
+                       effort: CoachCues.Effort? = nil) {
         let current = store.entry(item.key)
         let wasTicked = index < current.sets.count && current.sets[index].ticked
         let ticking = !wasTicked || reps != nil
@@ -19,8 +20,9 @@ enum SetTick {
                 e.sets[index].weight = w
             }
         }
-        guard ticking else { return }
+        guard ticking else { store.clearCoachCue(); return }
         store.carryForward(item, from: index)
+        store.coachAfterSet(item, set: index, effort: effort, in: session)
         startRest(after: item, in: session, timer: timer)
     }
 
