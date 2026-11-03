@@ -46,7 +46,7 @@ struct ItemCard: View {
                         .font(.footnote.weight(.medium))
                 }
                 if item.kind == .main, let id = item.exerciseID {
-                    WarmUpSection(item: item, liftID: id)
+                    WarmUpSection(item: item, liftID: id, session: session)
                 }
                 ForEach(0..<item.sets, id: \.self) { i in
                     SetRow(item: item, index: i, suggestion: suggestion, session: session)

@@ -17,6 +17,8 @@ public struct SessionDraft: Codable, Equatable, Sendable {
     public var timeBudget: Int?
     /// When the first set or warm-up step was ticked (start of the Health workout).
     public var startedAt: Date?
+    /// Warm-up weights changed by hand, by step index ("0", "1"...).
+    public var warmWeights: [String: Double]?
 
     public init(slot: Slot, week: Int, readiness: Readiness = .normal) {
         self.slot = slot
@@ -101,6 +103,15 @@ public struct SessionDraft: Codable, Equatable, Sendable {
         }
         entries[key] = e
     }
+
+    /// Changes one warm-up step's weight; nil goes back to the calculated weight.
+    public mutating func setWarmWeight(_ weight: Double?, step index: Int) {
+        var w = warmWeights ?? [:]
+        w["\(index)"] = weight
+        warmWeights = w.isEmpty ? nil : w
+    }
+
+    public func warmWeight(step index: Int) -> Double? { warmWeights?["\(index)"] }
 
     public mutating func toggleWarmTick(_ index: Int) {
         if let i = warmTicks.firstIndex(of: index) {

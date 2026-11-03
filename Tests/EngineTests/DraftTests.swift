@@ -149,3 +149,24 @@ import Testing
         #expect(d.entries["x"]!.sets[2].reps == nil)
     }
 }
+
+@Suite struct WarmWeightTests {
+    @Test func handEditedWarmUpWeightsStickAndClear() {
+        var d = SessionDraft(slot: .A, week: 1)
+        d.setWarmWeight(140, step: 1)
+        #expect(d.warmWeight(step: 1) == 140)
+        #expect(d.warmWeight(step: 0) == nil)
+        d.setWarmWeight(nil, step: 1)
+        #expect(d.warmWeights == nil)
+    }
+
+    @Test func oldDraftsWithoutWarmWeightsStillLoad() throws {
+        var d = SessionDraft(slot: .A, week: 2)
+        d.warmTicks = [0]
+        var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(d)) as! [String: Any]
+        json.removeValue(forKey: "warmWeights")
+        json.removeValue(forKey: "startedAt")
+        let back = try JSONDecoder().decode(SessionDraft.self, from: JSONSerialization.data(withJSONObject: json))
+        #expect(back.week == 2 && back.warmTicks == [0] && back.warmWeights == nil)
+    }
+}

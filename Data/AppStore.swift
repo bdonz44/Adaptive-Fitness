@@ -344,6 +344,11 @@ final class AppStore {
         saveDraft()
     }
 
+    func setWarmWeight(_ weight: Double?, step index: Int) {
+        draft.setWarmWeight(weight, step: index)
+        saveDraft()
+    }
+
     func toggleWarmTick(_ index: Int) {
         draft.toggleWarmTick(index)
         saveDraft()
