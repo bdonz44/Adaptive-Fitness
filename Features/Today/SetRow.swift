@@ -4,6 +4,7 @@ import Hybrid12Engine
 struct SetRow: View {
     @Environment(AppStore.self) private var store
     @Environment(RestTimer.self) private var timer
+    @Environment(HoldTimer.self) private var hold
     let item: SessionItem
     let index: Int
     let suggestion: Suggestion
@@ -28,6 +29,21 @@ struct SetRow: View {
                 .foregroundStyle(Theme.secondary)
 
             Spacer()
+
+            if item.unit == .sec && !set.isDone {
+                Button {
+                    hideKeyboard()
+                    HoldStart.start(item, set: index, store: store, hold: hold)
+                } label: {
+                    Label("Start", systemImage: "timer")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(Theme.onAccent)
+                        .padding(.horizontal, 10).frame(minHeight: 36)
+                        .background(Theme.accent, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Start \(set.reps ?? item.high) second timer for set \(index + 1)")
+            }
 
             Button {
                 toggle(set)

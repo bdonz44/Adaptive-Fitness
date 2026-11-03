@@ -8,6 +8,7 @@ struct Hybrid12App: App {
     private let container: ModelContainer
     @State private var store: AppStore
     private let timer = RestTimer.shared
+    @State private var hold = HoldTimer()
 
     init() {
         RestAlerts.endLeftovers()
@@ -51,6 +52,7 @@ struct Hybrid12App: App {
             RootTabView()
                 .environment(store)
                 .environment(timer)
+                .environment(hold)
                 .modelContainer(container)
         }
     }

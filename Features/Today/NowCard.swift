@@ -5,6 +5,7 @@ import Hybrid12Engine
 struct NowCard: View {
     @Environment(AppStore.self) private var store
     @Environment(RestTimer.self) private var timer
+    @Environment(HoldTimer.self) private var hold
     let session: Session
     let openFocus: () -> Void
 
@@ -41,11 +42,13 @@ struct NowCard: View {
                 SetProgress(done: doneCount(item), total: item.sets)
                 HStack(spacing: 10) {
                     Button {
-                        SetTick.toggle(item, set: open.set, in: session, store: store, timer: timer)
+                        if item.unit == .sec {
+                            HoldStart.start(item, set: open.set, store: store, hold: hold)
+                        } else {
+                            SetTick.toggle(item, set: open.set, in: session, store: store, timer: timer)
+                        }
                     } label: {
-                        Text(look.uppercaseTitles ? "DONE · \(reps) \(unitWord(item.unit).uppercased())"
-                                                  : "Done · \(reps) \(unitWord(item.unit))")
-                            .accentButton()
+                        Text(doneLabel(item, reps: reps, look: look)).accentButton()
                     }
                     .buttonStyle(.plain)
                     Button(action: openFocus) {
@@ -79,6 +82,11 @@ struct NowCard: View {
         if set == item.sets - 1, let push = CoachCues.lastSetPush(item: item, lightDay: session.isLightDay) { return push }
         if set == 0 { return store.coachTarget(for: item, in: session) }
         return nil
+    }
+
+    private func doneLabel(_ item: SessionItem, reps: Int, look: Look) -> String {
+        let text = item.unit == .sec ? "Start \(reps) sec\(item.side ? " each side" : "")" : "Done · \(reps) \(unitWord(item.unit))"
+        return look.uppercaseTitles ? text.uppercased() : text
     }
 
     private func doneCount(_ item: SessionItem) -> Int {

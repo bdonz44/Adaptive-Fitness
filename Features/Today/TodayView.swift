@@ -5,6 +5,7 @@ import Hybrid12Engine
 struct TodayView: View {
     @Environment(AppStore.self) private var store
     @Environment(RestTimer.self) private var timer
+    @Environment(HoldTimer.self) private var hold
     @State private var summary: FinishSummary?
     @State private var confirmSkip = false
     @State private var confirmRestart = false
@@ -68,6 +69,9 @@ struct TodayView: View {
             }
             .fullScreenCover(isPresented: $showFocus) {
                 FocusView()
+            }
+            .fullScreenCover(isPresented: Binding(get: { hold.isActive && !showFocus }, set: { if !$0 { hold.cancel() } })) {
+                HoldTimerView()
             }
             .fullScreenCover(isPresented: $showRest) {
                 RestView(close: { showRest = false })

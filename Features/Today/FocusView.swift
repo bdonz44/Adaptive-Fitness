@@ -6,6 +6,7 @@ import Hybrid12Engine
 struct FocusView: View {
     @Environment(AppStore.self) private var store
     @Environment(RestTimer.self) private var timer
+    @Environment(HoldTimer.self) private var hold
     @Environment(\.dismiss) private var dismiss
     @State private var reps: Int?
     @State private var weight: Double?
@@ -16,7 +17,9 @@ struct FocusView: View {
         let look = Theme.look
         let session = store.session
         Group {
-            if timer.isActive {
+            if hold.isActive {
+                HoldTimerView()
+            } else if timer.isActive {
                 RestView(close: { dismiss() })
             } else if let open = store.nextOpenSet, let item = session.item(open.key) {
                 setScreen(item, open: open, session: session)
@@ -101,6 +104,11 @@ struct FocusView: View {
                 EffortPicker(effort: $effort)
             }
             Button {
+                if item.unit == .sec {
+                    store.update(item.key, sets: item.sets) { $0.sets[open.set].reps = shownReps }
+                    HoldStart.start(item, set: open.set, store: store, hold: hold)
+                    return
+                }
                 SetTick.toggle(item, set: open.set, in: session, store: store, timer: timer,
                                reps: shownReps, weight: item.equipment == .bw ? nil : shownWeight, effort: effort)
                 reps = nil
@@ -139,6 +147,7 @@ struct FocusView: View {
     }
 
     private func doneLabel(_ item: SessionItem) -> String {
+        if item.unit == .sec { return "Start the timer" }
         if item.startsPair { return "Done · go to the next exercise" }
         return item.restSeconds > 0 ? "Done · start \(RestTimer.clock(TimeInterval(item.restSeconds))) rest" : "Done"
     }
