@@ -45,6 +45,7 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIBackgroundModes: [remote-notification]
         NSSupportsLiveActivities: true
+        NSHealthShareUsageDescription: Hybrid 12 reads your workouts, sleep and heart rate to count cardio and suggest how hard to train.
         NSHealthUpdateUsageDescription: Hybrid 12 saves each finished session to Health as a workout so it shows in the Fitness app.
     entitlements:
       path: App/Hybrid12.entitlements
