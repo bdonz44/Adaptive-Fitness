@@ -34,6 +34,7 @@ struct TodayView: View {
                             .background(Theme.accent.opacity(0.2), in: RoundedRectangle(cornerRadius: look.radius))
                     }
                     NowCard(session: session, openFocus: { showFocus = true })
+                    if !timer.isActive { CoachCueCard() }
                     ForEach(session.blocks, id: \.kind) { block in
                         BlockSection(block: block, session: session)
                     }

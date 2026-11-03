@@ -54,10 +54,7 @@ struct FocusView: View {
                 Text(look.uppercaseTitles ? item.name.uppercased() : item.name)
                     .font(look.title(44)).lineLimit(2).minimumScaleFactor(0.6)
                 if let line = coachLine(item, set: open.set, session: session) {
-                    Label(line, systemImage: "flame.fill")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(look.accent)
-                        .fixedSize(horizontal: false, vertical: true)
+                    CoachCallout(text: line)
                 }
             }
 

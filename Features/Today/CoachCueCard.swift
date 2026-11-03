@@ -9,52 +9,72 @@ struct CoachCueCard: View {
     var body: some View {
         if let (_, cue) = store.coachCue {
             let look = Theme.look
+            let style = CoachStyle(cue.tone)
             HStack(alignment: .center, spacing: 12) {
-                Image(systemName: icon(cue.tone))
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(color(cue.tone))
-                VStack(alignment: .leading, spacing: 2) {
-                    if !compact { SectionLabel(text: "Coach", color: color(cue.tone)) }
+                Image(systemName: style.icon)
+                    .font(.system(size: compact ? 24 : 30, weight: .heavy))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("COACH").font(.system(size: 12, weight: .black)).tracking(1.5).opacity(0.85)
                     Text(cue.text)
-                        .font(.system(size: compact ? 15 : 17, weight: .semibold, design: look.bodyDesign))
+                        .font(.system(size: compact ? 18 : 21, weight: .heavy, design: look.bodyDesign))
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
                 if let w = cue.newWeight {
                     Button { store.applyCoachWeight() } label: {
                         Text("Use \(lb(w))")
-                            .font(.subheadline.weight(.heavy))
-                            .foregroundStyle(look.onAccent)
-                            .padding(.horizontal, 12)
-                            .frame(minHeight: 44)
-                            .background(look.accent, in: RoundedRectangle(cornerRadius: max(look.radius - 8, 2)))
+                            .font(.system(size: 17, weight: .black))
+                            .foregroundStyle(style.fill)
+                            .padding(.horizontal, 14)
+                            .frame(minHeight: 48)
+                            .background(style.text, in: RoundedRectangle(cornerRadius: max(look.radius - 8, 4)))
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding(compact ? 12 : 16)
+            .foregroundStyle(style.text)
+            .padding(compact ? 14 : 18)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(color(cue.tone).opacity(0.14), in: RoundedRectangle(cornerRadius: look.radius))
-            .overlay(RoundedRectangle(cornerRadius: look.radius).stroke(color(cue.tone).opacity(0.6), lineWidth: 1))
+            .background(style.fill, in: RoundedRectangle(cornerRadius: look.radius))
+            .shadow(color: .black.opacity(0.35), radius: 8, y: 3)
+            .sensoryFeedback(.impact(weight: .heavy), trigger: cue.text)
+            .accessibilityElement(children: .combine)
         }
     }
+}
 
-    private func icon(_ tone: CoachCues.Cue.Tone) -> String {
+/// Solid, high-contrast colors for each kind of call.
+struct CoachStyle {
+    let fill: Color
+    let text: Color
+    let icon: String
+
+    init(_ tone: CoachCues.Cue.Tone) {
         switch tone {
-        case .push: return "flame.fill"
-        case .steady: return "target"
-        case .ease: return "arrow.down.circle.fill"
-        case .done: return "checkmark.seal.fill"
+        case .push: fill = Theme.accent; text = Theme.onAccent; icon = "flame.fill"
+        case .steady: fill = Color(hex: 0x2563EB); text = .white; icon = "target"
+        case .ease: fill = Color(hex: 0xF59E0B); text = .black; icon = "arrow.down.circle.fill"
+        case .done: fill = Color(hex: 0x16A34A); text = .white; icon = "checkmark.seal.fill"
         }
     }
+}
 
-    private func color(_ tone: CoachCues.Cue.Tone) -> Color {
-        switch tone {
-        case .push: return Theme.accent
-        case .steady: return Color(hex: 0x60A5FA)
-        case .ease: return Color(hex: 0xFBBF24)
-        case .done: return Theme.done
+/// The coach's target or last-set push, as a bold callout (Now card and Focus).
+struct CoachCallout: View {
+    let text: String
+
+    var body: some View {
+        let look = Theme.look
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "flame.fill").font(.system(size: 20, weight: .heavy))
+            Text(text)
+                .font(.system(size: 17, weight: .heavy, design: look.bodyDesign))
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .foregroundStyle(look.onAccent)
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(look.accent, in: RoundedRectangle(cornerRadius: max(look.radius - 6, 4)))
     }
 }
 

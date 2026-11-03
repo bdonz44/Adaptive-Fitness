@@ -34,10 +34,7 @@ struct NowCard: View {
                     Text("Per side: \(Plates.text(weight))").font(.subheadline).foregroundStyle(look.secondary)
                 }
                 if let line = coachLine(item, set: open.set) {
-                    Label(line, systemImage: "flame.fill")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(look.accent)
-                        .fixedSize(horizontal: false, vertical: true)
+                    CoachCallout(text: line)
                 }
                 SetProgress(done: doneCount(item), total: item.sets)
                 HStack(spacing: 10) {
