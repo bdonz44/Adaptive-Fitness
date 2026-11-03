@@ -1,3 +1,4 @@
+import CoreData
 import Foundation
 import Observation
 import SwiftData
@@ -38,7 +39,7 @@ struct RecentLog: Identifiable, Equatable {
 @Observable
 final class AppStore {
     @ObservationIgnored private let context: ModelContext
-    @ObservationIgnored private let programModel: StoredProgram
+    @ObservationIgnored private var programModel: StoredProgram
     @ObservationIgnored let catalog = Catalog.bundled
 
     private(set) var program: ProgramState
@@ -54,26 +55,39 @@ final class AppStore {
 
     init(context: ModelContext) {
         self.context = context
-
-        let pm: StoredProgram
-        if let first = (try? context.fetch(FetchDescriptor<StoredProgram>()))?.first {
-            pm = first
-        } else {
-            pm = StoredProgram()
-            context.insert(pm)
+        program = ProgramState()
+        lifts = [:]
+        logs = []
+        cardioByWeek = [:]
+        draft = SessionDraft(slot: .B, week: 1)
+        recentLogs = []
+        weighIns = []
+        waist = []
+        programModel = StoredProgram()
+        load()
+        // iCloud delivers changes from other installs in the background; fold them in.
+        NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main) { [weak self] _ in
+            self?.load()
         }
+    }
+
+    /// Reads everything from storage, merging duplicate records first.
+    func load() {
+        let storedLogs = (try? context.fetch(FetchDescriptor<StoredLog>(sortBy: [SortDescriptor(\.date, order: .reverse)]))) ?? []
+        let pm = canonicalProgram(newestLog: storedLogs.first)
         programModel = pm
-        let state = ProgramState(week: pm.week, doneSlots: pm.doneSlots, startDate: pm.startDate, runMinutes: pm.runMinutes)
+        var state = ProgramState(week: pm.week, doneSlots: pm.doneSlots, startDate: pm.startDate, runMinutes: pm.runMinutes)
+        // Sessions logged this week always count as done.
+        let loggedThisWeek = storedLogs.filter { $0.week == state.week }.compactMap { Slot(rawValue: $0.slot) }
+        let repaired = Program.addingLogged(loggedThisWeek, state: state)
+        if repaired != state {
+            state = repaired
+            pm.doneSlots = state.doneSlots
+        }
         program = state
 
-        var loadedLifts: [String: LiftRecord] = [:]
-        for stored in (try? context.fetch(FetchDescriptor<StoredLift>())) ?? [] {
-            if let rec = Self.decode(LiftRecord.self, stored.json) { loadedLifts[stored.exerciseID] = rec }
-        }
-        lifts = loadedLifts
+        lifts = loadLifts()
 
-        let logDescriptor = FetchDescriptor<StoredLog>(sortBy: [SortDescriptor(\.date, order: .reverse)])
-        let storedLogs = (try? context.fetch(logDescriptor)) ?? []
         let stamps = storedLogs.compactMap { log in Slot(rawValue: log.slot).map { LogStamp(slot: $0, date: log.date) } }
         logs = stamps
         recentLogs = storedLogs.prefix(Tracking.recentSessionLimit).map { RecentLog(date: $0.date, title: $0.title, week: $0.week) }
@@ -83,22 +97,93 @@ final class AppStore {
         waist = ((try? context.fetch(FetchDescriptor<StoredWaist>())) ?? [])
             .map { WaistEntry(date: $0.date, inches: $0.inches) }.sorted { $0.date < $1.date }
 
-        var cardio: [Int: Int] = [:]
-        for week in (try? context.fetch(FetchDescriptor<StoredCardioWeek>())) ?? [] {
-            cardio[week.week, default: 0] += week.minutes
-        }
-        cardioByWeek = cardio
+        cardioByWeek = loadCardio()
 
-        var saved: SessionDraft? = nil
-        if let stored = (try? context.fetch(FetchDescriptor<StoredDraft>()))?.first {
-            saved = Self.decode(SessionDraft.self, stored.json)
-        }
-        if let saved, saved.isCurrent(for: state) {
-            draft = saved
-        } else {
+        let saved = newestDraft().flatMap { Self.decode(SessionDraft.self, $0.json) }
+        if var saved {
+            if saved.isCurrent(for: state) {
+                draft = saved
+            } else if saved.hasWork {
+                // Never throw away logged sets: keep them on the current week.
+                saved.week = state.week
+                draft = saved
+            } else {
+                draft = SessionDraft(slot: Program.nextSlot(state: state, logs: stamps, now: Date()), week: state.week)
+            }
+        } else if !draft.hasWork || !draft.isCurrent(for: state) {
             draft = SessionDraft(slot: Program.nextSlot(state: state, logs: stamps, now: Date()), week: state.week)
         }
         try? context.save()
+    }
+
+    // MARK: Merging duplicates
+    // A fresh install starts before iCloud has delivered the old data, so it can
+    // create a second program, draft, lift or cardio record. Keep one of each.
+
+    /// The program that matches the newest logged session (then the furthest along); others are deleted.
+    private func canonicalProgram(newestLog: StoredLog?) -> StoredProgram {
+        let all = (try? context.fetch(FetchDescriptor<StoredProgram>())) ?? []
+        guard !all.isEmpty else {
+            let fresh = StoredProgram()
+            context.insert(fresh)
+            return fresh
+        }
+        let ranked = all.sorted { a, b in
+            func score(_ p: StoredProgram) -> (Int, Int, Int, Int) {
+                let matchesLog = newestLog.map { log in p.week == log.week || p.week == log.week + 1 ? 1 : 0 } ?? 0
+                let hasStart = p.startDate == nil ? 0 : 1
+                return (matchesLog, hasStart, p.week, p.doneSlots.count)
+            }
+            return score(a) > score(b)
+        }
+        let keep = ranked[0]
+        for extra in ranked.dropFirst() { context.delete(extra) }
+        return keep
+    }
+
+    private func newestDraft() -> StoredDraft? {
+        let all = (try? context.fetch(FetchDescriptor<StoredDraft>(sortBy: [SortDescriptor(\.updated, order: .reverse)]))) ?? []
+        for extra in all.dropFirst() { context.delete(extra) }
+        return all.first
+    }
+
+    /// One record per lift: the one with the newest history wins.
+    private func loadLifts() -> [String: LiftRecord] {
+        var best: [String: (StoredLift, LiftRecord)] = [:]
+        for stored in (try? context.fetch(FetchDescriptor<StoredLift>())) ?? [] {
+            guard let rec = Self.decode(LiftRecord.self, stored.json) else { continue }
+            if let current = best[stored.exerciseID] {
+                let newer = (rec.history.last?.date ?? .distantPast, rec.history.count)
+                    > (current.1.history.last?.date ?? .distantPast, current.1.history.count)
+                if newer {
+                    context.delete(current.0)
+                    best[stored.exerciseID] = (stored, rec)
+                } else {
+                    context.delete(stored)
+                }
+            } else {
+                best[stored.exerciseID] = (stored, rec)
+            }
+        }
+        return best.mapValues(\.1)
+    }
+
+    /// One record per week; copies of the same week keep the larger total.
+    private func loadCardio() -> [Int: Int] {
+        var kept: [Int: StoredCardioWeek] = [:]
+        for row in (try? context.fetch(FetchDescriptor<StoredCardioWeek>())) ?? [] {
+            if let current = kept[row.week] {
+                if row.minutes > current.minutes {
+                    context.delete(current)
+                    kept[row.week] = row
+                } else {
+                    context.delete(row)
+                }
+            } else {
+                kept[row.week] = row
+            }
+        }
+        return kept.mapValues(\.minutes)
     }
 
     // MARK: Reading
@@ -284,6 +369,7 @@ final class AppStore {
     func jump(toWeekInCycle n: Int) {
         setProgram(Program.jump(toWeekInCycle: n, state: program))
         resetDraft()
+        load()  // sessions already logged in that week count as done
     }
 
     /// Erases the program state and every log: lifts, sessions, cardio, weigh-ins and waist.

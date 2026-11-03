@@ -106,3 +106,18 @@ import Testing
         #expect(Program.jump(toWeekInCycle: 12, state: ProgramState(week: 3)).week == 12)
     }
 }
+
+@Suite struct LoggedDoneRepairTests {
+    @Test func loggedSlotsCountAsDone() {
+        let state = ProgramState(week: 3, doneSlots: ["B"], startDate: nil, runMinutes: 25)
+        let fixed = Program.addingLogged([.C, .B, .R], state: state)
+        #expect(fixed.doneSlots == ["B", "C"])
+        #expect(fixed.week == 3)
+    }
+
+    @Test func allFiveLoggedDoesNotAdvance() {
+        let fixed = Program.addingLogged(Program.order, state: ProgramState(week: 2, doneSlots: [], startDate: nil, runMinutes: 25))
+        #expect(fixed.week == 2)
+        #expect(fixed.doneCount == 5)
+    }
+}

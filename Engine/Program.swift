@@ -134,8 +134,8 @@ public struct ProgramState: Codable, Equatable, Sendable {
 
     public func isDone(_ slot: Slot) -> Bool { doneSlots.contains(slot.rawValue) }
     public var doneCount: Int { Program.order.filter { isDone($0) }.count }
-    /// Four done shows a "Start next week" link.
-    public var canStartNextWeek: Bool { doneCount == 4 }
+    /// Four (or, after a repair, five) done shows a "Start next week" link.
+    public var canStartNextWeek: Bool { doneCount >= 4 }
 }
 
 public struct WeekAdvance: Equatable, Sendable {
@@ -162,6 +162,17 @@ extension Program {
             return WeekAdvance(state: s, finishedWeek: nil, message: nil)
         }
         return advance(s)
+    }
+
+    /// Every slot with a session logged in the current week counts as done (repairs
+    /// a done list that lost entries, for example to an iCloud duplicate). Never
+    /// advances the week; the easy run is ignored.
+    public static func addingLogged(_ slots: [Slot], state: ProgramState) -> ProgramState {
+        var s = state
+        for slot in order where slots.contains(slot) && !s.doneSlots.contains(slot.rawValue) {
+            s.doneSlots.append(slot.rawValue)
+        }
+        return s
     }
 
     /// The "Start next week" link (shown when four are done).
