@@ -29,6 +29,9 @@ public struct EngineWorkout: Codable, Hashable, Sendable {
     /// Rounds by phase: Foundation, Build, Define.
     public let rounds: [Int]
     public let minPerRound: Double
+    /// Round timer: seconds of work and rest per round (interval workouts only).
+    public let work: Int?
+    public let rest: Int?
     public let description: String
 }
 
@@ -40,6 +43,9 @@ public struct Finisher: Codable, Hashable, Sendable {
     public let unit: ExerciseUnit
     public let minPerRound: Double?
     public let startWeight: Double?
+    /// Round timer: seconds of work and rest per round (interval finishers only).
+    public let work: Int?
+    public let rest: Int?
     public let description: String
 }
 

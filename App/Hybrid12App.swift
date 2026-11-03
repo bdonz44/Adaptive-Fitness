@@ -9,6 +9,7 @@ struct Hybrid12App: App {
     @State private var store: AppStore
     private let timer = RestTimer.shared
     @State private var hold = HoldTimer()
+    @State private var rounds = RoundTimer()
 
     init() {
         RestAlerts.endLeftovers()
@@ -53,6 +54,7 @@ struct Hybrid12App: App {
                 .environment(store)
                 .environment(timer)
                 .environment(hold)
+                .environment(rounds)
                 .modelContainer(container)
         }
     }

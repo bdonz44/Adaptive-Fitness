@@ -1,8 +1,8 @@
 [
-  { "name": "Heavy Bag Rounds", "rounds": [8, 10, 12], "minPerRound": 3, "description": "2 min on, 1 min off. Mix jabs, crosses, hooks, body shots. Stay light on your feet." },
-  { "name": "Treadmill Hill Intervals", "rounds": [8, 10, 12], "minPerRound": 2, "description": "Warm up 5 min. Then 30 sec hard at 8-10% incline, 90 sec easy walk." },
+  { "name": "Heavy Bag Rounds", "rounds": [8, 10, 12], "minPerRound": 3, "work": 120, "rest": 60, "description": "2 min on, 1 min off. Mix jabs, crosses, hooks, body shots. Stay light on your feet." },
+  { "name": "Treadmill Hill Intervals", "rounds": [8, 10, 12], "minPerRound": 2, "work": 30, "rest": 90, "description": "Warm up 5 min. Then 30 sec hard at 8-10% incline, 90 sec easy walk." },
   { "name": "Kettlebell Circuit", "rounds": [4, 5, 6], "minPerRound": 4, "description": "10 swings, 8 goblet squats, 6 presses each arm, 10 push-ups. Rest 60 sec." },
-  { "name": "Run Intervals", "rounds": [5, 6, 7], "minPerRound": 4, "description": "Jog 5 min easy. Then 2 min hard steady pace, 2 min easy jog or walk." },
-  { "name": "Bag + Swing Combo", "rounds": [6, 7, 8], "minPerRound": 3, "description": "1 min hard on the bag, 15 KB swings, rest the rest of the 3 min." },
+  { "name": "Run Intervals", "rounds": [5, 6, 7], "minPerRound": 4, "work": 120, "rest": 120, "description": "Jog 5 min easy. Then 2 min hard steady pace, 2 min easy jog or walk." },
+  { "name": "Bag + Swing Combo", "rounds": [6, 7, 8], "minPerRound": 3, "work": 60, "rest": 120, "description": "1 min hard on the bag, 15 KB swings, rest the rest of the 3 min." },
   { "name": "Dumbbell Grinder", "rounds": [4, 5, 6], "minPerRound": 3, "description": "8 DB thrusters, 10 renegade rows (5 each arm), 10 push-ups. Rest 60 sec." }
 ]

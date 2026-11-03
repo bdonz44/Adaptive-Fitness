@@ -42,6 +42,9 @@ public struct SessionItem: Equatable, Sendable {
     public var pair: Int? = nil
     public var position: Int? = nil
     public var startWeight: Double? = nil
+    /// Round timer defaults (seconds), from the workout data.
+    public var intervalWork: Int? = nil
+    public var intervalRest: Int? = nil
 
     public var isLift: Bool { kind == .main || kind == .accessory }
     public var isCardio: Bool { kind == .engine || kind == .finisher || kind == .run }
@@ -147,7 +150,8 @@ public enum SessionBuilder {
             let item = SessionItem(
                 key: "engine", tag: "", kind: .engine, exerciseID: nil, name: w.name,
                 equipment: nil, unit: .rounds, sets: 1, low: rounds, high: rounds, restSeconds: 0,
-                rounds: rounds, minutesPerRound: w.minPerRound, detail: w.description)
+                rounds: rounds, minutesPerRound: w.minPerRound, detail: w.description,
+                intervalWork: w.work, intervalRest: w.rest)
             blocks.append(SessionBlock(kind: .engine, items: [item]))
         }
 
@@ -209,7 +213,7 @@ public enum SessionBuilder {
                     equipment: f.startWeight != nil ? .db : nil, unit: f.unit, sets: 1,
                     low: rounds, high: rounds, restSeconds: 0,
                     rounds: rounds, minutesPerRound: f.minPerRound ?? 2, detail: f.description,
-                    startWeight: f.startWeight)
+                    startWeight: f.startWeight, intervalWork: f.work, intervalRest: f.rest)
                 blocks.append(SessionBlock(kind: .burnIt, items: [item]))
             }
         }

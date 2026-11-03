@@ -1,10 +1,10 @@
 [
-  { "slot": "A", "name": "KB Swing EMOM", "rounds": 10, "unit": "min", "description": "Every minute on the minute: 15 swings." },
+  { "slot": "A", "name": "KB Swing EMOM", "rounds": 10, "unit": "min", "work": 60, "rest": 0, "description": "Every minute on the minute: 15 swings." },
   { "slot": "A", "name": "Goblet Squat + Swing Ladder", "rounds": 3, "unit": "rounds", "description": "Rounds of 21, 15, then 9 goblet squats and swings." },
-  { "slot": "A", "name": "Bag Burnout", "rounds": 5, "unit": "rounds", "description": "1 min all-out on the heavy bag, 1 min easy." },
+  { "slot": "A", "name": "Bag Burnout", "rounds": 5, "unit": "rounds", "work": 60, "rest": 60, "description": "1 min all-out on the heavy bag, 1 min easy." },
 
-  { "slot": "B", "name": "Heavy Bag Rounds", "rounds": 6, "unit": "rounds", "description": "1 min hard combinations, 30 sec rest." },
-  { "slot": "B", "name": "Push-Up + Bag Flurry", "rounds": 5, "unit": "rounds", "description": "10 push-ups, then 30 sec fast straight punches." },
+  { "slot": "B", "name": "Heavy Bag Rounds", "rounds": 6, "unit": "rounds", "work": 60, "rest": 30, "description": "1 min hard combinations, 30 sec rest." },
+  { "slot": "B", "name": "Push-Up + Bag Flurry", "rounds": 5, "unit": "rounds", "work": 30, "rest": 45, "description": "10 push-ups, then 30 sec fast straight punches." },
   { "slot": "B", "name": "Lateral Raise Burnout", "rounds": 2, "unit": "rounds", "startWeight": 8, "description": "Light dumbbells (8 lb start). 50 reps per round, 100 total. Logs weight." },
 
   { "slot": "D", "name": "Farmer Carry", "rounds": 4, "unit": "rounds", "description": "Heaviest bells or dumbbells. Walk 40 yd, rest 60 sec." },
@@ -12,6 +12,6 @@
   { "slot": "D", "name": "Curl + Push-Up Pump", "rounds": 4, "unit": "rounds", "description": "10 curls then 10 push-ups, no rest between." },
 
   { "slot": "E", "name": "Swing + Burpee Ladder", "rounds": 6, "unit": "rounds", "description": "Round 1: 1 burpee and 10 swings. Add one burpee each round." },
-  { "slot": "E", "name": "Treadmill Sprints", "rounds": 8, "unit": "rounds", "description": "30 sec fast at 6-8% incline, 60 sec walk." },
+  { "slot": "E", "name": "Treadmill Sprints", "rounds": 8, "unit": "rounds", "work": 30, "rest": 60, "description": "30 sec fast at 6-8% incline, 60 sec walk." },
   { "slot": "E", "name": "KB Complex", "rounds": 5, "unit": "rounds", "description": "6 swings, 6 cleans, 6 presses, 6 squats. Rest 90 sec." }
 ]

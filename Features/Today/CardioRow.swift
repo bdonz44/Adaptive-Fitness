@@ -6,10 +6,29 @@ import Hybrid12Engine
 struct CardioRow: View {
     @Environment(AppStore.self) private var store
     let item: SessionItem
+    @State private var showTimer = false
 
     var body: some View {
         let entry = store.entry(item.key)
         VStack(alignment: .leading, spacing: 10) {
+            if item.kind != .run {
+                Button { showTimer = true } label: {
+                    HStack {
+                        Image(systemName: "bell.fill")
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Round timer").font(.subheadline.weight(.heavy))
+                            Text(RoundPlan.summary(RoundTimer.saved(for: item))).font(.caption)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                    }
+                    .foregroundStyle(Theme.onAccent)
+                    .padding(12)
+                    .background(Theme.accent, in: RoundedRectangle(cornerRadius: max(Theme.look.radius - 6, 2)))
+                }
+                .buttonStyle(.plain)
+                .fullScreenCover(isPresented: $showTimer) { RoundTimerView(item: item) }
+            }
             if item.kind == .finisher, let start = item.startWeight {
                 HStack {
                     Text("Weight").font(.subheadline)
