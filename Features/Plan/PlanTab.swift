@@ -20,6 +20,9 @@ struct PlanTab: View {
                         Button { openLook() } label: {
                             linkRow("Look", detail: "\(Theme.look.name) · Lock Screen · app icon", icon: "paintpalette.fill")
                         }
+                        NavigationLink { WhoopSettingsView() } label: {
+                            linkRow("WHOOP", detail: "Recovery sets your readiness", icon: "heart.text.square.fill")
+                        }
                         NavigationLink { ProgramsView() } label: {
                             linkRow("Programs", detail: "Hybrid 12 · more coming", icon: "square.stack.3d.up.fill")
                         }

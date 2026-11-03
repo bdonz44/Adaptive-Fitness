@@ -1,0 +1,3 @@
+// Build settings for the app target. WHOOP keys live in Secrets.xcconfig,
+// which is not committed (see README). Without it the app builds with WHOOP off.
+#include? "Secrets.xcconfig"

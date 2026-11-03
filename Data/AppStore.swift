@@ -253,6 +253,23 @@ final class AppStore {
     func setReadiness(_ readiness: Readiness) {
         draft.setReadiness(readiness)
         saveDraft()
+        // Picked by hand: WHOOP won't change it again today.
+        UserDefaults.standard.set(Self.dayKey(Date()), forKey: "readinessChosenDay")
+    }
+
+    /// Sets readiness from WHOOP recovery, unless it was picked by hand today
+    /// or the session has already started.
+    func applyWhoop(_ t: WhoopToday?) {
+        guard let t, WhoopReadiness.isCurrent(t, now: Date()), let r = WhoopReadiness.readiness(t) else { return }
+        guard UserDefaults.standard.string(forKey: "readinessChosenDay") != Self.dayKey(Date()) else { return }
+        guard !draft.hasWork, draft.readiness != r else { return }
+        draft.setReadiness(r)
+        saveDraft()
+    }
+
+    private static func dayKey(_ d: Date) -> String {
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: d)
+        return "\(c.year ?? 0)-\(c.month ?? 0)-\(c.day ?? 0)"
     }
 
     func update(_ key: String, sets count: Int = 0, _ change: (inout LoggedItem) -> Void) {

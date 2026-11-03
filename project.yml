@@ -45,8 +45,13 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIBackgroundModes: [remote-notification]
         NSSupportsLiveActivities: true
+        WhoopClientID: $(WHOOP_CLIENT_ID)
+        WhoopClientSecret: $(WHOOP_CLIENT_SECRET)
         NSHealthShareUsageDescription: Hybrid 12 reads your workouts, sleep and heart rate to count cardio and suggest how hard to train.
         NSHealthUpdateUsageDescription: Hybrid 12 saves each finished session to Health as a workout so it shows in the Fitness app.
+    configFiles:
+      Debug: Config/App.xcconfig
+      Release: Config/App.xcconfig
     entitlements:
       path: App/Hybrid12.entitlements
       properties:

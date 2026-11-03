@@ -10,6 +10,8 @@ struct Hybrid12App: App {
     private let timer = RestTimer.shared
     @State private var hold = HoldTimer()
     @State private var rounds = RoundTimer()
+    @State private var whoop = WhoopService()
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         RestAlerts.endLeftovers()
@@ -48,6 +50,13 @@ struct Hybrid12App: App {
         RestTimer.shared.contextProvider = { [store] in store.restContext() }
     }
 
+    /// Fetches today's WHOOP numbers (at most every 20 min) and sets readiness from them.
+    @MainActor
+    private func syncWhoop() async {
+        await whoop.sync()
+        store.applyWhoop(whoop.today)
+    }
+
     var body: some Scene {
         WindowGroup {
             RootTabView()
@@ -55,7 +64,12 @@ struct Hybrid12App: App {
                 .environment(timer)
                 .environment(hold)
                 .environment(rounds)
+                .environment(whoop)
                 .modelContainer(container)
+                .task { await syncWhoop() }
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active { Task { await syncWhoop() } }
+                }
         }
     }
 }

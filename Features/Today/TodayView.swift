@@ -22,6 +22,7 @@ struct TodayView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     if store.isEmpty { ImportPromptCard() }
                     WeekHeader(title: session.title)
+                    WhoopCard()
                     if look.readinessFirst { ReadinessPicker() }
                     SlotChips()
                     if !look.readinessFirst { ReadinessPicker() }
