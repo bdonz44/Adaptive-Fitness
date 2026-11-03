@@ -175,6 +175,35 @@ extension Program {
         return s
     }
 
+    public enum SlotStatus: Equatable, Sendable {
+        /// Finished with a log this week.
+        case logged(Date)
+        /// Counted as done with no log (skipped, imported or marked by hand).
+        case markedDone
+        case toDo
+    }
+
+    /// Each session of the week and why it counts (or not). `logged` = newest log date per slot this week.
+    public static func weekStatus(state: ProgramState, logged: [Slot: Date]) -> [(slot: Slot, status: SlotStatus)] {
+        order.map { slot in
+            guard state.isDone(slot) else { return (slot, .toDo) }
+            if let d = logged[slot] { return (slot, .logged(d)) }
+            return (slot, .markedDone)
+        }
+    }
+
+    /// Marks or unmarks one session by hand. Never advances the week.
+    public static func setDone(_ slot: Slot, _ done: Bool, state: ProgramState) -> ProgramState {
+        guard slot != .R else { return state }
+        var s = state
+        if done {
+            if !s.doneSlots.contains(slot.rawValue) { s.doneSlots.append(slot.rawValue) }
+        } else {
+            s.doneSlots.removeAll { $0 == slot.rawValue }
+        }
+        return s
+    }
+
     /// The "Start next week" link (shown when four are done).
     public static func startNextWeek(_ state: ProgramState) -> WeekAdvance {
         advance(state)

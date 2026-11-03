@@ -25,6 +25,8 @@ struct FinishSummary: Identifiable {
     var records: [PR] = []
     /// Sessions done this week after this one (0-5); 0 when the week just rolled over.
     var weekDone: Int = 0
+    /// When this finish rolled the week over: the state to go back to.
+    var undoState: ProgramState? = nil
 }
 
 /// One row in "Recent sessions".
@@ -52,6 +54,8 @@ final class AppStore {
     private(set) var weighIns: [WeighIn]
     /// Oldest first.
     private(set) var waist: [WaistEntry]
+    /// Every log's slot, week and date (for "This week" in the Plan tab).
+    @ObservationIgnored private var weekLogs: [(slot: String, week: Int, date: Date)] = []
     /// The coach's call after the last set ticked.
     private(set) var coachCue: (key: String, cue: CoachCues.Cue)?
 
@@ -78,15 +82,9 @@ final class AppStore {
         let storedLogs = (try? context.fetch(FetchDescriptor<StoredLog>(sortBy: [SortDescriptor(\.date, order: .reverse)]))) ?? []
         let pm = canonicalProgram(newestLog: storedLogs.first)
         programModel = pm
-        var state = ProgramState(week: pm.week, doneSlots: pm.doneSlots, startDate: pm.startDate, runMinutes: pm.runMinutes)
-        // Sessions logged this week always count as done.
-        let loggedThisWeek = storedLogs.filter { $0.week == state.week }.compactMap { Slot(rawValue: $0.slot) }
-        let repaired = Program.addingLogged(loggedThisWeek, state: state)
-        if repaired != state {
-            state = repaired
-            pm.doneSlots = state.doneSlots
-        }
+        let state = ProgramState(week: pm.week, doneSlots: pm.doneSlots, startDate: pm.startDate, runMinutes: pm.runMinutes)
         program = state
+        weekLogs = storedLogs.map { (slot: $0.slot, week: $0.week, date: $0.date) }
 
         lifts = loadLifts()
 
@@ -270,6 +268,36 @@ final class AppStore {
         saveDraft()
     }
 
+    // MARK: This week
+
+    /// The five sessions of the current week and why each counts as done.
+    var weekStatus: [(slot: Slot, status: Program.SlotStatus)] {
+        var logged: [Slot: Date] = [:]
+        for log in weekLogs where log.week == program.week {
+            if let slot = Slot(rawValue: log.slot), (logged[slot] ?? .distantPast) < log.date { logged[slot] = log.date }
+        }
+        return Program.weekStatus(state: program, logged: logged)
+    }
+
+    /// Mark or unmark a session by hand (fixes a wrong done list).
+    func setDone(_ slot: Slot, _ done: Bool) {
+        setProgram(Program.setDone(slot, done, state: program))
+        if !draft.hasWork { resetDraft() }
+    }
+
+    /// The Finish screen's "Go back": the week before it rolled over, with today's session done.
+    func undoWeekAdvance(_ previous: ProgramState) {
+        setProgram(previous)
+        resetDraft()
+    }
+
+    /// Sessions logged in the current week count as done (used after picking a week).
+    private func markLoggedThisWeek() {
+        let slots = weekLogs.filter { $0.week == program.week }.compactMap { Slot(rawValue: $0.slot) }
+        let fixed = Program.addingLogged(slots, state: program)
+        if fixed != program { setProgram(fixed) }
+    }
+
     // MARK: Coach
 
     /// What to beat today for this lift.
@@ -353,6 +381,7 @@ final class AppStore {
                                  title: s.title, readiness: s.readiness.rawValue,
                                  cardioMinutes: result.cardioMinutes, entries: Self.encode(draft.entries)))
         logs.insert(LogStamp(slot: s.slot, date: now), at: 0)
+        weekLogs.insert((slot: s.slot.rawValue, week: program.week, date: now), at: 0)
         recentLogs.insert(RecentLog(date: now, title: s.title, week: program.week), at: 0)
         recentLogs = Array(recentLogs.prefix(Tracking.recentSessionLimit))
 
@@ -360,13 +389,14 @@ final class AppStore {
         state.runMinutes = result.runMinutes
         if state.startDate == nil { state.startDate = now }
         let advance = Program.markDone(s.slot, state: state)
+        let undo = advance.finishedWeek == nil ? nil : Program.setDone(s.slot, true, state: state)
         setProgram(advance.state)
         resetDraft()
         Nudges.schedule(CoachCues.nudge(after: now, next: nextSlot))
 
         return FinishSummary(title: s.title, changes: result.changes, cardioMinutes: result.cardioMinutes,
                              weekMessage: advance.message, minutes: workout?.minutes, setsDone: stats.setsDone,
-                             volume: stats.volume, records: records, weekDone: program.doneCount)
+                             volume: stats.volume, records: records, weekDone: program.doneCount, undoState: undo)
     }
 
     /// Skip marks a slot done with no log.
@@ -414,7 +444,7 @@ final class AppStore {
     func jump(toWeekInCycle n: Int) {
         setProgram(Program.jump(toWeekInCycle: n, state: program))
         resetDraft()
-        load()  // sessions already logged in that week count as done
+        markLoggedThisWeek()  // sessions already logged in that week count as done
     }
 
     /// Erases the program state and every log: lifts, sessions, cardio, weigh-ins and waist.

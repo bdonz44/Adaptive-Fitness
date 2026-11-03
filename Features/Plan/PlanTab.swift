@@ -25,6 +25,7 @@ struct PlanTab: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    thisWeekCard(week)
                     weeksCard(week)
                     Card(title: "\(week.phase.name) sessions") {
                         ForEach(PlanText.sessions(week.phase, runMinutes: store.program.runMinutes, catalog: store.catalog), id: \.self) { line in
@@ -95,6 +96,46 @@ struct PlanTab: View {
             Text("Cycle \(week.cycle) · \(store.program.doneCount) of 5 sessions done this week")
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondary)
+        }
+    }
+
+    /// Which sessions count as done this week, and why. Tap to fix a wrong one.
+    private func thisWeekCard(_ week: ProgramWeek) -> some View {
+        Card(title: "Week \(week.wk) sessions") {
+            Text("Tap Mark to fix a session that's wrong.")
+                .font(.caption).foregroundStyle(Theme.secondary)
+            ForEach(store.weekStatus, id: \.slot) { row in
+                HStack(spacing: 10) {
+                    Image(systemName: icon(row.status))
+                        .foregroundStyle(row.status == .toDo ? Theme.secondary : Theme.done)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(Program.plan(row.slot).name).font(.subheadline.weight(.semibold))
+                        Text(statusText(row.status)).font(.caption).foregroundStyle(Theme.secondary)
+                    }
+                    Spacer()
+                    Button(row.status == .toDo ? "Mark done" : "Mark not done") {
+                        store.setDone(row.slot, row.status == .toDo)
+                    }
+                    .font(.caption.weight(.bold))
+                    .buttonStyle(.bordered)
+                }
+            }
+        }
+    }
+
+    private func icon(_ s: Program.SlotStatus) -> String {
+        switch s {
+        case .logged: return "checkmark.circle.fill"
+        case .markedDone: return "checkmark.circle"
+        case .toDo: return "circle"
+        }
+    }
+
+    private func statusText(_ s: Program.SlotStatus) -> String {
+        switch s {
+        case .logged(let d): return "Logged \(d.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))"
+        case .markedDone: return "Marked done, nothing logged"
+        case .toDo: return "To do"
         }
     }
 

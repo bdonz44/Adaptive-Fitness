@@ -121,3 +121,22 @@ import Testing
         #expect(fixed.doneCount == 5)
     }
 }
+
+@Suite struct WeekStatusTests {
+    @Test func statusSaysWhySessionsCount() {
+        let state = ProgramState(week: 5, doneSlots: ["B", "C", "A"], startDate: nil, runMinutes: 25)
+        let rows = Program.weekStatus(state: state, logged: [.B: t0, .A: t0])
+        #expect(rows.map(\.slot) == Program.order)
+        #expect(rows[0].status == .logged(t0))
+        #expect(rows[1].status == .markedDone)
+        #expect(rows[3].status == .toDo)
+    }
+
+    @Test func handMarkingNeverAdvances() {
+        var state = ProgramState(week: 5, doneSlots: ["B", "C", "A", "D"], startDate: nil, runMinutes: 25)
+        state = Program.setDone(.E, true, state: state)
+        #expect(state.week == 5 && state.doneCount == 5)
+        state = Program.setDone(.D, false, state: state)
+        #expect(state.doneSlots == ["B", "C", "A", "E"])
+    }
+}

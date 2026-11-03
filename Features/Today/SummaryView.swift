@@ -6,6 +6,8 @@ import Hybrid12Engine
 struct SummaryView: View {
     let summary: FinishSummary
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppStore.self) private var store
+    @State private var undone = false
 
     var body: some View {
         let look = Theme.look
@@ -25,8 +27,26 @@ struct SummaryView: View {
                         Text(statsLine).font(.subheadline).foregroundStyle(look.secondary)
                             .multilineTextAlignment(.center)
                     }
-                    if let message = summary.weekMessage {
+                    if let message = summary.weekMessage, !undone {
                         Text(message).font(.headline).multilineTextAlignment(.center).padding(.top, 4)
+                    }
+                    if let previous = summary.undoState {
+                        if undone {
+                            Text("Back on week \(previous.week). Your session is saved.")
+                                .font(.subheadline.weight(.semibold)).foregroundStyle(look.done)
+                        } else {
+                            Button {
+                                store.undoWeekAdvance(previous)
+                                undone = true
+                            } label: {
+                                Text("Not right? Go back to week \(previous.week)")
+                                    .font(.subheadline.weight(.bold))
+                                    .padding(.horizontal, 14).frame(minHeight: 44)
+                                    .background(look.card, in: Capsule())
+                                    .overlay(Capsule().stroke(look.line))
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity)
