@@ -14,6 +14,11 @@ import Testing
         #expect(big.newWeight == 245)
     }
 
+    @Test func oneRepOverTheTopIsEnoughToGoUp() {
+        let cue = CoachCues.afterSet(item: squat, reps: 6, weight: 235, effort: nil, setsLeft: 2, lightDay: false)
+        #expect(cue.newWeight == 245)
+    }
+
     @Test func missedRangeDropsTheWeight() {
         let cue = CoachCues.afterSet(item: row, reps: 8, weight: 50, effort: .grind, setsLeft: 1, lightDay: false)
         #expect(cue.tone == .ease)
@@ -23,7 +28,7 @@ import Testing
     @Test func inRangeHoldsAndChasesAnotherRep() {
         let cue = CoachCues.afterSet(item: row, reps: 10, weight: 50, effort: .solid, setsLeft: 2, lightDay: false)
         #expect(cue.newWeight == nil)
-        #expect(cue.text.contains("Chase 11"))
+        #expect(cue.text.contains("Next set: 11"))
         let grind = CoachCues.afterSet(item: row, reps: 12, weight: 50, effort: .grind, setsLeft: 2, lightDay: false)
         #expect(grind.newWeight == nil)
     }
@@ -33,7 +38,7 @@ import Testing
         #expect(cue.newWeight == nil)
         #expect(CoachCues.lastSetPush(item: squat, lightDay: true) == nil)
         #expect(CoachCues.lastSetPush(item: squat, lightDay: false) != nil)
-        #expect(CoachCues.lastSetPush(item: row, lightDay: false) == nil)
+        #expect(CoachCues.lastSetPush(item: row, lightDay: false) != nil)
     }
 
     @Test func lastSetWrapsUpTheLift() {
