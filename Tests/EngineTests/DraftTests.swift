@@ -117,3 +117,35 @@ import Testing
         #expect(try JSONDecoder().decode(SessionDraft.self, from: data) == d)
     }
 }
+
+@Suite struct CarryForwardTests {
+    @Test func doneSetFillsLaterBlankSets() {
+        var d = SessionDraft(slot: .A, week: 1)
+        d.entries["main"] = LoggedItem(sets: [LoggedSet(weight: 235, reps: 5, ticked: true)])
+        d.carryForward(key: "main", from: 0, setCount: 4)
+        let sets = d.entries["main"]!.sets
+        #expect(sets.count == 4)
+        #expect(sets[1...].allSatisfy { $0.weight == 235 && $0.reps == 5 && !$0.ticked })
+    }
+
+    @Test func keepsWhatWasTypedAndDoneSets() {
+        var d = SessionDraft(slot: .A, week: 1)
+        d.entries["main"] = LoggedItem(sets: [LoggedSet(weight: 235, reps: 4, ticked: true),
+                                              LoggedSet(weight: 225, reps: nil),
+                                              LoggedSet(weight: 240, reps: 5, ticked: true),
+                                              LoggedSet()])
+        d.carryForward(key: "main", from: 0, setCount: 4)
+        let sets = d.entries["main"]!.sets
+        #expect(sets[1].weight == 225 && sets[1].reps == 4)
+        #expect(sets[2].weight == 240 && sets[2].reps == 5)
+        #expect(sets[3].weight == 235 && sets[3].reps == 4)
+    }
+
+    @Test func blankRepsStayBlank() {
+        var d = SessionDraft(slot: .A, week: 1)
+        d.entries["x"] = LoggedItem(sets: [LoggedSet(weight: 50, reps: nil, ticked: true)])
+        d.carryForward(key: "x", from: 0, setCount: 3)
+        #expect(d.entries["x"]!.sets[2].weight == 50)
+        #expect(d.entries["x"]!.sets[2].reps == nil)
+    }
+}

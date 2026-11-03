@@ -20,6 +20,7 @@ enum SetTick {
             }
         }
         guard ticking else { return }
+        store.carryForward(item, from: index)
         startRest(after: item, in: session, timer: timer)
     }
 

@@ -88,6 +88,20 @@ public struct SessionDraft: Codable, Equatable, Sendable {
         entries[key] = e
     }
 
+    /// After a set is done, later sets of the same item that are still blank and
+    /// not done take its weight and reps, so the next set is ready to tick.
+    public mutating func carryForward(key: String, from index: Int, setCount: Int) {
+        guard var e = entries[key], index < e.sets.count else { return }
+        e.ensureSets(setCount)
+        let done = e.sets[index]
+        guard done.isDone else { return }
+        for i in (index + 1)..<max(e.sets.count, index + 1) where !e.sets[i].isDone {
+            if e.sets[i].weight == nil { e.sets[i].weight = done.weight }
+            if e.sets[i].reps == nil { e.sets[i].reps = done.reps }
+        }
+        entries[key] = e
+    }
+
     public mutating func toggleWarmTick(_ index: Int) {
         if let i = warmTicks.firstIndex(of: index) {
             warmTicks.remove(at: i)

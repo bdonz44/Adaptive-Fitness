@@ -12,6 +12,7 @@ struct NowCard: View {
         let look = Theme.look
         if let open = store.nextOpenSet, let item = session.item(open.key) {
             let weight = store.weight(for: item, set: open.set, in: session)
+            let reps = store.entry(item.key).sets[safe: open.set]?.reps ?? item.high
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     SectionLabel(text: "Now · \(kindName(item))", color: look.accent)
@@ -22,9 +23,9 @@ struct NowCard: View {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     if let weight, item.equipment != .bw {
                         Text(lb(weight)).font(look.number(84)).minimumScaleFactor(0.5).lineLimit(1)
-                        Text("lb × \(target(item))").font(.title3.weight(.semibold)).foregroundStyle(look.secondary)
+                        Text("lb × \(reps)").font(.title3.weight(.semibold)).foregroundStyle(look.secondary)
                     } else {
-                        Text(target(item)).font(look.number(64))
+                        Text("\(reps)").font(look.number(64))
                         Text(unitWord(item.unit)).font(.title3.weight(.semibold)).foregroundStyle(look.secondary)
                     }
                 }
@@ -36,8 +37,8 @@ struct NowCard: View {
                     Button {
                         SetTick.toggle(item, set: open.set, in: session, store: store, timer: timer)
                     } label: {
-                        Text(look.uppercaseTitles ? "DONE · \(item.high) \(unitWord(item.unit).uppercased())"
-                                                  : "Done · \(item.high) \(unitWord(item.unit))")
+                        Text(look.uppercaseTitles ? "DONE · \(reps) \(unitWord(item.unit).uppercased())"
+                                                  : "Done · \(reps) \(unitWord(item.unit))")
                             .accentButton()
                     }
                     .buttonStyle(.plain)

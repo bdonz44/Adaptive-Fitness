@@ -98,3 +98,4 @@ Or open `Package.swift` in Xcode and press Cmd-U. GitHub also runs them on every
 - **Personal record** = a lift's estimated max (Epley) beats every earlier logged entry. A lift's first entry is never a record.
 - **Lock Screen styles:** big number, session progress, or with +30s/Done buttons. The expanded Dynamic Island always has the buttons.
 - **Programs:** only Hybrid 12 exists; the other five are listed as coming soon.
+- **Carry forward:** finishing a set fills that exercise's later blank, unfinished sets with its weight and reps. Typed values and done sets are never changed.

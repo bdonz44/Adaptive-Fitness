@@ -268,6 +268,12 @@ final class AppStore {
         saveDraft()
     }
 
+    /// Fills the item's later blank sets from a finished set.
+    func carryForward(_ item: SessionItem, from index: Int) {
+        draft.carryForward(key: item.key, from: index, setCount: item.sets)
+        saveDraft()
+    }
+
     func swap(_ item: SessionItem) {
         draft.swap(item.key, in: session, catalog: catalog)
         saveDraft()
