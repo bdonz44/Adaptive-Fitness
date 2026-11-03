@@ -16,7 +16,7 @@ struct CardioRow: View {
                     NumberField(placeholder: lb(start), value: entry.sets.first?.weight) { value in
                         store.update(item.key, sets: 1) { $0.sets[0].weight = value }
                     }
-                    Text("lb").font(.caption).foregroundStyle(.secondary)
+                    Text("lb").font(.caption).foregroundStyle(Theme.secondary)
                 }
             }
 
@@ -32,7 +32,7 @@ struct CardioRow: View {
                 } label: {
                     Image(systemName: entry.ticked ? "checkmark.circle.fill" : "circle")
                         .font(.title)
-                        .foregroundStyle(entry.ticked ? Theme.done : Color.secondary)
+                        .foregroundStyle(entry.ticked ? Theme.done : Theme.secondary)
                 }
                 .buttonStyle(.plain)
             }

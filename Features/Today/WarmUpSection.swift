@@ -16,7 +16,7 @@ struct WarmUpSection: View {
             if work == nil {
                 Text(WarmUp.placeholderHint)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.secondary)
             }
             ForEach(Array(steps.enumerated()), id: \.offset) { pair in
                 stepRow(pair.offset, pair.element)
@@ -32,7 +32,7 @@ struct WarmUpSection: View {
         return HStack {
             Text(step.label).monospacedDigit()
             if let plates = step.plates {
-                Text(plates).font(.caption).foregroundStyle(.secondary)
+                Text(plates).font(.caption).foregroundStyle(Theme.secondary)
             }
             Spacer()
             Button {
@@ -41,7 +41,7 @@ struct WarmUpSection: View {
             } label: {
                 Image(systemName: ticked ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
-                    .foregroundStyle(ticked ? Theme.done : Color.secondary)
+                    .foregroundStyle(ticked ? Theme.done : Theme.secondary)
             }
             .buttonStyle(.plain)
         }

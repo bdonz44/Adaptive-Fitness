@@ -10,9 +10,13 @@ final class RestAlerts {
     private var activity: Activity<RestTimerAttributes>?
 
     /// Starts or moves both alerts to a new end time.
-    func show(label: String, start: Date, end: Date) {
+    func show(label: String, start: Date, end: Date, context: RestContext) {
         scheduleNotification(label: label, end: end)
-        let state = RestTimerAttributes.ContentState(label: label, start: start, end: end)
+        let style = UserDefaults.standard.string(forKey: LockStyle.storageKey) ?? LockStyle.big.rawValue
+        let state = RestTimerAttributes.ContentState(
+            label: label, start: start, end: end, style: style, accent: Look.current.accentHex,
+            next: context.next, sessionTitle: context.sessionTitle,
+            setsDone: context.setsDone, setsTotal: context.setsTotal)
         let content = ActivityContent(state: state, staleDate: end)
         if let activity, activity.activityState == .active {
             Task { await activity.update(content) }

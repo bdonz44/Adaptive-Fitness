@@ -8,6 +8,8 @@ struct ItemCard: View {
 
     var body: some View {
         let suggestion = store.suggestion(for: item, in: session)
+        let isNow = store.nextOpenSet?.key == item.key
+        let finished = item.isLift && store.entry(item.key).sets.prefix(item.sets).filter(\.isDone).count >= item.sets
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 if !item.tag.isEmpty {
@@ -17,8 +19,11 @@ struct ItemCard: View {
                         .background(Theme.accent.opacity(0.25), in: RoundedRectangle(cornerRadius: 6))
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(item.name).font(.headline)
-                    Text(prescription).font(.subheadline).foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        Text(item.name).font(.system(size: 18, weight: .bold, design: Theme.look.bodyDesign))
+                        if finished { Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.done) }
+                    }
+                    Text(prescription).font(.subheadline).foregroundStyle(Theme.secondary)
                 }
                 Spacer()
                 if item.kind == .accessory || item.kind == .engine || item.kind == .finisher {
@@ -33,7 +38,7 @@ struct ItemCard: View {
 
             Text(item.detail)
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.secondary)
 
             if item.isLift {
                 if !suggestion.reason.isEmpty || suggestion.weight != nil {
@@ -52,7 +57,7 @@ struct ItemCard: View {
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: 16))
+        .lookCard(highlight: isNow)
     }
 
     private var prescription: String {

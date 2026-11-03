@@ -31,6 +31,9 @@ Engine/                  Pure, UI-free program logic
   Catalog.swift          loads the bundled JSON
   Resources/             exercises.json, engine.json, finishers.json (edit these, not code, to add moves)
 Tests/EngineTests/       Swift Testing tests for every rule
+Engine/SessionInsights.swift  plates per side, next open set, session stats, personal records
+Features/Look/           the six looks (Look.swift), Look settings, program picker
+Features/Today/          NowCard, FocusView, RestView (full-screen timer), SetTick
 Services/                RestTimer, RestAlerts (notification + Live Activity), HealthService
 Shared/                  RestTimerAttributes (used by the app and the widget extension)
 Hybrid12Widgets/         Live Activity for the rest timer (bundle ID com.bdonz44.hybrid12.widgets)
@@ -88,3 +91,10 @@ Or open `Package.swift` in Xcode and press Cmd-U. GitHub also runs them on every
 - **Health workout times:** a session runs from the first ticked set or warm-up step to Finish. If that comes out under 5 minutes or over 4 hours, it is written as 45 minutes ending at Finish. The easy run is a running workout of the logged minutes ending at Finish; every other session is a strength workout. A session with nothing logged writes nothing. No calories are written.
 - **Health permission** is asked the first time you finish a session; **notification permission** the first time a rest timer starts.
 - **Rest timer when locked:** the Live Activity counts down on its own and shows "Go" at zero; the notification says "Go". The Live Activity has no buttons (use +30s and Done in the app). Closing the app ends the timer and its Live Activity.
+- **Looks:** six looks from the design canvas (Iron is the default), picked in Plan > Look. They use Apple's built-in fonts (compressed, condensed, serif, rounded, mono) rather than the Google fonts in the mockups. Changing the look rebuilds the screens.
+- **Arcade** has the neon style but no XP or streak system (nothing in the program earns XP yet).
+- **Pulse** puts the readiness picker first; WHOOP numbers arrive with milestone 6.
+- **Now card and Focus mode** follow the next unfinished lift set in session order; superset partners alternate. Done logs the target reps (Focus lets you change reps and weight first).
+- **Personal record** = a lift's estimated max (Epley) beats every earlier logged entry. A lift's first entry is never a record.
+- **Lock Screen styles:** big number, session progress, or with +30s/Done buttons. The expanded Dynamic Island always has the buttons.
+- **Programs:** only Hybrid 12 exists; the other five are listed as coming soon.

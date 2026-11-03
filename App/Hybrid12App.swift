@@ -7,7 +7,7 @@ struct Hybrid12App: App {
     static let iCloudContainer = "iCloud.com.bdonz44.hybrid12"
     private let container: ModelContainer
     @State private var store: AppStore
-    @State private var timer = RestTimer()
+    private let timer = RestTimer.shared
 
     init() {
         RestAlerts.endLeftovers()
@@ -43,6 +43,7 @@ struct Hybrid12App: App {
         }
         #endif
         _store = State(initialValue: store)
+        RestTimer.shared.contextProvider = { [store] in store.restContext() }
     }
 
     var body: some Scene {
@@ -51,8 +52,6 @@ struct Hybrid12App: App {
                 .environment(store)
                 .environment(timer)
                 .modelContainer(container)
-                .preferredColorScheme(.dark)
-                .tint(Theme.accent)
         }
     }
 }

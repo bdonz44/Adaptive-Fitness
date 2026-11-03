@@ -4,11 +4,26 @@ import SwiftData
 import Hybrid12Engine
 
 struct FinishSummary: Identifiable {
+    struct PR: Identifiable {
+        let id: String
+        let name: String
+        let weight: Double
+        let reps: Int
+        let e1RM: Double
+        let gain: Double
+    }
+
     let id = UUID()
     let title: String
     let changes: [LiftChange]
     let cardioMinutes: Int
     let weekMessage: String?
+    var minutes: Int? = nil
+    var setsDone: Int = 0
+    var volume: Double = 0
+    var records: [PR] = []
+    /// Sessions done this week after this one (0-5); 0 when the week just rolled over.
+    var weekDone: Int = 0
 }
 
 /// One row in "Recent sessions".
@@ -113,6 +128,35 @@ final class AppStore {
         draft.entries[key] ?? LoggedItem()
     }
 
+    /// The next lift set to do (focus mode and the Now card).
+    var nextOpenSet: SessionInsights.OpenSet? {
+        SessionInsights.nextOpenSet(session: session, entries: draft.entries)
+    }
+
+    var sessionStats: SessionInsights.Stats {
+        SessionInsights.stats(session: session, entries: draft.entries)
+    }
+
+    /// Weight for a set: what's typed, else the suggestion.
+    func weight(for item: SessionItem, set index: Int, in session: Session) -> Double? {
+        let sets = entry(item.key).sets
+        if index < sets.count, let w = sets[index].weight { return w }
+        return suggestion(for: item, in: session).weight
+    }
+
+    /// Next set and session progress for the Lock Screen.
+    func restContext() -> RestContext {
+        let s = session
+        let stats = SessionInsights.stats(session: s, entries: draft.entries)
+        var next = ""
+        if let open = SessionInsights.nextOpenSet(session: s, entries: draft.entries), let item = s.item(open.key) {
+            let w = weight(for: item, set: open.set, in: s)
+            let amount = w.map { "\(lb($0)) × \(item.high)" } ?? "\(item.high) \(unitWord(item.unit))"
+            next = "\(item.name) set \(open.set + 1) · \(amount)"
+        }
+        return RestContext(next: next, sessionTitle: s.title, setsDone: stats.setsDone, setsTotal: stats.setsPlanned)
+    }
+
     // MARK: Draft changes (saved on every change)
 
     func select(_ slot: Slot) {
@@ -161,9 +205,13 @@ final class AppStore {
         let s = session
         let result = Progression.progress(session: s, entries: draft.entries, lifts: lifts, date: now,
                                           runMinutes: program.runMinutes, catalog: catalog)
-        if let workout = Workouts.record(session: s, entries: draft.entries, startedAt: draft.startedAt,
-                                         finishedAt: now, cardioMinutes: result.cardioMinutes) {
-            Task { await HealthService.shared.save(workout) }
+        let workout = Workouts.record(session: s, entries: draft.entries, startedAt: draft.startedAt,
+                                      finishedAt: now, cardioMinutes: result.cardioMinutes)
+        if let workout { Task { await HealthService.shared.save(workout) } }
+        let stats = SessionInsights.stats(session: s, entries: draft.entries)
+        let records = SessionInsights.records(lifts: result.lifts, date: now).map { r in
+            FinishSummary.PR(id: r.exerciseID, name: catalog.exercise(r.exerciseID)?.name ?? r.exerciseID,
+                             weight: r.weight, reps: r.reps, e1RM: r.e1RM, gain: r.gain)
         }
         for (id, rec) in result.lifts where rec != lifts[id] {
             saveLift(id, rec)
@@ -187,7 +235,8 @@ final class AppStore {
         resetDraft()
 
         return FinishSummary(title: s.title, changes: result.changes, cardioMinutes: result.cardioMinutes,
-                             weekMessage: advance.message)
+                             weekMessage: advance.message, minutes: workout?.minutes, setsDone: stats.setsDone,
+                             volume: stats.volume, records: records, weekDone: program.doneCount)
     }
 
     /// Skip marks a slot done with no log.

@@ -19,8 +19,9 @@ struct ProgressTab: View {
                 }
                 .padding()
             }
+            .background(Theme.background)
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("Progress")
+            .navigationTitle(Theme.look.uppercaseTitles ? "PROGRESS" : "Progress")
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
@@ -39,13 +40,11 @@ struct Card<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title.uppercased())
-                .font(.caption.weight(.heavy))
-                .foregroundStyle(Theme.accent)
+            SectionLabel(text: title, color: Theme.accent)
             VStack(alignment: .leading, spacing: 12) { content }
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Theme.card, in: RoundedRectangle(cornerRadius: 16))
+                .lookCard()
         }
     }
 }
@@ -69,7 +68,7 @@ struct LogField: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
                 .background(Theme.field, in: RoundedRectangle(cornerRadius: 10))
-            Text(unit).foregroundStyle(.secondary)
+            Text(unit).foregroundStyle(Theme.secondary)
             Button("Log") {
                 guard let value, value > 0 else { return }
                 onLog(value)
@@ -130,12 +129,12 @@ struct MeasureSummary: View {
         if let trend = Tracking.trend(points.map(\.value)) {
             HStack(alignment: .firstTextBaseline) {
                 Text(lb(trend.latest)).font(.title.weight(.bold)).monospacedDigit()
-                Text(unit).foregroundStyle(.secondary)
+                Text(unit).foregroundStyle(Theme.secondary)
                 Spacer()
                 if let change = trend.changeSinceFirst {
                     Text("\(Tracking.changeText(change, unit: unit)) since first")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.secondary)
                 }
             }
             if points.count >= 2 {
@@ -146,7 +145,7 @@ struct MeasureSummary: View {
                 ForEach(recent, id: \.offset) { index, p in
                     HStack {
                         Text(p.date, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day())
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.secondary)
                         Spacer()
                         Text("\(lb(p.value)) \(unit)").monospacedDigit()
                         Button("Remove", role: .destructive) { onRemove(index) }
@@ -200,14 +199,14 @@ struct CardioCard: View {
             HStack {
                 Text("This week")
                 Spacer()
-                Text("\(minutes) of \(goal) min").monospacedDigit().foregroundStyle(.secondary)
+                Text("\(minutes) of \(goal) min").monospacedDigit().foregroundStyle(Theme.secondary)
             }
             ProgressView(value: min(1, Double(minutes) / Double(goal)))
             if store.program.week > 1 {
                 let last = store.cardioByWeek[store.program.week - 1] ?? 0
                 Text("Last week: \(last) min")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.secondary)
             }
         }
     }
@@ -222,7 +221,7 @@ struct BodyweightCard: View {
             if entries.isEmpty {
                 Text("Weigh in once or twice a week, at the same time of day.")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.secondary)
             }
             MeasureSummary(points: entries.map { ($0.date, $0.pounds) }, unit: "lb") { index in
                 store.removeWeighIn(entries[index])
@@ -241,7 +240,7 @@ struct WaistCard: View {
             if Tracking.showsWaistTarget(entryCount: entries.count) {
                 Text("Measure at the belly button once a week. The heart-health target is under \(lb(Tracking.waistTarget)) in.")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.secondary)
             }
             MeasureSummary(points: entries.map { ($0.date, $0.inches) }, unit: "in") { index in
                 store.removeWaist(entries[index])
@@ -260,7 +259,7 @@ struct WorkingWeightsCard: View {
             if rows.isEmpty {
                 Text("Finish a session and your lifts show up here.")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.secondary)
             }
             ForEach(rows) { row in
                 HStack(spacing: 10) {
@@ -270,7 +269,7 @@ struct WorkingWeightsCard: View {
                         if let max = row.estimatedMax {
                             Text("Est. max \(lb(max)) lb")
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Theme.secondary)
                         }
                     }
                     Spacer()
@@ -294,7 +293,7 @@ struct RecentSessionsCard: View {
             if store.recentLogs.isEmpty {
                 Text("Nothing logged yet.")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.secondary)
             }
             ForEach(store.recentLogs) { log in
                 HStack {
@@ -302,12 +301,12 @@ struct RecentSessionsCard: View {
                         Text(log.title)
                         Text(log.date, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day())
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.secondary)
                     }
                     Spacer()
                     Text("Week \(ProgramWeek(log.week).wk)")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.secondary)
                 }
             }
         }

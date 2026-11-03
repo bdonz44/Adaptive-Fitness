@@ -5,6 +5,7 @@ import Hybrid12Engine
 struct PlanTab: View {
     @Environment(AppStore.self) private var store
     @Environment(RestTimer.self) private var timer
+    @Environment(\.openLook) private var openLook
     @State private var jumpTarget: Int?
     @State private var confirmStartOver = false
     @State private var confirmStartOverAgain = false
@@ -15,6 +16,15 @@ struct PlanTab: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     header(week)
+                    VStack(spacing: 10) {
+                        Button { openLook() } label: {
+                            linkRow("Look", detail: "\(Theme.look.name) · Lock Screen · app icon", icon: "paintpalette.fill")
+                        }
+                        NavigationLink { ProgramsView() } label: {
+                            linkRow("Programs", detail: "Hybrid 12 · more coming", icon: "square.stack.3d.up.fill")
+                        }
+                    }
+                    .buttonStyle(.plain)
                     weeksCard(week)
                     Card(title: "\(week.phase.name) sessions") {
                         ForEach(PlanText.sessions(week.phase, runMinutes: store.program.runMinutes, catalog: store.catalog), id: \.self) { line in
@@ -34,7 +44,7 @@ struct PlanTab: View {
                     Card(title: "Web app data") {
                         Text("Bring over your week, weights, sessions, weigh-ins, waist and cardio from the web app's export file.")
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                         ImportButton()
                     }
@@ -42,7 +52,8 @@ struct PlanTab: View {
                 }
                 .padding()
             }
-            .navigationTitle("Plan")
+            .background(Theme.background)
+            .navigationTitle(Theme.look.uppercaseTitles ? "PLAN" : "Plan")
             .confirmationDialog(jumpTarget.map { "Jump to week \($0)?" } ?? "",
                                 isPresented: Binding(get: { jumpTarget != nil }, set: { if !$0 { jumpTarget = nil } }),
                                 titleVisibility: .visible) {
@@ -59,12 +70,31 @@ struct PlanTab: View {
         }
     }
 
+    private func linkRow(_ title: String, detail: String, icon: String) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(Theme.onAccent)
+                .frame(width: 40, height: 40)
+                .background(Theme.accent, in: RoundedRectangle(cornerRadius: 10))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.headline)
+                Text(detail).font(.subheadline).foregroundStyle(Theme.secondary)
+            }
+            Spacer()
+            Image(systemName: "chevron.right").foregroundStyle(Theme.secondary)
+        }
+        .padding(14)
+        .lookCard()
+        .contentShape(Rectangle())
+    }
+
     private func header(_ week: ProgramWeek) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Week \(week.wk) of 12 · \(week.phase.name)").font(.headline)
             Text("Cycle \(week.cycle) · \(store.program.doneCount) of 5 sessions done this week")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.secondary)
         }
     }
 
@@ -72,7 +102,7 @@ struct PlanTab: View {
         Card(title: "This cycle") {
             Text("Tap a week to jump to it.")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.secondary)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
                 ForEach(PlanText.cycleWeeks(current: week.week)) { w in
                     Button {
@@ -97,14 +127,14 @@ struct PlanTab: View {
             }
             Text(w.isDeload ? "Back-off" : w.phase.name)
                 .font(.caption2)
-                .foregroundStyle(w.isDeload ? Color.blue : .secondary)
+                .foregroundStyle(w.isDeload ? Color.blue : Theme.secondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
-        .background(current ? Theme.accent.opacity(0.3) : Theme.field, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(current ? Theme.accent : .clear, lineWidth: 1.5))
+        .background(current ? Theme.accent.opacity(0.3) : Theme.field, in: RoundedRectangle(cornerRadius: max(Theme.look.radius - 8, 2)))
+        .overlay(RoundedRectangle(cornerRadius: max(Theme.look.radius - 8, 2)).stroke(current ? Theme.accent : .clear, lineWidth: 1.5))
         .accessibilityLabel("Week \(w.wk), \(w.isDeload ? "back-off week" : w.phase.name)\(current ? ", current" : "")")
     }
 
@@ -112,14 +142,14 @@ struct PlanTab: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(phase.name).font(.headline)
-                Text(PlanText.weeks(phase)).font(.subheadline).foregroundStyle(.secondary)
+                Text(PlanText.weeks(phase)).font(.subheadline).foregroundStyle(Theme.secondary)
                 Spacer()
                 if current {
                     Text("Now").font(.caption.weight(.bold)).foregroundStyle(Theme.accent)
                 }
             }
             Text(PlanText.focus(phase)).font(.subheadline)
-            Text(PlanText.scheme(phase)).font(.caption).foregroundStyle(.secondary)
+            Text(PlanText.scheme(phase)).font(.caption).foregroundStyle(Theme.secondary)
         }
         .fixedSize(horizontal: false, vertical: true)
     }

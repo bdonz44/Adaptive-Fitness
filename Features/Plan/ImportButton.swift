@@ -71,7 +71,7 @@ struct ImportPromptCard: View {
             Text("Moving from the web app?").font(.headline)
             Text("Export your data from the web app and save hybrid12-data.json to Files. Then import it here to bring over your week, weights and history.")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             ImportButton(prominent: true)
         }

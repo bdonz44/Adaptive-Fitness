@@ -15,7 +15,7 @@ struct SetRow: View {
         HStack(spacing: 10) {
             Text("\(index + 1)")
                 .font(.subheadline.monospacedDigit())
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.secondary)
                 .frame(width: 18)
 
             weightControl(set)
@@ -25,7 +25,7 @@ struct SetRow: View {
             }
             Text(unitWord(item.unit))
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.secondary)
 
             Spacer()
 
@@ -34,7 +34,7 @@ struct SetRow: View {
             } label: {
                 Image(systemName: set.ticked ? "checkmark.circle.fill" : "circle")
                     .font(.title)
-                    .foregroundStyle(set.ticked ? Theme.done : Color.secondary)
+                    .foregroundStyle(set.ticked ? Theme.done : Theme.secondary)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(set.ticked ? "Set \(index + 1) done" : "Mark set \(index + 1) done")
@@ -62,7 +62,7 @@ struct SetRow: View {
                 NumberField(placeholder: suggestion.weight.map { lb($0) } ?? "–", value: set.weight) { value in
                     store.setWeight(value, item: item, set: index)
                 }
-                Text("lb").font(.caption).foregroundStyle(.secondary)
+                Text("lb").font(.caption).foregroundStyle(Theme.secondary)
             }
         default:
             EmptyView()
@@ -70,21 +70,8 @@ struct SetRow: View {
     }
 
     private func toggle(_ set: LoggedSet) {
-        let ticking = !set.ticked
         hideKeyboard()
-        store.update(item.key, sets: item.sets) { e in
-            e.sets[index].ticked = ticking
-            if ticking, e.sets[index].weight == nil, item.equipment != .bw, let w = suggestion.weight {
-                e.sets[index].weight = w
-            }
-        }
-        guard ticking else { return }
-        if item.startsPair,
-           let partner = session.items.first(where: { $0.pair == item.pair && $0.position == 1 }) {
-            timer.start(seconds: RestTimer.transitionSeconds, label: "Transition to \(partner.name)")
-        } else {
-            timer.start(seconds: item.restSeconds, label: "Rest")
-        }
+        SetTick.toggle(item, set: index, in: session, store: store, timer: timer)
     }
 }
 
@@ -104,7 +91,7 @@ struct NumberField: View {
             .monospacedDigit()
             .frame(width: 64)
             .padding(.vertical, 8)
-            .background(Theme.field, in: RoundedRectangle(cornerRadius: 8))
+            .background(Theme.field, in: RoundedRectangle(cornerRadius: max(Theme.look.radius / 2, 2)))
             .onAppear { text = Self.format(value) }
             .onChange(of: value) { _, newValue in
                 if Self.parse(text) != newValue { text = Self.format(newValue) }

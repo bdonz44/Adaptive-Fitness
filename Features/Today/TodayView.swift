@@ -10,22 +10,28 @@ struct TodayView: View {
     @State private var confirmRestart = false
     @State private var banner: String?
 
+    @State private var showFocus = false
+    @State private var showRest = false
+
     var body: some View {
         let session = store.session
+        let look = Theme.look
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if store.isEmpty { ImportPromptCard() }
-                    WeekHeader()
+                    WeekHeader(title: session.title)
+                    if look.readinessFirst { ReadinessPicker() }
                     SlotChips()
-                    ReadinessPicker()
+                    if !look.readinessFirst { ReadinessPicker() }
                     if let banner {
                         Text(banner)
                             .font(.subheadline.weight(.semibold))
-                            .padding(10)
+                            .padding(12)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Theme.accent.opacity(0.2), in: RoundedRectangle(cornerRadius: 10))
+                            .background(Theme.accent.opacity(0.2), in: RoundedRectangle(cornerRadius: look.radius))
                     }
+                    NowCard(session: session, openFocus: { showFocus = true })
                     ForEach(session.blocks, id: \.kind) { block in
                         BlockSection(block: block, session: session)
                     }
@@ -33,19 +39,38 @@ struct TodayView: View {
                 }
                 .padding()
             }
+            .background(look.background)
             .scrollDismissesKeyboard(.interactively)
             .safeAreaInset(edge: .bottom) {
-                if timer.isActive { RestTimerBar() }
+                if timer.isActive && !showFocus {
+                    RestTimerBar(expand: { showRest = true })
+                }
             }
-            .navigationTitle(session.title)
             .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showFocus = true
+                    } label: {
+                        Label("Focus mode", systemImage: "scope")
+                    }
+                }
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
                     Button("Done") { hideKeyboard() }
                 }
             }
+            .toolbarBackground(look.background, for: .navigationBar)
             .sheet(item: $summary) { s in
                 SummaryView(summary: s)
+            }
+            .fullScreenCover(isPresented: $showFocus) {
+                FocusView()
+            }
+            .fullScreenCover(isPresented: $showRest) {
+                RestView(close: { showRest = false })
+            }
+            .onChange(of: timer.isActive) { _, active in
+                if !active { showRest = false }
             }
         }
     }
@@ -59,12 +84,10 @@ struct TodayView: View {
                 summary = store.finish()
                 banner = nil
             } label: {
-                Text("Finish session")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
+                Text(Theme.look.uppercaseTitles ? "FINISH SESSION" : "Finish session")
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.plain)
+            .accentButton()
 
             HStack {
                 if session.slot != .R {
@@ -107,16 +130,14 @@ struct TodayView: View {
 
 struct WeekHeader: View {
     @Environment(AppStore.self) private var store
+    let title: String
 
     var body: some View {
         let week = store.week
-        VStack(alignment: .leading, spacing: 8) {
+        let look = Theme.look
+        VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                Text("Week \(week.wk) of 12 · \(week.phase.name)")
-                    .font(.headline)
-                if week.cycle > 1 {
-                    Text("Cycle \(week.cycle)").font(.subheadline).foregroundStyle(.secondary)
-                }
+                SectionLabel(text: "Week \(week.wk) / 12 · \(week.phase.name)" + (week.cycle > 1 ? " · Cycle \(week.cycle)" : ""))
                 Spacer()
                 if week.isDeload {
                     Text("Back-off week")
@@ -125,15 +146,29 @@ struct WeekHeader: View {
                         .background(Color.blue.opacity(0.3), in: Capsule())
                 }
             }
+            Text(look.uppercaseTitles ? title.uppercased() : title)
+                .font(look.title(42))
+                .foregroundStyle(look.text)
+                .lineLimit(2)
+                .minimumScaleFactor(0.6)
+            // One segment per session this week: done, today, still to do.
+            HStack(spacing: 6) {
+                ForEach(Program.order, id: \.self) { slot in
+                    Capsule()
+                        .fill(store.program.isDone(slot) ? look.accent
+                              : slot == store.draft.slot ? look.text : look.field)
+                        .frame(height: 6)
+                }
+            }
+            .accessibilityElement()
+            .accessibilityLabel("\(store.program.doneCount) of 5 sessions done this week")
             HStack {
-                Text("Cardio this week")
+                Text("\(store.program.doneCount) of 5 done")
                 Spacer()
-                Text("\(store.cardioThisWeek) of \(Program.cardioGoalMinutes) min")
-                    .monospacedDigit()
+                Text("Cardio \(store.cardioThisWeek) / \(Program.cardioGoalMinutes) min").monospacedDigit()
             }
             .font(.caption)
-            .foregroundStyle(.secondary)
-            ProgressView(value: min(1, Double(store.cardioThisWeek) / Double(Program.cardioGoalMinutes)))
+            .foregroundStyle(look.secondary)
         }
     }
 }
@@ -178,8 +213,8 @@ struct SlotChips: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(selected ? Theme.accent.opacity(0.3) : Theme.card, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? Theme.accent : .clear, lineWidth: 1.5))
+            .background(selected ? Theme.accent.opacity(0.25) : Theme.card, in: RoundedRectangle(cornerRadius: max(Theme.look.radius - 6, 2)))
+            .overlay(RoundedRectangle(cornerRadius: max(Theme.look.radius - 6, 2)).stroke(selected ? Theme.accent : Theme.line, lineWidth: selected ? 1.5 : 1))
         }
         .buttonStyle(.plain)
     }
@@ -192,7 +227,7 @@ struct ReadinessPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("How do you feel?").font(.caption).foregroundStyle(.secondary)
+            Text("How do you feel?").font(.caption).foregroundStyle(Theme.secondary)
             Picker("Readiness", selection: Binding(
                 get: { store.draft.readiness },
                 set: { store.setReadiness($0) }
@@ -205,9 +240,11 @@ struct ReadinessPicker: View {
             if store.draft.readiness == .beat {
                 Text("Short day: no supersets, half the finisher, 10% lighter, no progression.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.secondary)
             }
         }
+        .padding(Theme.look.readinessFirst ? 16 : 0)
+        .background(Theme.look.readinessFirst ? Theme.card : .clear, in: RoundedRectangle(cornerRadius: Theme.look.radius))
     }
 }
 
@@ -219,9 +256,7 @@ struct BlockSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(block.title.uppercased())
-                .font(.caption.weight(.heavy))
-                .foregroundStyle(Theme.accent)
+            SectionLabel(text: block.title, color: Theme.accent)
             ForEach(block.items, id: \.key) { item in
                 ItemCard(item: item, session: session)
             }
