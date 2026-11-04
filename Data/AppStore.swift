@@ -333,7 +333,7 @@ final class AppStore {
         if let effort {
             update(item.key, sets: item.sets) { $0.rir = effort.rir }
         }
-        let left = sets.prefix(item.sets).enumerated().filter { $0.offset > index && !$0.element.isDone }.count
+        let left = sets.prefix(activeSets(item)).enumerated().filter { $0.offset > index && !$0.element.isDone }.count
         let cue = CoachCues.afterSet(item: item, reps: sets[index].reps, weight: sets[index].weight, effort: effort,
                                      setsLeft: left, lightDay: session.isLightDay)
         coachCue = (item.key, cue)
@@ -355,6 +355,42 @@ final class AppStore {
         draft.carryForward(key: item.key, from: index, setCount: item.sets)
         saveDraft()
     }
+
+    // MARK: Remove, skip, all done
+
+    func activeSets(_ item: SessionItem) -> Int { entry(item.key).activeSets(planned: item.sets) }
+
+    func removeSet(_ item: SessionItem) {
+        draft.removeSet(key: item.key, planned: item.sets)
+        saveDraft()
+    }
+
+    func restoreSets(_ item: SessionItem) {
+        draft.restoreSets(key: item.key)
+        saveDraft()
+    }
+
+    func skip(_ item: SessionItem, reason: String?) {
+        draft.skip(key: item.key, reason: reason)
+        if coachCue?.key == item.key { coachCue = nil }
+        saveDraft()
+    }
+
+    func markAllDone(_ item: SessionItem) {
+        draft.markAllDone(key: item.key, planned: item.sets, weight: suggestion(for: item, in: session).weight)
+        saveDraft()
+    }
+
+    /// Finish's "log them": every unticked set on exercises not skipped counts as done.
+    func markEverythingDone() {
+        for item in session.items where item.isLift && entry(item.key).skipped == nil {
+            draft.markAllDone(key: item.key, planned: item.sets, weight: suggestion(for: item, in: session).weight)
+        }
+        saveDraft()
+    }
+
+    /// Why this lift was skipped last time, if it was.
+    func lastSkip(_ item: SessionItem) -> String? { item.exerciseID.flatMap { lifts[$0]?.lastSkip } }
 
     func swap(_ item: SessionItem) {
         draft.swap(item.key, in: session, catalog: catalog)
@@ -392,10 +428,11 @@ final class AppStore {
             FinishSummary.PR(id: r.exerciseID, name: catalog.exercise(r.exerciseID)?.name ?? r.exerciseID,
                              weight: r.weight, reps: r.reps, e1RM: r.e1RM, gain: r.gain)
         }
-        for (id, rec) in result.lifts where rec != lifts[id] {
+        let withSkips = Progression.applySkips(session: s, entries: draft.entries, lifts: result.lifts)
+        for (id, rec) in withSkips where rec != lifts[id] {
             saveLift(id, rec)
         }
-        lifts = result.lifts
+        lifts = withSkips
 
         if result.cardioMinutes > 0 { addCardio(result.cardioMinutes, week: program.week) }
 

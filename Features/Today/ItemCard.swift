@@ -9,7 +9,9 @@ struct ItemCard: View {
     var body: some View {
         let suggestion = store.suggestion(for: item, in: session)
         let isNow = store.nextOpenSet?.key == item.key
-        let finished = item.isLift && store.entry(item.key).sets.prefix(item.sets).filter(\.isDone).count >= item.sets
+        let active = store.activeSets(item)
+        let skipped = store.entry(item.key).skipped
+        let finished = item.isLift && skipped == nil && store.entry(item.key).sets.prefix(active).filter(\.isDone).count >= active
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 if !item.tag.isEmpty {
@@ -26,7 +28,7 @@ struct ItemCard: View {
                     Text(prescription).font(.subheadline).foregroundStyle(Theme.secondary)
                 }
                 Spacer()
-                if item.kind == .accessory || item.kind == .engine || item.kind == .finisher {
+                if (item.kind == .accessory || item.kind == .engine || item.kind == .finisher) && skipped == nil {
                     Button {
                         store.swap(item)
                     } label: {
@@ -34,8 +36,24 @@ struct ItemCard: View {
                     }
                     .buttonStyle(.bordered)
                 }
+                if item.isLift { ExerciseMenu(item: item) }
             }
 
+            if let skipped {
+                HStack {
+                    Text("Skipped today · \(skipped)").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.secondary)
+                    Spacer()
+                    Button("Bring it back") { store.skip(item, reason: nil) }
+                        .font(.subheadline.weight(.bold))
+                }
+            } else if let last = store.lastSkip(item) {
+                Label("Skipped last time (\(last.lowercased())).\(item.kind == .accessory ? " Tap Swap for a different move." : " Go light and see how it feels.")",
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color(hex: 0xF59E0B))
+            }
+
+            if skipped == nil {
             Text(item.detail)
                 .font(.footnote)
                 .foregroundStyle(Theme.secondary)
@@ -48,16 +66,18 @@ struct ItemCard: View {
                 if item.kind == .main, let id = item.exerciseID {
                     WarmUpSection(item: item, liftID: id, session: session)
                 }
-                ForEach(0..<item.sets, id: \.self) { i in
+                ForEach(0..<active, id: \.self) { i in
                     SetRow(item: item, index: i, suggestion: suggestion, session: session)
                 }
             } else if item.isCardio {
                 CardioRow(item: item)
             }
+            }
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
         .lookCard(highlight: isNow)
+        .opacity(skipped == nil ? 1 : 0.6)
     }
 
     private var prescription: String {
@@ -99,4 +119,37 @@ func unitWord(_ unit: ExerciseUnit) -> String {
 /// 135 -> "135", 27.5 -> "27.5"
 func lb(_ w: Double) -> String {
     w == w.rounded() ? String(Int(w)) : String(format: "%.1f", w)
+}
+
+/// All sets done, Remove a set, Skip exercise.
+struct ExerciseMenu: View {
+    @Environment(AppStore.self) private var store
+    let item: SessionItem
+    static let reasons = ["Pain", "No time", "No equipment", "Other"]
+
+    var body: some View {
+        let e = store.entry(item.key)
+        Menu {
+            if e.skipped == nil {
+                Button { store.markAllDone(item) } label: { Label("All sets done", systemImage: "checkmark.circle.fill") }
+                Button { store.removeSet(item) } label: { Label("Remove a set", systemImage: "minus.circle") }
+                    .disabled(store.activeSets(item) <= 1)
+                if (e.removedSets ?? 0) > 0 {
+                    Button { store.restoreSets(item) } label: { Label("Put removed sets back", systemImage: "plus.circle") }
+                }
+                Menu {
+                    ForEach(Self.reasons, id: \.self) { reason in
+                        Button(reason) { store.skip(item, reason: reason) }
+                    }
+                } label: { Label("Skip exercise", systemImage: "forward.end") }
+            } else {
+                Button { store.skip(item, reason: nil) } label: { Label("Bring it back", systemImage: "arrow.uturn.backward") }
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.title2)
+                .frame(width: 44, height: 44)
+        }
+        .accessibilityLabel("More for \(item.name)")
+    }
 }

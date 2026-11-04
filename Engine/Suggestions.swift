@@ -27,6 +27,8 @@ public struct LiftRecord: Codable, Equatable, Sendable {
     public var history: [HistoryEntry]
     /// First weight ever logged (history only keeps 12), for "heavier than where you started".
     public var firstWeight: Double?
+    /// Why this lift was skipped last time it came up ("Pain"...), cleared once it's logged again.
+    public var lastSkip: String?
 
     public init(exerciseID: String, workingWeight: Double? = nil, fails: Int = 0, holds: Int = 0,
                 note: String? = nil, history: [HistoryEntry] = [], firstWeight: Double? = nil) {

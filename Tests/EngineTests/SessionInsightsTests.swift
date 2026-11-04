@@ -69,3 +69,56 @@ import Testing
         #expect(abs(recs[0].gain - 5 * (1 + 5.0 / 30)) < 0.001)
     }
 }
+
+@Suite struct RemoveSkipTests {
+    func session() -> Session {
+        SessionBuilder.build(slot: .A, context: SessionDraft(slot: .A, week: 1).context(runMinutes: 25))
+    }
+
+    @Test func removingSetsShrinksTodayOnly() {
+        let s = session()
+        let main = s.items.first { $0.kind == .main }!
+        var d = SessionDraft(slot: .A, week: 1)
+        d.removeSet(key: main.key, planned: main.sets)
+        #expect(d.entries[main.key]!.activeSets(planned: main.sets) == main.sets - 1)
+        let full = SessionInsights.stats(session: s, entries: [:]).setsPlanned
+        #expect(SessionInsights.stats(session: s, entries: d.entries).setsPlanned == full - 1)
+        for _ in 0..<10 { d.removeSet(key: main.key, planned: main.sets) }
+        #expect(d.entries[main.key]!.activeSets(planned: main.sets) == 1)
+        d.restoreSets(key: main.key)
+        #expect(d.entries[main.key]!.activeSets(planned: main.sets) == main.sets)
+    }
+
+    @Test func doneSetsAreNeverRemoved() {
+        var d = SessionDraft(slot: .A, week: 1)
+        d.entries["x"] = LoggedItem(sets: sets(100, [5, 5]))
+        d.removeSet(key: "x", planned: 2)
+        #expect(d.entries["x"]!.activeSets(planned: 2) == 2)
+    }
+
+    @Test func skippedExerciseIsPassedOver() {
+        let s = session()
+        let main = s.items.first { $0.kind == .main }!
+        var d = SessionDraft(slot: .A, week: 1)
+        d.entries[main.key] = LoggedItem(sets: sets(200, [5]))
+        d.skip(key: main.key, reason: "Pain")
+        #expect(d.entries[main.key]!.sets.isEmpty)
+        #expect(SessionInsights.nextOpenSet(session: s, entries: d.entries)?.key != main.key)
+        let lifts = Progression.applySkips(session: s, entries: d.entries, lifts: [:])
+        #expect(lifts[main.exerciseID!]?.lastSkip == "Pain")
+        let after = Progression.progress(session: s, entries: [main.key: LoggedItem(sets: sets(200, [5, 5, 5, 5]))],
+                                         lifts: lifts, date: t0, runMinutes: 25)
+        #expect(after.lifts[main.exerciseID!]?.lastSkip == nil)
+    }
+
+    @Test func markAllDoneTicksActiveSets() {
+        var d = SessionDraft(slot: .A, week: 1)
+        d.entries["x"] = LoggedItem(sets: [LoggedSet(weight: 95, reps: 4, ticked: true)], removedSets: 1)
+        d.markAllDone(key: "x", planned: 4, weight: 100)
+        let e = d.entries["x"]!
+        let ticked = e.sets.prefix(3).allSatisfy { $0.ticked }
+        #expect(ticked)
+        #expect(e.sets[0].weight == 95 && e.sets[0].reps == 4)
+        #expect(e.sets[2].weight == 100 && e.sets[2].reps == nil)
+    }
+}

@@ -25,9 +25,16 @@ public struct LoggedItem: Codable, Equatable, Sendable {
     public var rir: Int?
     public var runRating: RunRating?
     public var miles: Double?
+    /// Sets taken off today's list (from the end).
+    public var removedSets: Int?
+    /// Set when the whole exercise was skipped today: "Pain", "No time", "No equipment", "Other".
+    public var skipped: String?
 
     public init(sets: [LoggedSet] = [], rounds: Int? = nil, ticked: Bool = false,
-                rir: Int? = nil, runRating: RunRating? = nil, miles: Double? = nil) {
+                rir: Int? = nil, runRating: RunRating? = nil, miles: Double? = nil,
+                removedSets: Int? = nil, skipped: String? = nil) {
+        self.removedSets = removedSets
+        self.skipped = skipped
         self.sets = sets
         self.rounds = rounds
         self.ticked = ticked
@@ -112,6 +119,18 @@ public enum Progression {
         return max(planned, current)
     }
 
+    /// Remembers why lifts were skipped today, so the next session can flag them.
+    public static func applySkips(session: Session, entries: [String: LoggedItem], lifts: [String: LiftRecord]) -> [String: LiftRecord] {
+        var lifts = lifts
+        for item in session.items where item.isLift {
+            guard let reason = entries[item.key]?.skipped, let id = item.exerciseID else { continue }
+            var rec = lifts[id] ?? LiftRecord(exerciseID: id)
+            rec.lastSkip = reason
+            lifts[id] = rec
+        }
+        return lifts
+    }
+
     /// Applies a finished session to the stored lifts.
     public static func progress(session: Session, entries: [String: LoggedItem], lifts: [String: LiftRecord],
                                 date: Date, runMinutes: Int, catalog: Catalog = .bundled) -> ProgressResult {
@@ -146,6 +165,7 @@ public enum Progression {
             let used = reading.usedWeight
 
             rec.history.append(HistoryEntry(date: date, weight: used, reps: reading.topReps, targetHi: item.high, rir: log.rir))
+            rec.lastSkip = nil
             if rec.history.count > historyLimit { rec.history.removeFirst(rec.history.count - historyLimit) }
             if rec.firstWeight == nil, let used, eq != .bw { rec.firstWeight = used }
 

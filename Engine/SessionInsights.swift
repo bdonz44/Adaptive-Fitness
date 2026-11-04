@@ -46,9 +46,10 @@ public enum SessionInsights {
                     group.append(lifts[i + group.count])
                 }
             }
-            let rounds = group.map(\.sets).max() ?? 0
+            func active(_ item: SessionItem) -> Int { (entries[item.key] ?? LoggedItem()).activeSets(planned: item.sets) }
+            let rounds = group.map(active).max() ?? 0
             for s in 0..<rounds {
-                for item in group where s < item.sets {
+                for item in group where s < active(item) {
                     let sets = entries[item.key]?.sets ?? []
                     if s >= sets.count || !sets[s].isDone { return OpenSet(key: item.key, set: s) }
                 }
@@ -63,14 +64,18 @@ public enum SessionInsights {
         public var setsPlanned: Int
         /// Pounds × reps over finished sets with a weight (a ticked set with blank reps counts the top of the range).
         public var volume: Double
+        /// Planned sets left unticked on exercises that weren't skipped.
+        public var setsOpen: Int { setsPlanned - setsDone }
     }
 
     public static func stats(session: Session, entries: [String: LoggedItem]) -> Stats {
         var done = 0, planned = 0
         var volume = 0.0
         for item in session.items where item.isLift {
-            planned += item.sets
-            for set in entries[item.key]?.sets ?? [] where set.isDone {
+            let entry = entries[item.key] ?? LoggedItem()
+            let active = entry.activeSets(planned: item.sets)
+            planned += active
+            for set in entry.sets.prefix(active) where set.isDone {
                 done += 1
                 if let w = set.weight { volume += w * Double(set.reps ?? item.high) }
             }

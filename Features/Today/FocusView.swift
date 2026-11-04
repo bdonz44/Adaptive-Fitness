@@ -49,7 +49,7 @@ struct FocusView: View {
                     .font(.subheadline).foregroundStyle(look.secondary)
             }
             VStack(alignment: .leading, spacing: 4) {
-                SectionLabel(text: "\(item.kind == .main ? "Main lift" : "Accessory") · Set \(open.set + 1) of \(item.sets)",
+                SectionLabel(text: "\(item.kind == .main ? "Main lift" : "Accessory") · Set \(open.set + 1) of \(store.activeSets(item))",
                              color: look.accent)
                 Text(look.uppercaseTitles ? item.name.uppercased() : item.name)
                     .font(look.title(44)).lineLimit(2).minimumScaleFactor(0.6)
@@ -124,7 +124,7 @@ struct FocusView: View {
     }
 
     private func coachLine(_ item: SessionItem, set: Int, session: Session) -> String? {
-        if set == item.sets - 1, let push = CoachCues.lastSetPush(item: item, lightDay: session.isLightDay) { return push }
+        if set == store.activeSets(item) - 1, let push = CoachCues.lastSetPush(item: item, lightDay: session.isLightDay) { return push }
         if set == 0 { return store.coachTarget(for: item, in: session) }
         return nil
     }

@@ -9,6 +9,7 @@ struct TodayView: View {
     @State private var summary: FinishSummary?
     @State private var confirmSkip = false
     @State private var confirmRestart = false
+    @State private var confirmOpenSets = false
     @State private var banner: String?
 
     @State private var showFocus = false
@@ -84,19 +85,37 @@ struct TodayView: View {
         }
     }
 
+    private func finishNow() {
+        timer.done()
+        summary = store.finish()
+        banner = nil
+    }
+
     @ViewBuilder
     private func finishButtons(_ session: Session) -> some View {
         VStack(spacing: 12) {
             Button {
                 hideKeyboard()
-                timer.done()
-                summary = store.finish()
-                banner = nil
+                if store.sessionStats.setsOpen > 0 {
+                    confirmOpenSets = true
+                } else {
+                    finishNow()
+                }
             } label: {
                 Text(Theme.look.uppercaseTitles ? "FINISH SESSION" : "Finish session")
             }
             .buttonStyle(.plain)
             .accentButton()
+            .confirmationDialog("\(store.sessionStats.setsOpen) sets aren't ticked. Log them as done at the planned weight and reps?",
+                                isPresented: $confirmOpenSets, titleVisibility: .visible) {
+                Button("Yes, log them as done") {
+                    store.markEverythingDone()
+                    finishNow()
+                }
+                Button("Only what I ticked") { finishNow() }
+            } message: {
+                Text("Skipped exercises stay skipped.")
+            }
 
             HStack {
                 if session.slot != .R {

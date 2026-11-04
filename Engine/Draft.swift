@@ -104,6 +104,46 @@ public struct SessionDraft: Codable, Equatable, Sendable {
         entries[key] = e
     }
 
+    /// Takes the last not-done set off today's list (keeps at least one).
+    public mutating func removeSet(key: String, planned: Int) {
+        var e = entries[key] ?? LoggedItem()
+        let active = e.activeSets(planned: planned)
+        guard active > 1 else { return }
+        let last = active - 1
+        if last < e.sets.count {
+            guard !e.sets[last].isDone else { return }
+            e.sets[last] = LoggedSet()
+        }
+        e.removedSets = (e.removedSets ?? 0) + 1
+        entries[key] = e
+    }
+
+    /// Puts removed sets back.
+    public mutating func restoreSets(key: String) {
+        entries[key]?.removedSets = nil
+    }
+
+    /// Skips the whole exercise today (clears anything logged) or, with nil, brings it back.
+    public mutating func skip(key: String, reason: String?) {
+        if let reason {
+            entries[key] = LoggedItem(skipped: reason)
+        } else {
+            entries[key]?.skipped = nil
+        }
+    }
+
+    /// Ticks every active set; blank weights take `weight`, blank reps stay blank (count as the top of the range).
+    public mutating func markAllDone(key: String, planned: Int, weight: Double?) {
+        var e = entries[key] ?? LoggedItem()
+        let active = e.activeSets(planned: planned)
+        e.ensureSets(active)
+        for i in 0..<active where !e.sets[i].isDone {
+            e.sets[i].ticked = true
+            if e.sets[i].weight == nil { e.sets[i].weight = weight }
+        }
+        entries[key] = e
+    }
+
     /// Changes one warm-up step's weight; nil goes back to the calculated weight.
     public mutating func setWarmWeight(_ weight: Double?, step index: Int) {
         var w = warmWeights ?? [:]
@@ -127,6 +167,12 @@ extension LoggedSet {
 }
 
 extension LoggedItem {
+    /// Sets planned for today after removals; 0 when the exercise is skipped.
+    public func activeSets(planned: Int) -> Int {
+        if skipped != nil { return 0 }
+        return max(1, planned - (removedSets ?? 0))
+    }
+
     public var hasCompletedWork: Bool { ticked || rounds != nil || sets.contains { $0.isDone } }
 
     public mutating func ensureSets(_ count: Int) {

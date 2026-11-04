@@ -18,7 +18,7 @@ struct NowCard: View {
                 HStack {
                     SectionLabel(text: "Now · \(kindName(item))", color: look.accent)
                     Spacer()
-                    Text("Set \(open.set + 1) of \(item.sets)").font(.subheadline).foregroundStyle(look.secondary)
+                    Text("Set \(open.set + 1) of \(store.activeSets(item))").font(.subheadline).foregroundStyle(look.secondary)
                 }
                 Text(item.name).font(.system(size: 22, weight: .bold, design: look.bodyDesign))
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -36,7 +36,7 @@ struct NowCard: View {
                 if let line = coachLine(item, set: open.set) {
                     CoachCallout(text: line)
                 }
-                SetProgress(done: doneCount(item), total: item.sets)
+                SetProgress(done: doneCount(item), total: store.activeSets(item))
                 HStack(spacing: 10) {
                     Button {
                         if item.unit == .sec {
@@ -76,7 +76,7 @@ struct NowCard: View {
 
     /// Last set of a main lift: the push. First set: what to beat today.
     private func coachLine(_ item: SessionItem, set: Int) -> String? {
-        if set == item.sets - 1, let push = CoachCues.lastSetPush(item: item, lightDay: session.isLightDay) { return push }
+        if set == store.activeSets(item) - 1, let push = CoachCues.lastSetPush(item: item, lightDay: session.isLightDay) { return push }
         if set == 0 { return store.coachTarget(for: item, in: session) }
         return nil
     }
@@ -87,7 +87,7 @@ struct NowCard: View {
     }
 
     private func doneCount(_ item: SessionItem) -> Int {
-        store.entry(item.key).sets.prefix(item.sets).filter(\.isDone).count
+        store.entry(item.key).sets.prefix(store.activeSets(item)).filter(\.isDone).count
     }
 
     private func target(_ item: SessionItem) -> String {
