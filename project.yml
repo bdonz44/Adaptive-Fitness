@@ -44,6 +44,8 @@ targets:
         UIRequiresFullScreen: true
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIBackgroundModes: [remote-notification, bluetooth-central]
+        NSCameraUsageDescription: Hybrid 12 uses the camera for your progress photos, with your last photo shown faintly so you can line up the same pose.
+        NSPhotoLibraryAddUsageDescription: Hybrid 12 saves a copy of each progress photo to your Photos library so iCloud Photos backs it up.
         NSBluetoothAlwaysUsageDescription: Hybrid 12 reads live heart rate from your WHOOP (Heart Rate Broadcast) to show your zone during intervals and rest.
         NSSupportsLiveActivities: true
         WhoopClientID: $(WHOOP_CLIENT_ID)

@@ -12,6 +12,7 @@ struct Hybrid12App: App {
     @State private var rounds = RoundTimer()
     @State private var whoop = WhoopService()
     @State private var heart = HeartRateMonitor()
+    @State private var progress = ProgressStore()
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -68,6 +69,7 @@ struct Hybrid12App: App {
                 .environment(rounds)
                 .environment(whoop)
                 .environment(heart)
+                .environment(progress)
                 .modelContainer(container)
                 .task { await syncWhoop() }
                 .onChange(of: scenePhase) { _, phase in

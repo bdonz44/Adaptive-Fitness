@@ -15,6 +15,8 @@ struct ProgressTab: View {
                     HardMinutesCard()
                     BodyweightCard()
                     WaistCard()
+                    MeasurementsCard()
+                    ProgressPhotosCard()
                     WorkingWeightsCard()
                     RecentSessionsCard()
                 }
