@@ -88,7 +88,7 @@ struct AddExerciseSheet: View {
     }
 
     static let names = ["bicep": "Biceps", "tricep": "Triceps", "delt": "Shoulders", "chest": "Chest",
-                        "row": "Back", "quad": "Legs", "hinge": "Hinge", "core": "Core", "full": "Full body",
+                        "row": "Back", "quad": "Legs", "hinge": "Hinge", "core": "Core", "abs": "Abs", "full": "Full body",
                         "main": "Big lifts", "power": "Cleans and snatches", "trx": "TRX"]
 
     /// "bicep" -> "Biceps"; unknown "rearDelt" -> "Rear Delt"

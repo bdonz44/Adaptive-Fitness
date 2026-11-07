@@ -7,7 +7,7 @@ import Testing
 
     @Test func bundledDataLoads() {
         #expect(catalog.mainLifts.count == 8)
-        #expect(catalog.accessories.count == 72)
+        #expect(catalog.accessories.count == 99)
         #expect(catalog.engineWorkouts.count == 6)
         for slot in [Slot.A, .B, .D, .E] {
             #expect(catalog.finishers(for: slot).count == 3)

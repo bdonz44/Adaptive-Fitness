@@ -90,7 +90,7 @@ import Testing
 
     @Test func trxMovesAreBodyweightAndNeverInAPlan() {
         let trx = c.accessories.filter { $0.category == Catalog.trxCategory }
-        #expect(trx.count == 18)
+        #expect(trx.count == 29)
         #expect(trx.allSatisfy { $0.eq == .bw && $0.name.hasPrefix("TRX") })
         for w in 1...12 {
             for slot in Program.order {
@@ -114,5 +114,38 @@ import Testing
         for id in ["trxrow", "powerclean", "curl", "trxrow"] { d.addExtra(id) }
         let s = SessionBuilder.build(slot: .D, context: d.context(runMinutes: 25))
         #expect(s.blocks.first { $0.kind == .extras }?.items.map(\.exerciseID) == ["trxrow", "powerclean", "curl"])
+    }
+}
+
+@Suite struct AbsTests {
+    let c = Catalog.bundled
+
+    @Test func absAndTrxAdditionsExist() {
+        #expect(c.accessories(in: Catalog.absCategory).count == 16)
+        #expect(c.exercise("trxchestfly")?.name == "TRX Chest Fly")
+        #expect(c.exercise("trxchestfly")?.category == Catalog.trxCategory)
+    }
+
+    @Test func hybridCoreRotationIsUnchanged() {
+        // Abs never rotate into Hybrid 12; the core list is the same six as before.
+        #expect(c.accessories(in: "core").map(\.id) == ["plank", "deadbug", "hollow", "sideplank", "suitcase", "bearcrawl"])
+        for w in 1...12 {
+            for slot in Program.order {
+                let s = SessionBuilder.build(slot: slot, context: SessionContext(week: w))
+                #expect(!s.items.contains { c.exercise($0.exerciseID ?? "")?.category == Catalog.absCategory })
+            }
+        }
+    }
+
+    @Test func swappingACoreMoveReachesTheAbsList() throws {
+        var d = SessionDraft(slot: .C, week: 1)
+        var seen = Set<String>()
+        for _ in 0..<30 {
+            let s = SessionBuilder.build(slot: .C, context: d.context(runMinutes: 25))
+            let key = try #require(s.items.first { $0.kind == .accessory && $0.pair == 0 }?.key)
+            seen.insert(s.item(key)?.exerciseID ?? "")
+            d.swap(key, in: s)
+        }
+        #expect(seen.contains { c.exercise($0)?.category == Catalog.absCategory })
     }
 }

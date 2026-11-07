@@ -280,7 +280,7 @@ public enum SessionBuilder {
     public static func swapOption(for key: String, in session: Session, catalog: Catalog = .bundled) -> String? {
         guard let item = session.item(key), item.kind == .accessory, !item.isExtra,
               let id = item.exerciseID, let ex = catalog.exercise(id) else { return nil }
-        let list = catalog.accessories(in: ex.category)
+        let list = catalog.swapChoices(for: ex.category)
         guard let index = list.firstIndex(where: { $0.id == id }) else { return nil }
         let inSession = Set(session.items.compactMap(\.exerciseID))
         for step in 1..<max(1, list.count) {

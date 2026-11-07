@@ -80,6 +80,18 @@ public struct Catalog: Sendable {
         accessories.filter { $0.category == category }
     }
 
+    /// Ab moves beyond the core list: never rotated into Hybrid 12 (that would reshuffle
+    /// its core picks), but Swap on a core exercise walks through them too.
+    public static let absCategory = "abs"
+
+    /// What Swap cycles through for an exercise in this category.
+    public func swapChoices(for category: String) -> [Exercise] {
+        if category == "core" || category == Catalog.absCategory {
+            return accessories(in: "core") + accessories(in: Catalog.absCategory)
+        }
+        return accessories(in: category)
+    }
+
     public func finishers(for slot: Slot) -> [Finisher] {
         finishers.filter { $0.slot == slot.rawValue }
     }
