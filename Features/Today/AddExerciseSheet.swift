@@ -36,6 +36,7 @@ struct AddExerciseSheet: View {
                     Section(group.title) {
                         ForEach(group.exercises, id: \.id) { e in
                             let order = picked.firstIndex(of: e.id)
+                            HStack(spacing: 4) {
                             Button {
                                 if let order { picked.remove(at: order) } else { picked.append(e.id) }
                             } label: {
@@ -57,7 +58,10 @@ struct AddExerciseSheet: View {
                                 }
                                 .contentShape(Rectangle())
                             }
+                            .buttonStyle(.borderless)
                             .accessibilityAddTraits(order == nil ? [] : .isSelected)
+                            HowToButton(exerciseID: e.id).buttonStyle(.borderless)
+                            }
                         }
                     }
                 }

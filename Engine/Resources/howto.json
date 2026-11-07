@@ -1,0 +1,537 @@
+{
+"squat": [
+"Bar on your upper back, hands just outside shoulders, feet shoulder width, toes slightly out.",
+"Big breath, brace, sit down between your hips until thighs are at least parallel, then drive up through mid-foot.",
+"Knees caving in or heels lifting. Push knees out over the toes."
+],
+"fsquat": [
+"Bar on the front of the shoulders, fingertips under it, elbows high.",
+"Sit straight down keeping the chest tall and elbows up, then stand.",
+"Elbows dropping, which dumps the bar forward. Lead with the elbows."
+],
+"bench": [
+"Eyes under the bar, shoulder blades pinned back and down, feet planted, slight arch. Set the safeties.",
+"Lower to the lower chest with elbows about 45 degrees, touch, press up and slightly back.",
+"Elbows flared straight out or bouncing off the chest."
+],
+"incline": [
+"Bench about 30 degrees, shoulder blades pinned, grip just wider than shoulders.",
+"Lower to the upper chest under control, press straight up over the shoulders.",
+"Bench set too steep (it turns into a shoulder press)."
+],
+"floorpress": [
+"Lie on the floor under the bar, knees bent, shoulder blades pinned.",
+"Lower until the upper arms touch the floor, pause, press.",
+"Letting the elbows crash into the floor. Touch softly and pause."
+],
+"ohp": [
+"Bar in front of the shoulders, grip just outside them, glutes and abs tight.",
+"Press straight up, move your head back then through once the bar passes your face, lock out overhead.",
+"Leaning back into a standing incline press. Squeeze the glutes."
+],
+"pushpress": [
+"Same setup as the overhead press, weight on the heels.",
+"Short, fast dip with the knees, drive the legs, punch the bar overhead and lock out.",
+"Dipping too deep or letting the knees go forward."
+],
+"deadlift": [
+"Bar over mid-foot, shins near the bar, hips higher than knees, flat back, arms straight.",
+"Pull the slack out, push the floor away, stand tall with the bar close, then hinge back down.",
+"Rounding the lower back or jerking the bar off the floor."
+],
+"rdl": [
+"Stand tall holding the bar at the hips, soft knees.",
+"Push the hips back, slide the bar down the thighs until you feel the hamstrings, then drive the hips forward.",
+"Turning it into a squat. Knees stay soft, hips go back."
+],
+"slrdl": [
+"Hold the bell in one hand, stand on the opposite leg, soft knee.",
+"Hinge forward, free leg reaching back, hips square, then stand back up.",
+"Hips opening toward the ceiling. Keep both hip bones pointing down."
+],
+"hipthrust": [
+"Upper back on the bench edge, bar padded across the hips, feet flat.",
+"Drive through the heels, hips up until the body is flat, squeeze 1 second, lower.",
+"Arching the lower back at the top. Tuck the ribs, chin down."
+],
+"kbswingh": [
+"Bell a foot in front, hinge and grip it, flat back.",
+"Hike it back, snap the hips forward to float it to chest height, let it fall back into the hinge.",
+"Squatting the swing or lifting with the arms. It's a hip snap."
+],
+"goodmorning": [
+"Bar on the upper back like a squat, soft knees.",
+"Push the hips back, chest lowers toward parallel, flat back, then drive the hips through.",
+"Rounding the back. Go only as low as you stay flat."
+],
+"splitsq": [
+"Long split stance, dumbbells at your sides, torso tall.",
+"Drop the back knee straight down near the floor, drive up through the front foot.",
+"Front knee caving in or the stance too short."
+],
+"gobletsq": [
+"Hold the bell at your chest, elbows down, feet shoulder width.",
+"Sit deep between the knees, chest up, stand.",
+"Heels lifting or the chest folding forward."
+],
+"stepup": [
+"Dumbbells at your sides, one foot fully on the bench.",
+"Drive through the top foot to stand on the bench, lower under control.",
+"Pushing off the bottom foot. Make the top leg do the work."
+],
+"lunge": [
+"Stand tall with dumbbells at your sides.",
+"Step forward, drop the back knee toward the floor, push back to start.",
+"Short steps that push the knee way past the toes."
+],
+"bulgarian": [
+"Back foot laces-down on the bench, front foot far enough out, dumbbells at your sides.",
+"Lower straight down until the back knee nearly touches, drive up through the front heel.",
+"Bouncing on the back leg. 90% of the work is the front leg."
+],
+"revlunge": [
+"Hold the bell at your chest, stand tall.",
+"Step back, drop the back knee, drive through the front foot to return.",
+"Leaning forward over the front knee."
+],
+"plank": [
+"Forearms under shoulders, body in one line, feet together.",
+"Squeeze glutes and quads, ribs down, breathe and hold.",
+"Hips sagging or piking up."
+],
+"deadbug": [
+"On your back, arms up, knees over hips at 90 degrees.",
+"Lower the opposite arm and leg toward the floor while the low back stays pressed down, return, switch.",
+"Low back lifting off the floor. Shorten the reach until it doesn't."
+],
+"hollow": [
+"On your back, press the low back into the floor.",
+"Arms overhead, shoulders and feet just off the floor, hold the banana shape.",
+"Low back arching up. Bend the knees to make it easier."
+],
+"sideplank": [
+"On one forearm, elbow under shoulder, feet stacked.",
+"Lift the hips so the body is a straight line, hold.",
+"Hips dropping or rolling forward."
+],
+"suitcase": [
+"Heavy bell in one hand, stand tall.",
+"Walk with even steps, shoulders level, don't lean.",
+"Leaning toward the bell. Fight to stay upright."
+],
+"bearcrawl": [
+"Hands under shoulders, knees under hips, knees an inch off the floor.",
+"Crawl forward moving opposite hand and foot, back flat, hips low.",
+"Hips shooting up high."
+],
+"lateral": [
+"Dumbbells at your sides, slight bend in the elbows, slight forward lean.",
+"Raise out to the side to shoulder height leading with the elbows, lower slowly.",
+"Swinging or shrugging. Go lighter."
+],
+"arnold": [
+"Seated, dumbbells at shoulder height, palms facing you.",
+"Rotate the palms out as you press overhead, reverse on the way down.",
+"Rushing the rotation or arching the back."
+],
+"reardelt": [
+"Hinge forward with a flat back, dumbbells hanging.",
+"Raise the arms out wide with a soft elbow, squeeze the back of the shoulders, lower slowly.",
+"Using momentum or squeezing the shoulder blades instead of the rear delts."
+],
+"dbpress": [
+"Seated tall, dumbbells at shoulder height.",
+"Press straight up until the arms are long, lower to ear level.",
+"Arching the lower back off the pad."
+],
+"kbbottoms": [
+"Bell upside down (bottom up) at the shoulder, crush the handle.",
+"Press slowly overhead, keeping the bell balanced, lower with control.",
+"Loose grip. Squeeze hard or it falls."
+],
+"pushup": [
+"Hands just wider than shoulders, body in one line.",
+"Lower the chest to the floor, elbows about 45 degrees, push back up.",
+"Hips sagging or half reps."
+],
+"dbincline": [
+"Bench about 30 degrees, dumbbells at the chest.",
+"Press up and slightly in, lower to a deep stretch at the chest.",
+"Clanking the bells together at the top and losing control."
+],
+"dbfly": [
+"On a flat bench, dumbbells above the chest, soft elbows.",
+"Open wide in an arc until you feel the chest stretch, squeeze back up.",
+"Bending the elbows into a press, or going too heavy."
+],
+"dbfloor": [
+"On the floor, knees bent, dumbbells at the chest.",
+"Press up, lower until the upper arms touch the floor, pause, press.",
+"Dropping the elbows hard onto the floor."
+],
+"deficitpu": [
+"Hands on plates or bells so the chest can go below the hands.",
+"Lower past hand level into a deep stretch, push back up.",
+"Losing the straight body line."
+],
+"curl": [
+"Stand tall, dumbbells at your sides, palms forward.",
+"Curl up without moving the elbows, squeeze, lower slowly.",
+"Swinging the body or the elbows drifting forward."
+],
+"hammer": [
+"Dumbbells at your sides, palms facing in.",
+"Curl up keeping the thumbs on top, lower slowly.",
+"Swinging."
+],
+"bbcurl": [
+"Shoulder-width grip, elbows at your sides.",
+"Curl the bar up, squeeze, lower over 2-3 seconds.",
+"Leaning back to cheat the weight up."
+],
+"inclinecurl": [
+"Lie back on a 45-60 degree bench, arms hanging straight down.",
+"Curl without letting the elbows come forward, lower all the way.",
+"Shortening the stretch at the bottom."
+],
+"ohtri": [
+"One dumbbell held overhead with both hands, elbows pointing up.",
+"Lower behind the head, extend back up.",
+"Elbows flaring way out."
+],
+"skull": [
+"Lying on the bench, dumbbells above the shoulders, palms in.",
+"Bend only at the elbows to lower beside the head, extend.",
+"Elbows drifting. Keep the upper arms still."
+],
+"cgpushup": [
+"Hands under the shoulders, elbows tight to the ribs.",
+"Lower with elbows brushing the sides, push up.",
+"Elbows flaring out (it becomes a chest push-up)."
+],
+"kickback": [
+"Hinge forward, upper arm tight to the side and parallel to the floor.",
+"Straighten the elbow back, squeeze, return.",
+"Swinging the upper arm."
+],
+"bbrow": [
+"Hinge to about 45 degrees, flat back, bar hanging.",
+"Row to the belly button, squeeze, lower under control.",
+"Standing up as you row."
+],
+"dbrow": [
+"One hand and knee on the bench, flat back, bell hanging.",
+"Pull the elbow toward the hip, pause, lower to a full stretch.",
+"Twisting the torso to heave the weight."
+],
+"pendlay": [
+"Bar on the floor, torso nearly parallel, flat back.",
+"Explode the bar to the lower chest, lower it back to the floor each rep.",
+"Rising up with the chest."
+],
+"gorilla": [
+"Two bells between the feet, deep hinge, flat back.",
+"Row one bell while pushing the other into the floor, alternate.",
+"Rotating the hips."
+],
+"csrow": [
+"Chest down on an incline bench, dumbbells hanging.",
+"Row up and back, squeeze the shoulder blades, lower.",
+"Lifting the chest off the pad."
+],
+"renegade": [
+"Push-up position on dumbbells, feet wide.",
+"Row one bell to the hip, set it down, row the other, keep the hips square.",
+"Hips twisting. Widen the feet."
+],
+"thruster": [
+"Dumbbells at the shoulders, feet shoulder width.",
+"Front squat down, drive up and press overhead in one motion.",
+"Pausing between the squat and press."
+],
+"kbcp": [
+"Bell between the feet, hinge and grip.",
+"Clean it to the rack position, then press overhead, lower and repeat.",
+"Bell banging the forearm. Let it roll, don't flip it."
+],
+"squatpress": [
+"Dumbbells at the shoulders.",
+"Squat deep, stand, then press overhead.",
+"Pressing before standing all the way up."
+],
+"powerclean": [
+"Bar over mid-foot, hips higher than a deadlift, arms long.",
+"Push up from the floor, jump and shrug when the bar passes the knees, pull under and catch on the shoulders with elbows high.",
+"Pulling with the arms early. Legs, then hips, then arms."
+],
+"hangclean": [
+"Stand tall, bar at the thighs, slide it to just above the knees.",
+"Jump and shrug, whip the elbows under, catch high on the shoulders.",
+"Dipping the knees too far forward."
+],
+"powersnatch": [
+"Wide grip, bar over mid-foot, hips high, flat back.",
+"Push up, jump and shrug, pull under and punch the bar overhead, catch in a quarter squat.",
+"Swinging the bar away from the body. Keep it close."
+],
+"hangsnatch": [
+"Wide grip, bar just above the knees.",
+"Drive the hips, shrug, punch overhead and lock out.",
+"Pressing out the lockout. Punch it fast."
+],
+"dbhangclean": [
+"Dumbbells at the thighs, soft knees.",
+"Jump the hips, shrug, flip the bells onto the shoulders.",
+"Curling the bells up instead of using the hips."
+],
+"dbsnatch": [
+"One dumbbell between the feet, hinge.",
+"Drive the hips, pull the bell close, punch it overhead in one move.",
+"Pressing it up at the end."
+],
+"kbclean": [
+"Bell between the feet, hike it back.",
+"Drive the hips, keep the elbow close, let the bell roll onto the forearm in the rack.",
+"Swinging it wide so it crashes onto the wrist."
+],
+"kbsnatch": [
+"Bell a foot in front, hike it back.",
+"Drive the hips, pull high, punch the hand through so the bell turns over softly overhead.",
+"Letting it flop over onto the wrist."
+],
+"trxrow": [
+"Face the anchor, hold the handles, walk the feet forward and lean back with straight arms, body straight.",
+"Pull the chest to the hands, squeeze the shoulder blades, lower slowly.",
+"Hips sagging. Walk the feet in to make it harder."
+],
+"trxsarow": [
+"One handle, feet set, body square to the anchor.",
+"Row the elbow to the ribs, lower slowly.",
+"Twisting open to cheat the rep."
+],
+"trxpress": [
+"Face away from the anchor, arms straight in front, lean forward.",
+"Lower the chest between the hands, press back to straight arms.",
+"Letting the straps rub your arms. Keep hands at chest width."
+],
+"trxpushup": [
+"Feet in the foot cradles, hands on the floor, plank.",
+"Lower the chest to the floor, push up, keep the hips level.",
+"Hips dropping."
+],
+"trxyfly": [
+"Face the anchor, arms straight in front, lean back.",
+"Raise the arms into a Y overhead, thumbs up, lower slowly.",
+"Bending the elbows."
+],
+"trxtfly": [
+"Face the anchor, arms straight in front, lean back.",
+"Open the arms out to a T, squeeze the upper back, return slowly.",
+"Shrugging the shoulders up."
+],
+"trxfacepull": [
+"Face the anchor, palms facing down, lean back.",
+"Pull the handles to your ears with elbows high, finish with thumbs back.",
+"Pulling to the chest instead of the face."
+],
+"trxcurl": [
+"Face the anchor, palms up, arms straight at shoulder height, lean back.",
+"Curl the hands toward the forehead keeping the elbows fixed, lower slowly.",
+"Elbows dropping."
+],
+"trxtricep": [
+"Face away, arms straight in front, lean forward.",
+"Bend only at the elbows to bring the hands beside the head, extend back out.",
+"Elbows flaring out."
+],
+"trxsquat": [
+"Face the anchor, hold the handles lightly, arms straight.",
+"Sit back deep, then drive up through the heels.",
+"Pulling yourself up with the arms."
+],
+"trxpistol": [
+"Face the anchor, one leg out in front.",
+"Sit as low as you can control on one leg, stand back up.",
+"Knee caving in."
+],
+"trxlunge": [
+"Face away, back foot in the foot cradle.",
+"Drop the back knee straight down, drive up through the front heel.",
+"Front knee drifting way past the toes."
+],
+"trxhamcurl": [
+"On your back, heels in the cradles, hips lifted.",
+"Pull the heels toward the glutes keeping the hips up, extend slowly.",
+"Hips dropping as you curl."
+],
+"trxpike": [
+"Feet in the cradles, hands on the floor in a plank.",
+"Lift the hips straight up over the shoulders with straight legs, lower to a plank.",
+"Bending the knees (that's a tuck)."
+],
+"trxtuck": [
+"Feet in the cradles, plank.",
+"Pull the knees to the chest, extend back to a plank.",
+"Hips sagging between reps."
+],
+"trxplank": [
+"Feet in the cradles, forearms on the floor.",
+"Hold a straight line, ribs down, don't let it swing.",
+"Hips sagging."
+],
+"trxsideplank": [
+"Feet stacked in the cradles, one forearm down.",
+"Lift the hips and hold.",
+"Rolling forward."
+],
+"trxclimber": [
+"Feet in the cradles, hands under the shoulders.",
+"Drive the knees in one at a time, fast, hips steady.",
+"Hips bouncing up and down."
+],
+"reversecrunch": [
+"On your back, knees bent, hands by your sides.",
+"Curl the hips off the floor toward the ribs, lower slowly.",
+"Swinging the legs for momentum."
+],
+"bicycle": [
+"On your back, hands lightly behind the head, legs up.",
+"Turn one elbow toward the opposite knee while the other leg extends, switch.",
+"Pulling the neck. Turn the shoulders instead."
+],
+"vup": [
+"Lie flat, arms overhead, legs straight.",
+"Lift the arms and legs together to meet in the middle, lower with control.",
+"Crashing back down."
+],
+"legraise": [
+"On your back, hands under the hips, legs straight.",
+"Raise the legs to vertical, lower slowly until just off the floor.",
+"Low back arching off the floor."
+],
+"hollowrock": [
+"Hollow hold position: low back down, arms and legs long.",
+"Rock back and forth while holding the shape.",
+"Folding in the middle."
+],
+"flutter": [
+"On your back, hands under the hips, legs just off the floor.",
+"Small fast kicks, low back pressed down.",
+"Legs too high (makes it easy) or back arching."
+],
+"russiantwist": [
+"Sit, lean back about 45 degrees, chest tall, bell at the chest.",
+"Turn the shoulders side to side, tapping the bell beside each hip.",
+"Moving only the arms. Turn the ribs."
+],
+"dbsitup": [
+"Feet anchored, dumbbell held on the chest.",
+"Sit all the way up, lower slowly.",
+"Yanking with momentum."
+],
+"woodchop": [
+"Dumbbell in both hands high over one shoulder, feet wide.",
+"Chop diagonally down across the body to the opposite hip, pivot the back foot.",
+"Bending the arms and just lifting."
+],
+"kbwindmill": [
+"Bell locked out overhead, feet angled away from it.",
+"Push the hips toward the bell side and lower the free hand to the floor, eyes on the bell, stand back up.",
+"Bending the top arm. Keep it locked."
+],
+"getup": [
+"On your back, bell locked out over the shoulder on the same side as the bent knee.",
+"Roll to the elbow, to the hand, bridge the hips, sweep the leg under, kneel, stand. Reverse it down.",
+"Rushing. Each step is slow and the bell stays locked."
+],
+"birddog": [
+"Hands under shoulders, knees under hips.",
+"Reach the opposite arm and leg long, hips level, pause 2 seconds, switch.",
+"Hips tipping open."
+],
+"shouldertap": [
+"High plank, feet wide.",
+"Tap each hand to the opposite shoulder without the hips moving.",
+"Hips swaying side to side."
+],
+"hipdip": [
+"Side plank on the forearm.",
+"Dip the hip to the floor, drive it high, repeat.",
+"Rushing the reps."
+],
+"copenhagen": [
+"Side plank with the top leg on the bench at the knee or ankle.",
+"Lift the bottom leg up to the bench and hold the body straight.",
+"Hips sagging. Use the knee on the bench to make it easier."
+],
+"bearhold": [
+"Hands under shoulders, knees under hips.",
+"Lift the knees an inch off the floor and hold, back flat, breathing.",
+"Hips lifting high."
+],
+"trxchestfly": [
+"Face away from the anchor, arms straight in front at chest height, soft elbows, lean forward.",
+"Open the arms wide until you feel the chest stretch, then squeeze the hands back together.",
+"Bending the elbows into a press. Walk the feet back to make it harder."
+],
+"trxatomic": [
+"Feet in the cradles, push-up position.",
+"One push-up, then pull the knees to the chest, extend.",
+"Hips sagging during the push-up."
+],
+"trxfallout": [
+"Face away, arms straight in front, lean forward from the ankles.",
+"Let the arms rise overhead as you fall into a long plank, pull back with the abs.",
+"Arching the low back. Ribs down."
+],
+"trxbodysaw": [
+"Forearm plank with feet in the cradles.",
+"Rock the body forward and back from the shoulders.",
+"Hips sagging as you rock back."
+],
+"trxoblique": [
+"Feet in the cradles, plank.",
+"Drive both knees toward one elbow, return, alternate.",
+"Losing the plank between reps."
+],
+"trxpowerpull": [
+"One handle, face the anchor, free arm reaching toward the floor.",
+"Rotate down toward the floor, then row and twist back up, free arm reaching to the sky.",
+"Bending the hips."
+],
+"trxhighrow": [
+"Face the anchor, palms down, arms straight at shoulder height, lean back.",
+"Pull with elbows high and wide until the hands reach the chest line.",
+"Dropping the elbows (that's a regular row)."
+],
+"trxhippress": [
+"On your back, heels in the cradles, legs straight.",
+"Drive the hips up off the floor, squeeze 1 second, lower.",
+"Arching the back instead of using the glutes."
+],
+"trxsprinter": [
+"Face away, lean into the straps, one foot back.",
+"Drive the back knee up fast into a sprint position, step back.",
+"Standing upright. Stay leaned in."
+],
+"trxsquatrow": [
+"Face the anchor, holding the handles, arms straight.",
+"Squat down, then as you stand, row the hands to the ribs.",
+"Rowing before you stand."
+],
+"trxsideplankreach": [
+"Feet stacked in the cradles, side plank on the forearm.",
+"Reach the top arm under the body, then up to the ceiling.",
+"Hips dropping."
+],
+"kbswing": [
+"Bell a foot in front, hinge and grip it.",
+"Hike it back, snap the hips to float it to chest height, let it fall back.",
+"Squatting the swing or lifting with the arms."
+],
+"burpee": [
+"Stand tall.",
+"Drop the hands, jump the feet back, chest to the floor, jump the feet in, jump up.",
+"Sagging hips in the plank."
+]
+}

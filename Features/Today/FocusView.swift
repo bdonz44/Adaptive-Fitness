@@ -69,8 +69,12 @@ struct FocusView: View {
             VStack(alignment: .leading, spacing: 4) {
                 SectionLabel(text: "\(item.kind == .main ? "Main lift" : "Accessory") · Set \(open.set + 1) of \(store.activeSets(item))",
                              color: look.accent)
-                Text(look.uppercaseTitles ? item.name.uppercased() : item.name)
-                    .font(look.title(44)).lineLimit(2).minimumScaleFactor(0.6)
+                HStack(alignment: .top) {
+                    Text(look.uppercaseTitles ? item.name.uppercased() : item.name)
+                        .font(look.title(44)).lineLimit(2).minimumScaleFactor(0.6)
+                    Spacer(minLength: 4)
+                    if let id = item.exerciseID { HowToButton(exerciseID: id) }
+                }
                 if let line = coachLine(item, set: open.set, session: session) {
                     CoachCallout(text: line)
                 }

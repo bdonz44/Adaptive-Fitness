@@ -57,8 +57,12 @@ public struct Catalog: Sendable {
     public let engineWorkouts: [EngineWorkout]
     public let finishers: [Finisher]
     private let byID: [String: Exercise]
+    /// How to do each exercise: setup, the movement, the most common mistake.
+    private let howTos: [String: [String]]
 
-    public init(mainLifts: [Exercise], accessories: [Exercise], engineWorkouts: [EngineWorkout], finishers: [Finisher]) {
+    public init(mainLifts: [Exercise], accessories: [Exercise], engineWorkouts: [EngineWorkout], finishers: [Finisher],
+                howTos: [String: [String]] = [:]) {
+        self.howTos = howTos
         self.mainLifts = mainLifts
         self.accessories = accessories
         self.engineWorkouts = engineWorkouts
@@ -69,6 +73,24 @@ public struct Catalog: Sendable {
     }
 
     public func exercise(_ id: String) -> Exercise? { byID[id] }
+
+    public struct HowTo: Equatable, Sendable {
+        public let setup: String
+        public let movement: String
+        public let mistake: String
+    }
+
+    public func howTo(_ id: String) -> HowTo? {
+        guard let h = howTos[id], h.count == 3 else { return nil }
+        return HowTo(setup: h[0], movement: h[1], mistake: h[2])
+    }
+
+    /// A YouTube search for good form videos of this exercise (opens the YouTube app if installed).
+    public static func formVideoURL(for name: String) -> URL? {
+        var c = URLComponents(string: "https://www.youtube.com/results")
+        c?.queryItems = [URLQueryItem(name: "search_query", value: "\(name) proper form how to")]
+        return c?.url
+    }
 
     /// Cleans and snatches: never rotated into a plan (no plan uses this category),
     /// only added by hand. Built with low reps and long rest.
@@ -116,7 +138,8 @@ public struct Catalog: Sendable {
         let ex = try decoder.decode(ExerciseFile.self, from: data("exercises"))
         let engine = try decoder.decode([EngineWorkout].self, from: data("engine"))
         let fin = try decoder.decode([Finisher].self, from: data("finishers"))
-        return Catalog(mainLifts: ex.main, accessories: ex.accessories, engineWorkouts: engine, finishers: fin)
+        let howTos = (try? decoder.decode([String: [String]].self, from: data("howto"))) ?? [:]
+        return Catalog(mainLifts: ex.main, accessories: ex.accessories, engineWorkouts: engine, finishers: fin, howTos: howTos)
     }
 
     /// The data shipped in this package.

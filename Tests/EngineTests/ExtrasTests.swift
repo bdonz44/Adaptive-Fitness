@@ -149,3 +149,19 @@ import Testing
         #expect(seen.contains { c.exercise($0)?.category == Catalog.absCategory })
     }
 }
+
+@Suite struct HowToTests {
+    @Test func everyExerciseHasAHowTo() {
+        let c = Catalog.bundled
+        for e in c.mainLifts + c.accessories {
+            let h = c.howTo(e.id)
+            #expect(h != nil, "\(e.id) has no how-to")
+            #expect(!(h?.setup.isEmpty ?? true) && !(h?.movement.isEmpty ?? true) && !(h?.mistake.isEmpty ?? true))
+        }
+    }
+
+    @Test func formVideoSearch() {
+        let url = Catalog.formVideoURL(for: "TRX Chest Fly")?.absoluteString ?? ""
+        #expect(url == "https://www.youtube.com/results?search_query=TRX%20Chest%20Fly%20proper%20form%20how%20to")
+    }
+}

@@ -24,6 +24,7 @@ struct ItemCard: View {
                     HStack(spacing: 6) {
                         Text(item.name).font(.system(size: 18, weight: .bold, design: Theme.look.bodyDesign))
                         if finished { Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.done) }
+                        if let id = item.exerciseID { HowToButton(exerciseID: id) }
                     }
                     Text(prescription).font(.subheadline).foregroundStyle(Theme.secondary)
                 }
