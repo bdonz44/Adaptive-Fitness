@@ -70,6 +70,10 @@ public struct Catalog: Sendable {
 
     public func exercise(_ id: String) -> Exercise? { byID[id] }
 
+    /// Cleans and snatches: never rotated into a plan (no plan uses this category),
+    /// only added by hand. Built with low reps and long rest.
+    public static let powerCategory = "power"
+
     public func accessories(in category: String) -> [Exercise] {
         accessories.filter { $0.category == category }
     }

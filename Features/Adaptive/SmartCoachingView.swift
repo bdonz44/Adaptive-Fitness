@@ -31,6 +31,25 @@ struct SmartCoachingView: View {
                         .font(.caption).foregroundStyle(look.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+
+                Card(title: "Time today") {
+                    Toggle(isOn: $store.adaptive.timeBox) {
+                        Text("Fit the workout to my time").font(.headline)
+                    }
+                    Text("Pick 20, 30, 45 or 60 minutes on Today. The workout is cut in this order until it fits:")
+                        .font(.subheadline).foregroundStyle(look.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(Array(["The finisher", "The third superset pair", "One set off each accessory",
+                                       "The second superset pair", "Main lift sets, never below 2",
+                                       "Engine rounds, never below half"].enumerated()), id: \.offset) { i, step in
+                            Text("\(i + 1). \(step)").font(.subheadline)
+                        }
+                    }
+                    Text("Anything you've already logged, and exercises you added, stay put.")
+                        .font(.caption).foregroundStyle(look.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             .padding()
         }

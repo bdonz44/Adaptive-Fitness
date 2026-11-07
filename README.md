@@ -82,7 +82,9 @@ Or open `Package.swift` in Xcode and press Cmd-U. GitHub also runs them on every
 - **Beat up on a deload week:** main sets drop by 1, not 2.
 - **Effort chips (adaptive 1):** the existing Easy / Solid / Grinder buttons stand in for the spec's 0 / 1 / 2 / 3+ chips (Easy = 3+, Solid = 2, Grinder = 0); the last one tapped on a lift counts. Effort rules apply to barbell and dumbbell lifts; kettlebells keep their bell jumps.
 - **"Average RIR instead of 2 in reserve" (adaptive 1):** taken literally, easy sets would make suggestions lighter. Instead, logged reps left count toward the estimated max (up to 3), and suggestions still leave 2 in the tank.
-- **Smart coaching switches** are saved on each phone (not synced through iCloud). Effort counts starts on.
+- **Smart coaching switches** are saved on each phone (not synced through iCloud). Each starts on; a switch missing from an older save takes its starting value.
+- **Time today (adaptive 2):** after the spec's trim order, Conditioning's engine rounds are cut (never below half), because nothing else on that day can be trimmed. Logged items and hand-added extras are never trimmed. The estimate uses the spec's formula as-is (supersets are counted as if done one after the other, so it runs a little long).
+- **Cleans and snatches** sit in their own "power" category that no plan rotates through, so they only appear when added by hand, at 3-5 reps with 2 min rest.
 - **A miss resets after any non-miss session**, for main lifts too, so "second miss in a row" means in a row.
 - **Light days (deload, Beat up)** still store a weight the first time a lift is ever logged.
 - **`firstWeight`** was added to the lift record so "heavier than where you started" survives the 12-entry history limit.

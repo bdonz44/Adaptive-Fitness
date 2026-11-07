@@ -69,6 +69,9 @@ public struct Session: Equatable, Sendable {
     public var week: ProgramWeek
     public var readiness: Readiness
     public var blocks: [SessionBlock]
+    /// Time today (adaptive 2): the minutes it was trimmed to, and what was cut.
+    public var budget: Int? = nil
+    public var trims: [String] = []
 
     public var items: [SessionItem] { blocks.flatMap(\.items) }
     public func item(_ key: String) -> SessionItem? { items.first { $0.key == key } }
@@ -213,16 +216,17 @@ public enum SessionBuilder {
         let extraItems: [SessionItem] = context.extras.compactMap { id in
             guard let ex = catalog.exercise(id) else { return nil }
             let range: (low: Int, high: Int)
+            let power = ex.category == Catalog.powerCategory
             switch ex.unit {
             case .sec: range = (scheme.holdLow, scheme.holdHigh)
             case .yd: range = (Program.carryYards, Program.carryYards)
-            default: range = (scheme.accLow, scheme.accHigh)
+            default: range = power ? Program.powerReps : (scheme.accLow, scheme.accHigh)
             }
             return SessionItem(
                 key: SessionItem.extraKey(ex.id), tag: "+", kind: .accessory,
                 exerciseID: ex.id, name: ex.name, equipment: ex.eq, unit: ex.unit, side: ex.side,
                 sets: max(1, scheme.accSets - (week.isDeload ? 1 : 0)), low: range.low, high: range.high,
-                restSeconds: scheme.accRest, detail: ex.cue)
+                restSeconds: power ? Program.powerRest : scheme.accRest, detail: ex.cue)
         }
         if !extraItems.isEmpty { blocks.append(SessionBlock(kind: .extras, items: extraItems)) }
 

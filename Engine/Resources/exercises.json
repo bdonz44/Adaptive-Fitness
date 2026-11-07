@@ -62,6 +62,14 @@
     { "id": "thruster", "name": "DB Thruster", "category": "full", "eq": "db", "unit": "reps", "side": false, "cue": "Front squat straight into a press, one smooth motion." },
     { "id": "kbcp", "name": "KB Clean & Press", "category": "full", "eq": "kb", "unit": "reps", "side": true, "cue": "Clean to the rack, then press." },
     { "id": "squatpress", "name": "DB Squat to Press", "category": "full", "eq": "db", "unit": "reps", "side": false, "cue": "Squat deep, stand and press." },
+    { "id": "powerclean", "name": "Power Clean", "category": "power", "eq": "bb", "inc": 5, "unit": "reps", "side": false, "cue": "Bar close, jump and shrug, elbows whip under to a high catch." },
+    { "id": "hangclean", "name": "Hang Power Clean", "category": "power", "eq": "bb", "inc": 5, "unit": "reps", "side": false, "cue": "From above the knee: hips back, then drive and catch high." },
+    { "id": "powersnatch", "name": "Power Snatch", "category": "power", "eq": "bb", "inc": 5, "unit": "reps", "side": false, "cue": "Wide grip, bar close, punch it overhead and lock out in a quarter squat." },
+    { "id": "hangsnatch", "name": "Hang Power Snatch", "category": "power", "eq": "bb", "inc": 5, "unit": "reps", "side": false, "cue": "From above the knee, wide grip. Drive the hips, punch up and lock out." },
+    { "id": "dbhangclean", "name": "DB Hang Clean", "category": "power", "eq": "db", "unit": "reps", "side": false, "cue": "Bells at the thighs, hips drive, catch on the shoulders." },
+    { "id": "dbsnatch", "name": "DB Snatch", "category": "power", "eq": "db", "unit": "reps", "side": true, "cue": "One bell from the floor to overhead in one move. Hips do the work." },
+    { "id": "kbclean", "name": "KB Clean", "category": "power", "eq": "kb", "unit": "reps", "side": true, "cue": "Hike, drive, and let the bell roll soft onto the forearm." },
+    { "id": "kbsnatch", "name": "KB Snatch", "category": "power", "eq": "kb", "unit": "reps", "side": true, "cue": "Hike, drive, punch through at the top so the bell doesn't flip onto the wrist." },
     { "id": "kbswing", "name": "KB Swing", "category": "full", "eq": "kb", "unit": "reps", "side": false, "cue": "Snap the hips, arms are just ropes." },
     { "id": "burpee", "name": "Burpee", "category": "full", "eq": "bw", "unit": "reps", "side": false, "cue": "Chest to the floor, jump at the top." }
   ]

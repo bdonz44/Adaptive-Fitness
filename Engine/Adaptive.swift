@@ -6,19 +6,26 @@ public struct AdaptiveSettings: Codable, Equatable, Sendable {
     /// 1. Effort-based progression: the Easy / Solid / Grinder call on a lift
     /// (stored as reps in reserve) changes how far the weight moves next time.
     public var effortProgression: Bool
+    /// 2. Time-boxed sessions: the "Time today" picker trims the session to fit.
+    public var timeBox: Bool
 
-    public init(effortProgression: Bool = false) {
+    public init(effortProgression: Bool = false, timeBox: Bool = false) {
         self.effortProgression = effortProgression
+        self.timeBox = timeBox
     }
 
-    /// Switches added later read as off from older saved settings.
+    /// A switch missing from older saved settings takes its starting value.
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        effortProgression = try c.decodeIfPresent(Bool.self, forKey: .effortProgression) ?? false
+        let d = AdaptiveSettings.starting
+        effortProgression = try c.decodeIfPresent(Bool.self, forKey: .effortProgression) ?? d.effortProgression
+        timeBox = try c.decodeIfPresent(Bool.self, forKey: .timeBox) ?? d.timeBox
     }
 
     /// Everything off: the web app's rules exactly.
     public static let off = AdaptiveSettings()
+    /// What a new install starts with.
+    public static let starting = AdaptiveSettings(effortProgression: true, timeBox: true)
 }
 
 /// Effort-based progression (RIR) rules.

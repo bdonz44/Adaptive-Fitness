@@ -28,6 +28,7 @@ struct TodayView: View {
                     if look.readinessFirst { ReadinessPicker() }
                     SlotChips()
                     if !look.readinessFirst { ReadinessPicker() }
+                    if store.adaptive.timeBox { TimeTodayPicker(session: session) }
                     if let banner {
                         Text(banner)
                             .font(.subheadline.weight(.semibold))
@@ -284,6 +285,30 @@ struct ReadinessPicker: View {
         }
         .padding(Theme.look.readinessFirst ? 16 : 0)
         .background(Theme.look.readinessFirst ? Theme.card : .clear, in: RoundedRectangle(cornerRadius: Theme.look.radius))
+    }
+}
+
+/// Adaptive 2: "Time today" trims the session to fit.
+struct TimeTodayPicker: View {
+    @Environment(AppStore.self) private var store
+    let session: Session
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Time today").font(.caption).foregroundStyle(Theme.secondary)
+            Picker("Time today", selection: Binding(
+                get: { store.draft.timeBudget ?? 0 },
+                set: { store.setTimeBudget($0 == 0 ? nil : $0) }
+            )) {
+                Text("Full").tag(0)
+                ForEach(TimeBox.choices, id: \.self) { Text("\($0) min").tag($0) }
+            }
+            .pickerStyle(.segmented)
+            Text(TimeBox.summary(session) ?? "About \(TimeBox.minutes(session)) min.")
+                .font(.caption)
+                .foregroundStyle(Theme.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 

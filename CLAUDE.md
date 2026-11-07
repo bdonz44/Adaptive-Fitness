@@ -17,7 +17,8 @@ Brandon's own 12-week home-gym program app for iPhone (separate from Bray-Ray, h
 - **WHOOP connected via API (Nov 3):** `Services/WhoopService.swift`, `Engine/WhoopReadiness.swift`. Keys: `Config/Secrets.xcconfig` (gitignored) generated from `~/Downloads/whoop.txt`; GitHub CI builds have no WHOOP keys (WHOOP off) unless secrets are added there. Privacy policy: PRIVACY.md (private repo link used in the WHOOP developer app). WHOOP sends no HRV or recovery to Apple Health.
 - **Since Nov 3:** hold timer, round timer (bag, intervals, EMOM), coach prompts, remove set / skip exercise.
 - **Add exercise (Nov 7):** Today has an "Add exercise" button; picks are stored in `SessionDraft.extras` and built as an "Extras" block (keys `x-<id>`, accessory sets/reps, progress like accessories, no Swap, "Remove from today" in the ⋯ menu).
-- **Milestone 6 (adaptive layer) in progress.** Switches live in `AdaptiveSettings` (`Engine/Adaptive.swift`), stored by `AppStore.adaptive`, shown on Plan > Smart coaching (`Features/Adaptive/SmartCoachingView.swift`). New switches must decode as off when missing. Done: **1. Effort counts (RIR)** (Nov 7). Next: 2. time-boxed sessions, then 3–8 in spec order.
+- **Milestone 6 (adaptive layer) in progress.** Switches live in `AdaptiveSettings` (`Engine/Adaptive.swift`), stored by `AppStore.adaptive`, shown on Plan > Smart coaching (`Features/Adaptive/SmartCoachingView.swift`). A switch missing from an older save takes its value from `AdaptiveSettings.starting`. Done (Nov 7): **1. Effort counts (RIR)**, **2. Time today** (`Engine/TimeBox.swift`, picker on Today, applied in `AppStore.session`). Next: 3. fatigue-timed back-off weeks, then 4–8 in spec order.
+- **Cleans and snatches (Nov 7):** category `power` in exercises.json, add-by-hand only. Brandon wants deep research into workout plans that fit him (see the five extra programs).
 
 ## Run
 

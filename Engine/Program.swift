@@ -91,6 +91,9 @@ public enum Program {
     public static let defaultRunMinutes = 25
     public static let cardioGoalMinutes = 120
     public static let carryYards = 40
+    /// Cleans and snatches added by hand: 3-5 reps, 2 min rest (fast lifts, fresh every set).
+    public static let powerReps = (low: 3, high: 5)
+    public static let powerRest = 120
     public static let runDescription = "Conversational pace on trails or treadmill. Slow down or walk if you cannot talk in full sentences."
 
     public static let plans: [Slot: SlotPlan] = [

@@ -61,3 +61,26 @@ import Testing
         #expect(back.extras == nil)
     }
 }
+
+@Suite struct PowerLiftTests {
+    @Test func cleansAndSnatchesAreInTheLibraryButNeverInAPlan() {
+        let c = Catalog.bundled
+        for id in ["powerclean", "hangclean", "powersnatch", "hangsnatch", "dbhangclean", "dbsnatch", "kbclean", "kbsnatch"] {
+            #expect(c.exercise(id)?.category == Catalog.powerCategory)
+        }
+        for w in 1...12 {
+            for slot in Program.order {
+                let s = SessionBuilder.build(slot: slot, context: SessionContext(week: w))
+                #expect(!s.items.contains { c.exercise($0.exerciseID ?? "")?.category == Catalog.powerCategory })
+            }
+        }
+    }
+
+    @Test func addedPowerLiftsGetLowRepsAndLongRest() throws {
+        var d = SessionDraft(slot: .A, week: 1)
+        d.addExtra("powerclean")
+        let item = try #require(SessionBuilder.build(slot: .A, context: d.context(runMinutes: 25)).item("x-powerclean"))
+        #expect(item.low == 3 && item.high == 5)
+        #expect(item.restSeconds == 120)
+    }
+}

@@ -58,7 +58,7 @@ struct AddExerciseSheet: View {
 
     static let names = ["bicep": "Biceps", "tricep": "Triceps", "delt": "Shoulders", "chest": "Chest",
                         "row": "Back", "quad": "Legs", "hinge": "Hinge", "core": "Core", "full": "Full body",
-                        "main": "Big lifts"]
+                        "main": "Big lifts", "power": "Cleans and snatches"]
 
     /// "bicep" -> "Biceps"; unknown "rearDelt" -> "Rear Delt"
     static func title(_ category: String) -> String {

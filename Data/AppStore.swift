@@ -195,7 +195,17 @@ final class AppStore {
     var week: ProgramWeek { ProgramWeek(program.week) }
 
     var session: Session {
-        SessionBuilder.build(slot: draft.slot, context: draft.context(runMinutes: program.runMinutes), catalog: catalog)
+        let built = SessionBuilder.build(slot: draft.slot, context: draft.context(runMinutes: program.runMinutes),
+                                         catalog: catalog)
+        guard adaptive.timeBox, let budget = draft.timeBudget else { return built }
+        let logged = Set(draft.entries.filter { $0.value.hasCompletedWork }.keys)
+        return TimeBox.fit(built, minutes: budget, keep: logged)
+    }
+
+    /// "Time today": nil is the full session.
+    func setTimeBudget(_ minutes: Int?) {
+        draft.timeBudget = minutes
+        saveDraft()
     }
 
     var nextSlot: Slot { Program.nextSlot(state: program, logs: logs, now: Date()) }
@@ -703,7 +713,7 @@ extension AppStore {
            let saved = try? JSONDecoder().decode(AdaptiveSettings.self, from: data) {
             return saved
         }
-        return AdaptiveSettings(effortProgression: true)
+        return .starting
     }
 
     static func saveAdaptive(_ settings: AdaptiveSettings) {

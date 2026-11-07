@@ -10,6 +10,11 @@ struct PlanTab: View {
     @State private var confirmStartOver = false
     @State private var confirmStartOverAgain = false
 
+    private var smartDetail: String {
+        let on = [store.adaptive.effortProgression ? "Effort" : nil, store.adaptive.timeBox ? "Time today" : nil].compactMap { $0 }
+        return on.isEmpty ? "All off" : on.joined(separator: " · ") + " on"
+    }
+
     var body: some View {
         let week = store.week
         NavigationStack {
@@ -24,7 +29,7 @@ struct PlanTab: View {
                             linkRow("WHOOP", detail: "Recovery sets your readiness", icon: "heart.text.square.fill")
                         }
                         NavigationLink { SmartCoachingView() } label: {
-                            linkRow("Smart coaching", detail: store.adaptive.effortProgression ? "Effort counts: on" : "All off",
+                            linkRow("Smart coaching", detail: smartDetail,
                                     icon: "brain.head.profile")
                         }
                         NavigationLink { ProgramsView() } label: {
