@@ -73,6 +73,8 @@ public struct Catalog: Sendable {
     /// Cleans and snatches: never rotated into a plan (no plan uses this category),
     /// only added by hand. Built with low reps and long rest.
     public static let powerCategory = "power"
+    /// TRX suspension moves: bodyweight, add-by-hand only (no plan uses this category).
+    public static let trxCategory = "trx"
 
     public func accessories(in category: String) -> [Exercise] {
         accessories.filter { $0.category == category }

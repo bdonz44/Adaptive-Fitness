@@ -185,7 +185,10 @@ public enum Progression {
                 case .kb:
                     if let used { note = kettlebell(&rec, id: id, used: used, reading: reading) }
                 case .bw:
-                    if reading.hitAll { note = harderNote(item.unit) }
+                    if reading.hitAll {
+                        let trx = catalog.exercise(id)?.category == Catalog.trxCategory
+                        note = trx && item.unit == .reps ? trxHarderNote : harderNote(item.unit)
+                    }
                 }
                 rec.note = note
             }
@@ -279,6 +282,8 @@ public enum Progression {
         rec.workingWeight = bell
         return chaseRepsNote
     }
+
+    static let trxHarderNote = "Harder: walk your feet closer to the anchor, or slow the lowering to 3 seconds."
 
     static func harderNote(_ unit: ExerciseUnit) -> String {
         switch unit {

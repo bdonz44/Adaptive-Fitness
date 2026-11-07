@@ -84,3 +84,26 @@ import Testing
         #expect(item.restSeconds == 120)
     }
 }
+
+@Suite struct TRXTests {
+    let c = Catalog.bundled
+
+    @Test func trxMovesAreBodyweightAndNeverInAPlan() {
+        let trx = c.accessories.filter { $0.category == Catalog.trxCategory }
+        #expect(trx.count == 18)
+        #expect(trx.allSatisfy { $0.eq == .bw && $0.name.hasPrefix("TRX") })
+        for w in 1...12 {
+            for slot in Program.order {
+                let s = SessionBuilder.build(slot: slot, context: SessionContext(week: w))
+                #expect(!s.items.contains { c.exercise($0.exerciseID ?? "")?.category == Catalog.trxCategory })
+            }
+        }
+    }
+
+    @Test func topOfRangeSaysWalkYourFeetIn() {
+        let r = finish(liftItem("trxrow"), sets(nil, [12, 12, 12]))
+        #expect(r.lifts["trxrow"]?.note == Progression.trxHarderNote)
+        let plank = finish(liftItem("trxplank", low: 30, high: 45), sets(nil, [45, 45, 45]))
+        #expect(plank.lifts["trxplank"]?.note == "Harder: add 10 to 15 seconds.")
+    }
+}

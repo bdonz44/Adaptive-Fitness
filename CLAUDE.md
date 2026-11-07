@@ -18,7 +18,7 @@ Brandon's own 12-week home-gym program app for iPhone (separate from Bray-Ray, h
 - **Since Nov 3:** hold timer, round timer (bag, intervals, EMOM), coach prompts, remove set / skip exercise.
 - **Add exercise (Nov 7):** Today has an "Add exercise" button; picks are stored in `SessionDraft.extras` and built as an "Extras" block (keys `x-<id>`, accessory sets/reps, progress like accessories, no Swap, "Remove from today" in the ⋯ menu).
 - **Milestone 6 (adaptive layer) in progress.** Switches live in `AdaptiveSettings` (`Engine/Adaptive.swift`), stored by `AppStore.adaptive`, shown on Plan > Smart coaching (`Features/Adaptive/SmartCoachingView.swift`). A switch missing from an older save takes its value from `AdaptiveSettings.starting`. Done (Nov 7): **1. Effort counts (RIR)**, **2. Time today** (`Engine/TimeBox.swift`, picker on Today, applied in `AppStore.session`). Next: 3. fatigue-timed back-off weeks, then 4–8 in spec order.
-- **Cleans and snatches (Nov 7):** category `power` in exercises.json, add-by-hand only. Brandon wants deep research into workout plans that fit him (see the five extra programs).
+- **Cleans and snatches, TRX (Nov 7):** categories `power` and `trx` in exercises.json, add-by-hand only (no plan rotates through them). Brandon has TRX straps: include them when equipment profiles and the research programs come. Brandon wants deep research into workout plans that fit him (see the five extra programs).
 
 ## Run
 

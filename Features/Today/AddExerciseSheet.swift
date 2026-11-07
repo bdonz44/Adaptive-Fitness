@@ -40,7 +40,7 @@ struct AddExerciseSheet: View {
                             } label: {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(e.name).font(.body.weight(.semibold)).foregroundStyle(Theme.text)
-                                    Text(Self.equipment(e.eq)).font(.caption).foregroundStyle(Theme.secondary)
+                                    Text(e.category == Catalog.trxCategory ? "TRX straps" : Self.equipment(e.eq)).font(.caption).foregroundStyle(Theme.secondary)
                                 }
                             }
                         }
@@ -58,7 +58,7 @@ struct AddExerciseSheet: View {
 
     static let names = ["bicep": "Biceps", "tricep": "Triceps", "delt": "Shoulders", "chest": "Chest",
                         "row": "Back", "quad": "Legs", "hinge": "Hinge", "core": "Core", "full": "Full body",
-                        "main": "Big lifts", "power": "Cleans and snatches"]
+                        "main": "Big lifts", "power": "Cleans and snatches", "trx": "TRX"]
 
     /// "bicep" -> "Biceps"; unknown "rearDelt" -> "Rear Delt"
     static func title(_ category: String) -> String {
