@@ -11,7 +11,8 @@ struct PlanTab: View {
     @State private var confirmStartOverAgain = false
 
     private var smartDetail: String {
-        let on = [store.adaptive.effortProgression ? "Effort" : nil, store.adaptive.timeBox ? "Time today" : nil].compactMap { $0 }
+        let on = [store.adaptive.effortProgression ? "Effort" : nil, store.adaptive.timeBox ? "Time today" : nil,
+                  store.adaptive.reEntry ? "Coming back" : nil].compactMap { $0 }
         return on.isEmpty ? "All off" : on.joined(separator: " · ") + " on"
     }
 

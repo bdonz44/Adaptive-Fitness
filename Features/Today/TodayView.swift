@@ -25,6 +25,7 @@ struct TodayView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     if store.isEmpty { ImportPromptCard() }
                     WeekHeader(title: session.title)
+                    if let plan = session.reEntry { ReEntryBanner(plan: plan) }
                     WhoopCard()
                     if look.readinessFirst { ReadinessPicker() }
                     SlotChips()
@@ -292,6 +293,47 @@ struct ReadinessPicker: View {
         }
         .padding(Theme.look.readinessFirst ? 16 : 0)
         .background(Theme.look.readinessFirst ? Theme.card : .clear, in: RoundedRectangle(cornerRadius: Theme.look.radius))
+    }
+}
+
+/// Adaptive 4: back after missed days.
+struct ReEntryBanner: View {
+    @Environment(AppStore.self) private var store
+    @Environment(RestTimer.self) private var timer
+    let plan: ReEntry.Plan
+    @State private var confirmPhase = false
+
+    var body: some View {
+        let look = Theme.look
+        let phaseStart = store.week.phase.rawValue * 4 + 1
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: "arrow.uturn.backward.circle.fill").font(.title2).foregroundStyle(look.accent)
+                Text("Welcome back").font(.headline)
+            }
+            Text(ReEntry.message(plan)).font(.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
+            if plan.offerPhaseRestart && store.week.wk != phaseStart {
+                Button { confirmPhase = true } label: {
+                    Text("Restart \(store.program.program.phaseName(store.week.phase)) at week \(phaseStart)")
+                        .font(.subheadline.weight(.bold))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(look.field, in: RoundedRectangle(cornerRadius: max(look.radius - 6, 2)))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(14)
+        .background(look.accent.opacity(0.15), in: RoundedRectangle(cornerRadius: look.radius))
+        .overlay(RoundedRectangle(cornerRadius: look.radius).stroke(look.accent, lineWidth: 1.5))
+        .confirmationDialog("Restart the phase at week \(phaseStart)?", isPresented: $confirmPhase, titleVisibility: .visible) {
+            Button("Restart at week \(phaseStart)") {
+                timer.done()
+                store.restartPhase()
+            }
+        } message: {
+            Text("After \(plan.daysOff) days off, redoing the phase rebuilds your base. Your weights and history stay.")
+        }
     }
 }
 

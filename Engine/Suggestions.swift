@@ -140,7 +140,8 @@ public enum Suggestions {
     // MARK: Suggestion
 
     public static func suggest(item: SessionItem, lifts: [String: LiftRecord], lightenToday: Bool,
-                               catalog: Catalog = .bundled, adaptive: AdaptiveSettings = .off) -> Suggestion {
+                               catalog: Catalog = .bundled, adaptive: AdaptiveSettings = .off,
+                               lightenFactor: Double = 0.9, lightenNote: String = " Lightened 10% for today.") -> Suggestion {
         let effort = adaptive.effortProgression
         guard item.isLift, let id = item.exerciseID, let eq = item.equipment else {
             return Suggestion(weight: nil, reason: "")
@@ -150,7 +151,7 @@ public enum Suggestions {
         case .bw:
             return Suggestion(weight: nil, reason: record?.note ?? "")
         case .kb:
-            return kettlebell(id: id, record: record, lightenToday: lightenToday)
+            return kettlebell(id: id, record: record, lightenToday: lightenToday, factor: lightenFactor, note: lightenNote)
         case .bb, .db:
             break
         }
@@ -185,13 +186,14 @@ public enum Suggestions {
 
         var w = clamp(base, equipment: eq)
         if lightenToday {
-            w = clamp(w * 0.9, equipment: eq)
-            reason += " Lightened 10% for today."
+            w = clamp(w * lightenFactor, equipment: eq)
+            reason += lightenNote
         }
         return Suggestion(weight: w, reason: reason)
     }
 
-    static func kettlebell(id: String, record: LiftRecord?, lightenToday: Bool) -> Suggestion {
+    static func kettlebell(id: String, record: LiftRecord?, lightenToday: Bool,
+                           factor: Double = 0.9, note: String = " Lightened 10% for today.") -> Suggestion {
         var bell: Double
         var reason: String
         if let stored = record?.workingWeight {
@@ -204,8 +206,8 @@ public enum Suggestions {
             reason = "Start with the \(Fmt.lb(bell)) lb bell."
         }
         if lightenToday {
-            bell = snapBell(bell * 0.9)
-            reason += " Lightened 10% for today."
+            bell = snapBell(bell * factor)
+            reason += note
         }
         return Suggestion(weight: bell, reason: reason)
     }

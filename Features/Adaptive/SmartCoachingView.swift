@@ -32,6 +32,22 @@ struct SmartCoachingView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
+                Card(title: "Coming back") {
+                    Toggle(isOn: $store.adaptive.reEntry) {
+                        Text("Ramp back after missed days").font(.headline)
+                    }
+                    Text("Weeks only move when you finish sessions, never by the calendar. Time off makes the first sessions back lighter:")
+                        .font(.subheadline).foregroundStyle(look.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 6) {
+                        rule("7-13 days off", "90%, 1 session")
+                        rule("14-27 days off", "85%, 2 sessions, week restarts")
+                        rule("28+ days off", "80%, 2 sessions, option to redo the phase")
+                    }
+                    Text("No weight increases on those sessions.")
+                        .font(.caption).foregroundStyle(look.secondary)
+                }
+
                 Card(title: "Time today") {
                     Toggle(isOn: $store.adaptive.timeBox) {
                         Text("Fit the workout to my time").font(.headline)

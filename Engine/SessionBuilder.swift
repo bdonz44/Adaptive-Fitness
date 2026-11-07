@@ -78,11 +78,20 @@ public struct Session: Equatable, Sendable {
     /// Time today (adaptive 2): the minutes it was trimmed to, and what was cut.
     public var budget: Int? = nil
     public var trims: [String] = []
+    /// Coming back after missed days (adaptive 4): lighter, no progression.
+    public var reEntry: ReEntry.Plan? = nil
 
     public var items: [SessionItem] { blocks.flatMap(\.items) }
     public func item(_ key: String) -> SessionItem? { items.first { $0.key == key } }
-    /// Deload weeks and Beat-up days: lighter weights, no progression.
-    public var isLightDay: Bool { week.isDeload || readiness == .beat }
+    /// Deload weeks, Beat-up days and re-entry sessions: lighter weights, no progression.
+    public var isLightDay: Bool { week.isDeload || readiness == .beat || reEntry != nil }
+    /// How much lighter: the re-entry percentage, else 90%.
+    public var lightenFactor: Double { reEntry.map { min($0.factor, 0.9) } ?? 0.9 }
+    /// The suggestion note for a light day.
+    public var lightenNote: String {
+        if let r = reEntry { return " \(r.percent)% after \(r.daysOff) days off." }
+        return " Lightened 10% for today."
+    }
 }
 
 /// Inputs from the session draft.
@@ -96,6 +105,8 @@ public struct SessionContext: Equatable, Sendable {
     public var runMinutes: Int
     /// Exercises added by hand for today, in order.
     public var extras: [String]
+    /// Coming back after missed days (set by the app from the log).
+    public var reEntry: ReEntry.Plan? = nil
     /// The program, days a week, and the absolute week it started on (week 1 of the program).
     public var program: ProgramID
     public var days: Int
@@ -149,6 +160,7 @@ public enum SessionBuilder {
         var session = context.program == .hybrid12
             ? buildHybrid(slot: slot, context: context, week: week, catalog: catalog)
             : ProgramLibrary.build(slot: slot, context: context, week: week, catalog: catalog)
+        session.reEntry = context.reEntry
         if let extras = extrasBlock(context: context, week: week, catalog: catalog) {
             let at = session.blocks.firstIndex { $0.kind == .burnIt } ?? session.blocks.count
             session.blocks.insert(extras, at: at)

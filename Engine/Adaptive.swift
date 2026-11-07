@@ -8,10 +8,13 @@ public struct AdaptiveSettings: Codable, Equatable, Sendable {
     public var effortProgression: Bool
     /// 2. Time-boxed sessions: the "Time today" picker trims the session to fit.
     public var timeBox: Bool
+    /// 4. Missed-day re-entry: lighter first sessions back after 7+ days off.
+    public var reEntry: Bool
 
-    public init(effortProgression: Bool = false, timeBox: Bool = false) {
+    public init(effortProgression: Bool = false, timeBox: Bool = false, reEntry: Bool = false) {
         self.effortProgression = effortProgression
         self.timeBox = timeBox
+        self.reEntry = reEntry
     }
 
     /// A switch missing from older saved settings takes its starting value.
@@ -20,12 +23,13 @@ public struct AdaptiveSettings: Codable, Equatable, Sendable {
         let d = AdaptiveSettings.starting
         effortProgression = try c.decodeIfPresent(Bool.self, forKey: .effortProgression) ?? d.effortProgression
         timeBox = try c.decodeIfPresent(Bool.self, forKey: .timeBox) ?? d.timeBox
+        reEntry = try c.decodeIfPresent(Bool.self, forKey: .reEntry) ?? d.reEntry
     }
 
     /// Everything off: the web app's rules exactly.
     public static let off = AdaptiveSettings()
     /// What a new install starts with.
-    public static let starting = AdaptiveSettings(effortProgression: true, timeBox: true)
+    public static let starting = AdaptiveSettings(effortProgression: true, timeBox: true, reEntry: true)
 }
 
 /// Effort-based progression (RIR) rules.

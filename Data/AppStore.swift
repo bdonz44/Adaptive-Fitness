@@ -125,6 +125,7 @@ final class AppStore {
             draft = SessionDraft(slot: Program.nextSlot(state: state, logs: stamps, now: Date()), state: state)
         }
         try? context.save()
+        restartWeekAfterBreak()
     }
 
     // MARK: Merging duplicates
@@ -217,11 +218,38 @@ final class AppStore {
     }
 
     var session: Session {
-        let built = SessionBuilder.build(slot: draft.slot, context: draft.context(for: program),
-                                         catalog: catalog)
+        var context = draft.context(for: program)
+        context.reEntry = reEntry
+        let built = SessionBuilder.build(slot: draft.slot, context: context, catalog: catalog)
         guard adaptive.timeBox, let budget = draft.timeBudget else { return built }
         let logged = Set(draft.entries.filter { $0.value.hasCompletedWork }.keys)
         return TimeBox.fit(built, minutes: budget, keep: logged)
+    }
+
+    /// Coming back after missed days (adaptive 4), from the logged sessions. The optional run doesn't count.
+    var reEntry: ReEntry.Plan? {
+        guard adaptive.reEntry else { return nil }
+        return ReEntry.plan(logDates: logs.filter { $0.slot != .R }.map(\.date), now: Date())
+    }
+
+    /// First open after a 14+ day break: the week starts over at Day 1 (once per break).
+    private func restartWeekAfterBreak() {
+        guard let plan = reEntry, plan.restartWeek, let last = logs.first?.date else { return }
+        let key = "reEntry.restarted"
+        let mark = String(Int(last.timeIntervalSince1970))
+        guard UserDefaults.standard.string(forKey: key) != mark else { return }
+        UserDefaults.standard.set(mark, forKey: key)
+        if !program.doneSlots.isEmpty {
+            var s = program
+            s.doneSlots = []
+            setProgram(s)
+        }
+        if !draft.hasWork { resetDraft() }
+    }
+
+    /// "Restart the phase" (offered after 28+ days off): back to its first week.
+    func restartPhase() {
+        jump(toWeekInCycle: week.phase.rawValue * 4 + 1)
     }
 
     /// "Time today": nil is the full session.
@@ -243,7 +271,7 @@ final class AppStore {
 
     func suggestion(for item: SessionItem, in session: Session) -> Suggestion {
         Suggestions.suggest(item: item, lifts: lifts, lightenToday: session.isLightDay, catalog: catalog,
-                            adaptive: adaptive)
+                            adaptive: adaptive, lightenFactor: session.lightenFactor, lightenNote: session.lightenNote)
     }
 
     func entry(_ key: String) -> LoggedItem {
