@@ -82,3 +82,28 @@ import Testing
         }
     }
 }
+
+@Suite struct EveryTimerHasRestTests {
+    /// Every timed workout has its work and rest set (EMOMs rest inside the minute).
+    @Test func everyEngineWorkoutAndFinisherIsTimed() {
+        let c = Catalog.bundled
+        for w in c.engineWorkouts {
+            #expect(w.work != nil, "\(w.name) has no timer settings")
+            #expect((w.rest ?? 0) > 0, "\(w.name) has no rest")
+        }
+        for f in c.finishers {
+            #expect(f.work != nil, "\(f.name) has no timer settings")
+            #expect((f.rest ?? 0) > 0 || f.description.contains("Every minute"), "\(f.name) has no rest")
+        }
+        for id in ProgramID.allCases where id != .hybrid12 {
+            for d in id.dayOptions {
+                for day in ProgramLibrary.days(id, days: d) {
+                    for c in [day.engine, day.finisher].compactMap({ $0 }) where c.unit != .min {
+                        #expect(c.work != nil, "\(c.name) has no timer settings")
+                        #expect((c.rest ?? 0) > 0 || c.details[0].contains("Every minute"), "\(c.name) has no rest")
+                    }
+                }
+            }
+        }
+    }
+}
