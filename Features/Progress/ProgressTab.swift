@@ -194,6 +194,7 @@ struct CoachCard: View {
 
 struct CardioCard: View {
     @Environment(AppStore.self) private var store
+    @State private var kind: ManualCardio.Kind = .run
 
     var body: some View {
         let goal = Program.cardioGoalMinutes
@@ -209,6 +210,25 @@ struct CardioCard: View {
                 Text("Includes \(store.whoopCardioThisWeek) min from WHOOP (\(store.whoopCardioSports.joined(separator: ", "))).")
                     .font(.caption)
                     .foregroundStyle(Theme.secondary)
+            }
+            ForEach(store.manualCardioThisWeek) { entry in
+                HStack {
+                    Label("\(entry.kind.name) · \(entry.minutes) min", systemImage: entry.kind.icon).font(.subheadline)
+                    Spacer()
+                    Text(entry.date.formatted(.dateTime.weekday(.abbreviated))).font(.caption).foregroundStyle(Theme.secondary)
+                    Button { store.removeCardio(entry) } label: { Image(systemName: "xmark.circle.fill") }
+                        .buttonStyle(.plain).foregroundStyle(Theme.secondary)
+                        .accessibilityLabel("Remove \(entry.kind.name) \(entry.minutes) minutes")
+                }
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                Picker("Type", selection: $kind) {
+                    ForEach(ManualCardio.Kind.allCases, id: \.self) { Text($0.name).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                LogField(placeholder: "\(kind.name) minutes", unit: "min") { store.logCardio(kind, minutes: Int($0.rounded())) }
+                Text("Only log what WHOOP didn't track, or it counts twice.")
+                    .font(.caption2).foregroundStyle(Theme.secondary)
             }
             if store.program.week > 1 {
                 let last = store.cardioByWeek[store.program.week - 1] ?? 0

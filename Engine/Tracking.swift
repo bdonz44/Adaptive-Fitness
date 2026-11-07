@@ -67,3 +67,30 @@ public enum Tracking {
         }
     }
 }
+
+/// Cardio typed in by hand (Progress > Cardio > Log cardio).
+public struct ManualCardio: Codable, Equatable, Identifiable, Sendable {
+    public enum Kind: String, Codable, CaseIterable, Sendable {
+        case run, walk, ride, hike, other
+        public var name: String { rawValue.capitalized }
+        public var icon: String {
+            switch self {
+            case .run: return "figure.run"
+            case .walk: return "figure.walk"
+            case .ride: return "figure.outdoor.cycle"
+            case .hike: return "figure.hiking"
+            case .other: return "heart.circle"
+            }
+        }
+    }
+    public var id: String
+    public var date: Date
+    public var kind: Kind
+    public var minutes: Int
+    /// Absolute program week it counts toward.
+    public var week: Int
+
+    public init(id: String = UUID().uuidString, date: Date, kind: Kind, minutes: Int, week: Int) {
+        self.id = id; self.date = date; self.kind = kind; self.minutes = minutes; self.week = week
+    }
+}

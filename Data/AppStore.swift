@@ -90,6 +90,7 @@ final class AppStore {
                                         state: program, catalog: catalog)
         review.cardioMinutes += WhoopCardio.minutes(whoopWorkouts, from: review.start, to: now,
                                                     sessionsFinished: stored.map(\.date))
+        review.cardioMinutes += manualCardio.filter { $0.date >= review.start && $0.date <= now }.reduce(0) { $0 + $1.minutes }
         return review
     }
     /// Every saved session heart rate (for the weekly zone 4-5 chart).
@@ -300,6 +301,36 @@ final class AppStore {
 
     /// Logged cardio this program week plus WHOOP activities (runs, walks, rides...) since it started.
     var cardioThisWeek: Int { (cardioByWeek[program.week] ?? 0) + whoopCardioThisWeek }
+
+    // MARK: Cardio typed in by hand
+
+    /// Entries are listed from this phone; their minutes go into the synced weekly cardio total.
+    private(set) var manualCardio: [ManualCardio] = {
+        UserDefaults.standard.data(forKey: "cardio.manual")
+            .flatMap { try? JSONDecoder().decode([ManualCardio].self, from: $0) } ?? []
+    }()
+
+    var manualCardioThisWeek: [ManualCardio] { manualCardio.filter { $0.week == program.week }.sorted { $0.date > $1.date } }
+
+    func logCardio(_ kind: ManualCardio.Kind, minutes: Int, date: Date = Date()) {
+        guard minutes > 0 else { return }
+        let entry = ManualCardio(date: date, kind: kind, minutes: minutes, week: program.week)
+        manualCardio.append(entry)
+        saveManualCardio()
+        addCardio(minutes, week: entry.week)
+        save()
+    }
+
+    func removeCardio(_ entry: ManualCardio) {
+        manualCardio.removeAll { $0.id == entry.id }
+        saveManualCardio()
+        addCardio(-entry.minutes, week: entry.week)
+        save()
+    }
+
+    private func saveManualCardio() {
+        if let data = try? JSONEncoder().encode(manualCardio) { UserDefaults.standard.set(data, forKey: "cardio.manual") }
+    }
 
     // MARK: WHOOP cardio
 
