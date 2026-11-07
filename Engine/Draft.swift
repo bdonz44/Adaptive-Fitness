@@ -21,6 +21,8 @@ public struct SessionDraft: Codable, Equatable, Sendable {
     public var warmWeights: [String: Double]?
     /// Exercises added by hand for today ("Add exercise"), in order.
     public var extras: [String]?
+    /// The item logged most recently (Now and Focus carry on from it).
+    public var lastDone: String?
     /// The program and days-a-week this draft was built for (nil: Hybrid 12, 5 days).
     public var program: ProgramID?
     public var days: Int?

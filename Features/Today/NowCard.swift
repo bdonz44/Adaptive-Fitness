@@ -11,7 +11,9 @@ struct NowCard: View {
 
     var body: some View {
         let look = Theme.look
-        if let open = store.nextOpenSet, let item = session.item(open.key) {
+        if let open = store.nextOpenSet, let item = session.item(open.key), item.isCardio {
+            CardioNow(item: item, openFocus: openFocus)
+        } else if let open = store.nextOpenSet, let item = session.item(open.key) {
             let weight = store.weight(for: item, set: open.set, in: session)
             let reps = store.entry(item.key).sets[safe: open.set]?.reps ?? item.high
             VStack(alignment: .leading, spacing: 12) {
@@ -160,6 +162,71 @@ struct PlateBar: View {
         case 10: return Color(hex: 0xE4E4E7)
         case 5: return Color(hex: 0xDC2626)
         default: return Color(hex: 0x71717A)
+        }
+    }
+}
+
+/// Now / Focus for a conditioning block: what it is, the round setup, and one button to start it.
+struct CardioNow: View {
+    @Environment(AppStore.self) private var store
+    let item: SessionItem
+    var big = false
+    var openFocus: (() -> Void)? = nil
+    @State private var showTimer = false
+
+    var body: some View {
+        let look = Theme.look
+        let timed = item.kind != .run
+        VStack(alignment: .leading, spacing: 12) {
+            SectionLabel(text: "Now · Conditioning", color: look.accent)
+            Text(look.uppercaseTitles && big ? item.name.uppercased() : item.name)
+                .font(big ? look.title(44) : .system(size: 22, weight: .bold, design: look.bodyDesign))
+                .lineLimit(2).minimumScaleFactor(0.6)
+            Text(timed ? RoundPlan.summary(RoundTimer.saved(for: item)) : "\(item.rounds ?? item.high) min")
+                .font(.headline).foregroundStyle(look.accent)
+            Text(item.detail).font(.subheadline).foregroundStyle(look.secondary)
+                .lineLimit(big ? nil : 3)
+                .fixedSize(horizontal: false, vertical: true)
+            if let target = HeartRate.target(for: item) {
+                LiveHeartBar(target: target, compact: !big)
+            }
+            HStack(spacing: 10) {
+                if timed {
+                    Button { showTimer = true } label: {
+                        Label("Start round timer", systemImage: "bell.fill").accentButton()
+                    }
+                    .buttonStyle(.plain)
+                }
+                Button { markDone() } label: {
+                    Text(timed ? "Mark done" : "Done")
+                        .font(.headline)
+                        .frame(maxWidth: timed ? 130 : .infinity, minHeight: 56)
+                        .foregroundStyle(timed ? look.text : look.onAccent)
+                        .background(timed ? look.field : look.accent, in: RoundedRectangle(cornerRadius: max(look.radius - 4, 2)))
+                }
+                .buttonStyle(.plain)
+                if let openFocus {
+                    Button(action: openFocus) {
+                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                            .font(.title3.weight(.bold))
+                            .frame(width: 56, height: 56)
+                            .background(look.field, in: RoundedRectangle(cornerRadius: max(look.radius - 4, 2)))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Open focus mode")
+                }
+            }
+        }
+        .padding(big ? 0 : 16)
+        .background(big ? Color.clear : look.card, in: RoundedRectangle(cornerRadius: look.radius))
+        .fullScreenCover(isPresented: $showTimer) { RoundTimerView(item: item) }
+    }
+
+    /// Logs the planned rounds (or minutes); change the number in the list if you did fewer.
+    private func markDone() {
+        store.update(item.key) { e in
+            e.ticked = true
+            if e.rounds == nil { e.rounds = item.rounds }
         }
     }
 }

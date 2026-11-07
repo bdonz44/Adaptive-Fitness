@@ -34,17 +34,28 @@ public enum SessionInsights {
         public var set: Int
     }
 
-    /// The next lift set to do, in session order. Superset partners alternate
-    /// (B1 set 1, B2 set 1, B1 set 2...). Nil when every lift set is done.
-    public static func nextOpenSet(session: Session, entries: [String: LoggedItem]) -> OpenSet? {
-        let lifts = session.items.filter(\.isLift)
+    /// What to do next, following the session's order: lifts set by set (superset partners
+    /// alternate: B1 set 1, B2 set 1, B1 set 2...) and conditioning blocks (set 0) where they
+    /// sit in the session. With `last` (the item just logged), it carries on from there and
+    /// only comes back to earlier unfinished items at the end. Nil when everything is done.
+    public static func nextOpenSet(session: Session, entries: [String: LoggedItem], after last: String? = nil) -> OpenSet? {
+        let items = session.items.filter { $0.isLift || $0.isCardio }
+        var groups: [[SessionItem]] = []
         var i = 0
-        while i < lifts.count {
-            var group = [lifts[i]]
-            if let pair = lifts[i].pair {
-                while i + group.count < lifts.count, lifts[i + group.count].pair == pair {
-                    group.append(lifts[i + group.count])
+        while i < items.count {
+            var group = [items[i]]
+            if items[i].isLift, let pair = items[i].pair {
+                while i + group.count < items.count, items[i + group.count].isLift, items[i + group.count].pair == pair {
+                    group.append(items[i + group.count])
                 }
+            }
+            groups.append(group)
+            i += group.count
+        }
+        func open(_ group: [SessionItem]) -> OpenSet? {
+            if group.count == 1, group[0].isCardio {
+                let e = entries[group[0].key] ?? LoggedItem()
+                return e.skipped == nil && !e.hasCompletedWork ? OpenSet(key: group[0].key, set: 0) : nil
             }
             func active(_ item: SessionItem) -> Int { (entries[item.key] ?? LoggedItem()).activeSets(planned: item.sets) }
             let rounds = group.map(active).max() ?? 0
@@ -54,7 +65,12 @@ public enum SessionInsights {
                     if s >= sets.count || !sets[s].isDone { return OpenSet(key: item.key, set: s) }
                 }
             }
-            i += group.count
+            return nil
+        }
+        guard !groups.isEmpty else { return nil }
+        let start = last.flatMap { k in groups.firstIndex { g in g.contains { $0.key == k } } } ?? 0
+        for offset in 0..<groups.count {
+            if let o = open(groups[(start + offset) % groups.count]) { return o }
         }
         return nil
     }

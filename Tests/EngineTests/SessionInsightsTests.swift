@@ -43,6 +43,11 @@ import Testing
         for item in s.items where item.isLift {
             entries[item.key] = LoggedItem(sets: sets(50, Array(repeating: 8, count: item.sets)))
         }
+        // Lifts done: conditioning (the finisher) is next, then nothing.
+        if let cardio = s.items.first(where: \.isCardio) {
+            #expect(SessionInsights.nextOpenSet(session: s, entries: entries)?.key == cardio.key)
+            for item in s.items where item.isCardio { entries[item.key] = LoggedItem(rounds: 1, ticked: true) }
+        }
         #expect(SessionInsights.nextOpenSet(session: s, entries: entries) == nil)
     }
 

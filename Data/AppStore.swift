@@ -286,7 +286,7 @@ final class AppStore {
 
     /// The next lift set to do (focus mode and the Now card).
     var nextOpenSet: SessionInsights.OpenSet? {
-        SessionInsights.nextOpenSet(session: session, entries: draft.entries)
+        SessionInsights.nextOpenSet(session: session, entries: draft.entries, after: draft.lastDone)
     }
 
     var sessionStats: SessionInsights.Stats {
@@ -305,10 +305,15 @@ final class AppStore {
         let s = session
         let stats = SessionInsights.stats(session: s, entries: draft.entries)
         var next = ""
-        if let open = SessionInsights.nextOpenSet(session: s, entries: draft.entries), let item = s.item(open.key) {
-            let w = weight(for: item, set: open.set, in: s)
-            let amount = w.map { "\(lb($0)) × \(item.high)" } ?? "\(item.high) \(unitWord(item.unit))"
-            next = "\(item.name) set \(open.set + 1) · \(amount)"
+        if let open = SessionInsights.nextOpenSet(session: s, entries: draft.entries, after: draft.lastDone),
+           let item = s.item(open.key) {
+            if item.isCardio {
+                next = "\(item.name) · \(item.rounds.map { item.unit == .min ? "\($0) min" : "\($0) rounds" } ?? "")"
+            } else {
+                let w = weight(for: item, set: open.set, in: s)
+                let amount = w.map { "\(lb($0)) × \(item.high)" } ?? "\(item.high) \(unitWord(item.unit))"
+                next = "\(item.name) set \(open.set + 1) · \(amount)"
+            }
         }
         return RestContext(next: next, sessionTitle: s.title, setsDone: stats.setsDone, setsTotal: stats.setsPlanned)
     }
@@ -345,9 +350,14 @@ final class AppStore {
 
     func update(_ key: String, sets count: Int = 0, _ change: (inout LoggedItem) -> Void) {
         var e = draft.entries[key] ?? LoggedItem()
+        func progress(_ x: LoggedItem) -> Int {
+            x.sets.filter(\.isDone).count + (x.ticked ? 1 : 0) + (x.rounds != nil ? 1 : 0)
+        }
+        let before = progress(e)
         e.ensureSets(count)
         change(&e)
         draft.entries[key] = e
+        if progress(e) > before { draft.lastDone = key }
         saveDraft()
     }
 

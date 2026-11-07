@@ -21,6 +21,22 @@ struct FocusView: View {
                 HoldTimerView()
             } else if timer.isActive {
                 RestView(close: { dismiss() })
+            } else if let open = store.nextOpenSet, let item = session.item(open.key), item.isCardio {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack {
+                        Button { dismiss() } label: {
+                            Text("All exercises").font(.subheadline.weight(.semibold))
+                                .padding(.horizontal, 14).frame(height: 44)
+                                .background(look.card, in: RoundedRectangle(cornerRadius: max(look.radius - 6, 2)))
+                        }
+                        .buttonStyle(.plain)
+                        Spacer()
+                        WorkoutClock(compact: true).fixedSize()
+                    }
+                    CardioNow(item: item, big: true)
+                    Spacer()
+                }
+                .padding(20)
             } else if let open = store.nextOpenSet, let item = session.item(open.key) {
                 setScreen(item, open: open, session: session)
             } else {
@@ -135,8 +151,8 @@ struct FocusView: View {
         VStack(spacing: 18) {
             Spacer()
             Image(systemName: "checkmark.seal.fill").font(.system(size: 64)).foregroundStyle(Theme.done)
-            Text("Lifts done").font(Theme.look.title(40))
-            Text("Log the cardio and finisher in the list, then Finish.")
+            Text("All done").font(Theme.look.title(40))
+            Text("Every set and round is logged. Head back to the list and tap Finish.")
                 .multilineTextAlignment(.center).foregroundStyle(Theme.secondary)
             Spacer()
             Button { dismiss() } label: { Text("Back to the list").accentButton() }
