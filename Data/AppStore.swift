@@ -86,8 +86,11 @@ final class AppStore {
             WeeklyReview.Log(date: log.date, title: log.title, cardioMinutes: log.cardioMinutes,
                              heart: Self.heart(in: log), counts: log.slot != Slot.R.rawValue)
         }
-        return WeeklyReview.build(now: now, logs: logs, lifts: lifts, weighIns: weighIns, waist: waist,
-                                  state: program, catalog: catalog)
+        var review = WeeklyReview.build(now: now, logs: logs, lifts: lifts, weighIns: weighIns, waist: waist,
+                                        state: program, catalog: catalog)
+        review.cardioMinutes += WhoopCardio.minutes(whoopWorkouts, from: review.start, to: now,
+                                                    sessionsFinished: stored.map(\.date))
+        return review
     }
     /// Every saved session heart rate (for the weekly zone 4-5 chart).
     private(set) var heartLogs: [(week: Int, heart: SessionHeart)] = []
@@ -295,10 +298,42 @@ final class AppStore {
 
     var nextSlot: Slot { Program.nextSlot(state: program, logs: logs, now: Date()) }
 
-    var cardioThisWeek: Int { cardioByWeek[program.week] ?? 0 }
+    /// Logged cardio this program week plus WHOOP activities (runs, walks, rides...) since it started.
+    var cardioThisWeek: Int { (cardioByWeek[program.week] ?? 0) + whoopCardioThisWeek }
+
+    // MARK: WHOOP cardio
+
+    /// WHOOP workouts from the last 14 days (saved on the phone, refreshed with each WHOOP sync).
+    private(set) var whoopWorkouts: [WhoopWorkout] = {
+        UserDefaults.standard.data(forKey: "whoop.recentWorkouts")
+            .flatMap { try? JSONDecoder().decode([WhoopWorkout].self, from: $0) } ?? []
+    }()
+
+    /// When the current program week began: the last session logged in an earlier week.
+    var weekStartedAt: Date {
+        let floor = Date().addingTimeInterval(-14 * 86400)
+        let previous = weekLogs.filter { $0.week < program.week }.map(\.date).max()
+        return max(previous ?? Date().addingTimeInterval(-7 * 86400), floor)
+    }
+
+    var whoopCardioThisWeek: Int {
+        WhoopCardio.minutes(whoopWorkouts, from: weekStartedAt, to: Date(), sessionsFinished: logs.map(\.date))
+    }
+
+    var whoopCardioSports: [String] {
+        WhoopCardio.sports(whoopWorkouts, from: weekStartedAt, to: Date(), sessionsFinished: logs.map(\.date))
+    }
+
+    func refreshWhoopCardio(_ fetch: (Date, Date) async -> [WhoopWorkout]?, now: Date = Date()) async {
+        guard let list = await fetch(now.addingTimeInterval(-14 * 86400), now) else { return }
+        whoopWorkouts = list
+        if let data = try? JSONEncoder().encode(list) { UserDefaults.standard.set(data, forKey: "whoop.recentWorkouts") }
+    }
 
     func coachNotes(now: Date = Date()) -> [CoachNote] {
-        Coach.coachNotes(weighIns: weighIns, cardioByWeek: cardioByWeek, week: program.week,
+        var cardio = cardioByWeek
+        cardio[program.week, default: 0] += whoopCardioThisWeek
+        return Coach.coachNotes(weighIns: weighIns, cardioByWeek: cardio, week: program.week,
                          lifts: lifts, now: now, catalog: catalog)
     }
 

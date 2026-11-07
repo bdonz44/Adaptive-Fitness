@@ -205,6 +205,11 @@ struct CardioCard: View {
                 Text("\(minutes) of \(goal) min").monospacedDigit().foregroundStyle(Theme.secondary)
             }
             ProgressView(value: min(1, Double(minutes) / Double(goal)))
+            if store.whoopCardioThisWeek > 0 {
+                Text("Includes \(store.whoopCardioThisWeek) min from WHOOP (\(store.whoopCardioSports.joined(separator: ", "))).")
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondary)
+            }
             if store.program.week > 1 {
                 let last = store.cardioByWeek[store.program.week - 1] ?? 0
                 Text("Last week: \(last) min")

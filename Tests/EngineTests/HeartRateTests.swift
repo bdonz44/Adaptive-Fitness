@@ -128,3 +128,27 @@ import Testing
         #expect(WhoopWorkout.match([walkLater], finishedAt: end) == nil)
     }
 }
+
+@Suite struct WhoopCardioTests {
+    let t = Date(timeIntervalSince1970: 1_793_000_000)
+    func w(_ sport: String, startHoursAgo: Double, minutes: Double) -> WhoopWorkout {
+        let s = t.addingTimeInterval(-startHoursAgo * 3600)
+        return WhoopWorkout(start: s, end: s.addingTimeInterval(minutes * 60), sport: sport, strain: 8, averageHR: 130,
+                            maxHR: 160, kilojoules: 1000, zoneSeconds: [0, 0, 0, 0, 0, 0])
+    }
+
+    @Test func countsRunsNotLiftingNorHybridSessions() {
+        let finished = t.addingTimeInterval(-24 * 3600)   // a Hybrid session finished yesterday
+        let list = [
+            w("running", startHoursAgo: 5, minutes: 32),
+            w("walking", startHoursAgo: 50, minutes: 45),
+            w("weightlifting", startHoursAgo: 80, minutes: 60),               // lifting elsewhere: not cardio
+            w("functional fitness", startHoursAgo: 25, minutes: 55),          // the Hybrid session itself
+            w("boxing", startHoursAgo: 25.2, minutes: 50),                    // overlaps the session: excluded
+            w("cycling", startHoursAgo: 300, minutes: 60),                    // before the window
+        ]
+        let start = t.addingTimeInterval(-7 * 86400)
+        #expect(WhoopCardio.minutes(list, from: start, to: t, sessionsFinished: [finished]) == 77)
+        #expect(WhoopCardio.sports(list, from: start, to: t, sessionsFinished: [finished]) == ["Running", "Walking"])
+    }
+}

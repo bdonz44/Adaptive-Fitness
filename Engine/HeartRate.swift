@@ -244,3 +244,36 @@ public struct SessionHeart: Codable, Equatable, Sendable {
         return by.keys.sorted().map { (week: $0, minutes: by[$0]!) }
     }
 }
+
+/// WHOOP activities that count as cardio: everything except strength work and the WHOOP
+/// workouts that are really Hybrid 12 sessions (those count through the session already).
+public enum WhoopCardio {
+    /// WHOOP sport names that are lifting, not cardio.
+    public static let strengthSports: Set<String> = [
+        "weightlifting", "powerlifting", "functional-fitness", "strength-trainer", "yoga", "pilates", "stretching",
+        "meditation", "massage-therapy", "sauna", "ice-bath",
+    ]
+
+    public static func counts(_ w: WhoopWorkout, sessionsFinished: [Date]) -> Bool {
+        if let sport = w.sport?.lowercased().replacingOccurrences(of: " ", with: "-"), strengthSports.contains(sport) { return false }
+        // A WHOOP workout that matches a logged Hybrid 12 session is that session.
+        return !sessionsFinished.contains { WhoopWorkout.match([w], finishedAt: $0) != nil }
+    }
+
+    /// Minutes of counted WHOOP cardio from `start` to `end`.
+    public static func minutes(_ workouts: [WhoopWorkout], from start: Date, to end: Date, sessionsFinished: [Date]) -> Int {
+        let total = workouts.filter { $0.start >= start && $0.start <= end && counts($0, sessionsFinished: sessionsFinished) }
+            .reduce(0.0) { $0 + $1.end.timeIntervalSince($1.start) }
+        return Int((total / 60).rounded())
+    }
+
+    /// "Running, Walking"
+    public static func sports(_ workouts: [WhoopWorkout], from start: Date, to end: Date, sessionsFinished: [Date]) -> [String] {
+        var seen: [String] = []
+        for w in workouts where w.start >= start && w.start <= end && counts(w, sessionsFinished: sessionsFinished) {
+            let name = (w.sport ?? "activity").replacingOccurrences(of: "-", with: " ").capitalized
+            if !seen.contains(name) { seen.append(name) }
+        }
+        return seen
+    }
+}
