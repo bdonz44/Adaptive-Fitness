@@ -131,7 +131,7 @@ public enum ProgramLibrary {
         days: [
             3: [
                 Day("Squat + 4×4", lower: true, lifts: [m("squat"), s("s1", "bench")],
-                    pairs: [pair("bbrow", "plank")], engine: norwegian),
+                    pairs: [pair("bbrow", "reversecrunch")], engine: norwegian),
                 Day("Power + Snatch", lifts: [p("power", "hangclean"), m("ohp", "ohp", "pushpress"), s("s1", "rdl")],
                     pairs: [pair("trxrow", "splitsq")], engine: snatch),
                 Day("Deadlift + Circuit", lower: true, lifts: [m("deadlift"), s("s1", "dbincline")],
@@ -139,25 +139,25 @@ public enum ProgramLibrary {
             ],
             4: [
                 Day("Squat + 4×4", lower: true, lifts: [m("squat"), s("s1", "rdl")],
-                    pairs: [pair("bulgarian", "deadbug")], engine: norwegian),
+                    pairs: [pair("bulgarian", "trxbodysaw")], engine: norwegian),
                 Day("Press + Bag", lifts: [m("bench"), s("s1", "bbrow")],
                     pairs: [pair("dbpress", "trxrow"), pair("curl", "ohtri")], engine: bagIntervals),
                 Day("Power + Snatch", lower: true, lifts: [p("power", "hangclean", "hangclean", "powerclean"), m("deadlift")],
-                    pairs: [pair("stepup", "hollow")], engine: snatch),
+                    pairs: [pair("stepup", "trxfallout")], engine: snatch),
                 Day("Upper + Circuit", lifts: [m("ohp", "ohp", "pushpress"), s("s1", "dbincline")],
                     pairs: [pair("trxfacepull", "hammer")], engine: circuit),
             ],
             5: [
                 Day("Squat + 4×4", lower: true, lifts: [m("squat"), s("s1", "rdl")],
-                    pairs: [pair("bulgarian", "deadbug")], engine: norwegian),
+                    pairs: [pair("bulgarian", "trxbodysaw")], engine: norwegian),
                 Day("Press + Bag", lifts: [m("bench"), s("s1", "bbrow")],
                     pairs: [pair("dbpress", "trxrow"), pair("curl", "ohtri")], engine: bagIntervals),
                 Day("Power + Snatch", lower: true, lifts: [p("power", "hangclean", "hangclean", "powerclean"), m("deadlift")],
-                    pairs: [pair("stepup", "hollow")], engine: snatch),
+                    pairs: [pair("stepup", "trxfallout")], engine: snatch),
                 Day("Upper + Circuit", lifts: [m("ohp", "ohp", "pushpress"), s("s1", "dbincline")],
                     pairs: [pair("trxfacepull", "hammer")], engine: circuit),
                 Day("Aerobic Base + Core", lifts: [],
-                    pairs: [pair("trxpike", "sideplank"), pair("trxtfly", "suitcase")], engine: easy),
+                    pairs: [pair("trxoblique", "hipdip"), pair("kbwindmill", "suitcase")], engine: easy),
             ],
         ])
 
@@ -175,31 +175,31 @@ public enum ProgramLibrary {
                 Day("Full Body A", lower: true, lifts: [m("squat"), s("s1", "bench")],
                     pairs: [pair("bbrow", "lateral"), pair("curl", "ohtri")], finisher: hills),
                 Day("Full Body B", lower: true, lifts: [m("deadlift"), s("s1", "ohp")],
-                    pairs: [pair("trxrow", "dbincline"), pair("reardelt", "trxpike")], finisher: bagFinisher),
+                    pairs: [pair("trxrow", "trxchestfly"), pair("reardelt", "trxfallout")], finisher: bagFinisher),
                 Day("Full Body C", lifts: [m("incline"), s("s1", "bulgarian")],
-                    pairs: [pair("dbrow", "arnold"), pair("hammer", "skull")], finisher: swingEMOM),
+                    pairs: [pair("dbrow", "arnold"), pair("hammer", "skull"), pair("vup", "woodchop")], finisher: swingEMOM),
             ],
             4: [
                 Day("Upper A", lifts: [m("bench"), s("s1", "bbrow")],
-                    pairs: [pair("dbincline", "trxfacepull"), pair("curl", "ohtri")], finisher: bagFinisher),
+                    pairs: [pair("dbincline", "trxfacepull"), pair("curl", "ohtri"), pair("trxchestfly", "legraise")], finisher: bagFinisher),
                 Day("Lower A", lower: true, lifts: [m("squat"), s("s1", "rdl")],
-                    pairs: [pair("splitsq", "trxhamcurl"), pair("trxpike", "sideplank")], finisher: hills),
+                    pairs: [pair("splitsq", "trxhamcurl"), pair("trxbodysaw", "hipdip")], finisher: hills),
                 Day("Upper B", lifts: [m("ohp"), s("s1", "pendlay")],
                     pairs: [pair("dbfloor", "lateral"), pair("hammer", "skull"), pair("trxyfly", "reardelt")]),
                 Day("Lower B", lower: true, lifts: [p("power", "hangclean"), m("deadlift"), s("s1", "gobletsq")],
-                    pairs: [pair("hipthrust", "trxtuck")], finisher: swingEMOM),
+                    pairs: [pair("hipthrust", "russiantwist")], finisher: swingEMOM),
             ],
             5: [
                 Day("Upper A", lifts: [m("bench"), s("s1", "bbrow")],
-                    pairs: [pair("dbincline", "trxfacepull"), pair("curl", "ohtri")], finisher: bagFinisher),
+                    pairs: [pair("dbincline", "trxfacepull"), pair("curl", "ohtri"), pair("trxchestfly", "legraise")], finisher: bagFinisher),
                 Day("Lower A", lower: true, lifts: [m("squat"), s("s1", "rdl")],
-                    pairs: [pair("splitsq", "trxhamcurl"), pair("trxpike", "sideplank")], finisher: hills),
+                    pairs: [pair("splitsq", "trxhamcurl"), pair("trxbodysaw", "hipdip")], finisher: hills),
                 Day("Upper B", lifts: [m("ohp"), s("s1", "pendlay")],
                     pairs: [pair("dbfloor", "lateral"), pair("hammer", "skull"), pair("trxyfly", "reardelt")]),
                 Day("Lower B", lower: true, lifts: [p("power", "hangclean"), m("deadlift"), s("s1", "gobletsq")],
-                    pairs: [pair("hipthrust", "trxtuck")], finisher: swingEMOM),
+                    pairs: [pair("hipthrust", "russiantwist")], finisher: swingEMOM),
                 Day("Arms, Delts + Engine", lifts: [],
-                    pairs: [pair("inclinecurl", "skull"), pair("lateral", "reardelt"), pair("trxcurl", "trxtricep")],
+                    pairs: [pair("inclinecurl", "skull"), pair("lateral", "reardelt"), pair("trxchestfly", "trxhighrow")],
                     engine: norwegian),
             ],
         ])
@@ -218,9 +218,9 @@ public enum ProgramLibrary {
                 Day("Strength + Technique", lower: true, lifts: [p("power", "powerclean"), m("squat"), s("s1", "bench")],
                     pairs: [pair("trxrow", "sideplank")], engine: technique, engineBlock: .box),
                 Day("Press + Power Rounds", lifts: [m("pushpress"), s("s1", "rdl")],
-                    pairs: [pair("dbrow", "trxpike")], engine: powerRounds, engineBlock: .box),
+                    pairs: [pair("dbrow", "woodchop")], engine: powerRounds, engineBlock: .box),
                 Day("Deadlift + Fight Rounds", lower: true, lifts: [m("deadlift"), s("s1", "floorpress")],
-                    pairs: [pair("bulgarian", "trxtuck")], engine: technique, engineBlock: .box),
+                    pairs: [pair("bulgarian", "russiantwist")], engine: technique, engineBlock: .box),
             ],
             4: [
                 Day("Lower Strength + Technique", lower: true, lifts: [p("power", "hangclean"), m("squat"), s("s1", "rdl")],
@@ -228,9 +228,9 @@ public enum ProgramLibrary {
                 Day("Upper Strength + Power Rounds", lifts: [m("bench"), s("s1", "bbrow")],
                     pairs: [pair("dbpress", "trxrow"), pair("trxfacepull", "hammer")], engine: powerRounds, engineBlock: .box),
                 Day("Power + Fight Rounds", lower: true, lifts: [p("power", "powerclean"), m("deadlift")],
-                    pairs: [pair("kbswingh", "trxpike")], engine: technique, engineBlock: .box),
+                    pairs: [pair("trxpowerpull", "woodchop")], engine: technique, engineBlock: .box),
                 Day("Upper + Roadwork", lifts: [m("pushpress"), s("s1", "pendlay")],
-                    pairs: [pair("dbincline", "dbrow"), pair("trxyfly", "trxtuck")], engine: roadwork),
+                    pairs: [pair("dbincline", "dbrow"), pair("trxyfly", "russiantwist")], engine: roadwork),
             ],
             5: [
                 Day("Lower Strength + Technique", lower: true, lifts: [p("power", "hangclean"), m("squat"), s("s1", "rdl")],
@@ -238,12 +238,123 @@ public enum ProgramLibrary {
                 Day("Upper Strength + Power Rounds", lifts: [m("bench"), s("s1", "bbrow")],
                     pairs: [pair("dbpress", "trxrow"), pair("trxfacepull", "hammer")], engine: powerRounds, engineBlock: .box),
                 Day("Power + Fight Rounds", lower: true, lifts: [p("power", "powerclean"), m("deadlift")],
-                    pairs: [pair("kbswingh", "trxpike")], engine: technique, engineBlock: .box),
+                    pairs: [pair("trxpowerpull", "woodchop")], engine: technique, engineBlock: .box),
                 Day("Upper + Roadwork", lifts: [m("pushpress"), s("s1", "pendlay")],
-                    pairs: [pair("dbincline", "dbrow"), pair("trxyfly", "trxtuck")], engine: roadwork),
+                    pairs: [pair("dbincline", "dbrow"), pair("trxyfly", "russiantwist")], engine: roadwork),
                 Day("Bag Day + Core", lifts: [],
-                    pairs: [pair("trxplank", "deadbug"), pair("suitcase", "trxsideplank")],
+                    pairs: [pair("trxbodysaw", "bicycle"), pair("suitcase", "trxoblique")],
                     engine: longTechnique, engineBlock: .box),
+            ],
+        ])
+
+    // MARK: Screen Ready (the actor cut)
+
+    static let absBurner = Cardio(
+        name: "Abs Burner", rounds: [8, 10, 12], work: 40, rest: 20, minPerRound: 1, unit: .rounds,
+        details: ["40 sec on, 20 off, rotating: V-ups, bicycle crunch, plank shoulder taps, reverse crunch. Quality reps, ribs down."])
+    static let inclineWalk = Cardio(
+        name: "Incline Walk", rounds: [30, 35, 40], work: nil, rest: nil, minPerRound: 1, unit: .min,
+        details: ["Treadmill at 10-12% incline, a brisk walk you could talk through. Burns fat without eating into recovery."])
+
+    static let screenReady = Spec(
+        doses: [
+            .power: [Dose(3, 3, 3, 120), Dose(3, 3, 3, 120), Dose(3, 3, 3, 120)],
+            .main: [Dose(4, 6, 8, 120), Dose(4, 6, 8, 105), Dose(3, 6, 8, 90)],
+            .strength: [Dose(3, 8, 10, 90), Dose(3, 8, 12, 75), Dose(3, 10, 12, 60)],
+            .accessory: [Dose(3, 10, 15, 60), Dose(3, 12, 15, 45), Dose(4, 12, 15, 30)],
+        ],
+        days: [
+            3: [
+                Day("Chest, Shoulders + Abs", lifts: [m("incline"), s("s1", "dbincline")],
+                    pairs: [pair("trxchestfly", "lateral"), pair("bbcurl", "skull"), pair("vup", "trxoblique")],
+                    finisher: absBurner),
+                Day("Legs + Back", lower: true, lifts: [m("squat"), s("s1", "bbrow")],
+                    pairs: [pair("bulgarian", "trxhighrow"), pair("hipthrust", "legraise")], finisher: hills),
+                Day("Full Body + Arms", lower: true, lifts: [p("power", "hangclean"), m("deadlift"), s("s1", "ohp")],
+                    pairs: [pair("trxrow", "trxchestfly"), pair("hammer", "trxtricep"), pair("trxfallout", "russiantwist")],
+                    finisher: bagFinisher),
+            ],
+            4: [
+                Day("Chest, Shoulders + Abs", lifts: [m("incline"), s("s1", "dbincline")],
+                    pairs: [pair("trxchestfly", "lateral"), pair("arnold", "reardelt"), pair("vup", "trxoblique")],
+                    finisher: absBurner),
+                Day("Legs + Back", lower: true, lifts: [m("squat"), s("s1", "bbrow")],
+                    pairs: [pair("bulgarian", "trxhighrow"), pair("hipthrust", "legraise")], finisher: hills),
+                Day("Arms, Delts + Abs", lifts: [m("ohp"), s("s1", "dbfloor")],
+                    pairs: [pair("bbcurl", "skull"), pair("hammer", "trxtricep"), pair("trxfallout", "bicycle")],
+                    finisher: absBurner),
+                Day("Full Body", lower: true, lifts: [p("power", "hangclean"), m("deadlift"), s("s1", "bench")],
+                    pairs: [pair("trxrow", "trxchestfly"), pair("lateral", "russiantwist")], finisher: bagFinisher),
+            ],
+            5: [
+                Day("Chest, Shoulders + Abs", lifts: [m("incline"), s("s1", "dbincline")],
+                    pairs: [pair("trxchestfly", "lateral"), pair("arnold", "reardelt"), pair("vup", "trxoblique")],
+                    finisher: absBurner),
+                Day("Legs + Back", lower: true, lifts: [m("squat"), s("s1", "bbrow")],
+                    pairs: [pair("bulgarian", "trxhighrow"), pair("hipthrust", "legraise")], finisher: hills),
+                Day("Arms, Delts + Abs", lifts: [m("ohp"), s("s1", "dbfloor")],
+                    pairs: [pair("bbcurl", "skull"), pair("hammer", "trxtricep"), pair("trxfallout", "bicycle")],
+                    finisher: absBurner),
+                Day("Full Body", lower: true, lifts: [p("power", "hangclean"), m("deadlift"), s("s1", "bench")],
+                    pairs: [pair("trxrow", "trxchestfly"), pair("lateral", "russiantwist")], finisher: bagFinisher),
+                Day("Pump + Incline Walk", lifts: [],
+                    pairs: [pair("trxchestfly", "trxhighrow"), pair("inclinecurl", "ohtri"), pair("lateral", "hollowrock")],
+                    engine: inclineWalk),
+            ],
+        ])
+
+    // MARK: Agent Circuits (about 45 minutes: heavy lift, then a circuit)
+
+    static let kbCircuit = Cardio(
+        name: "Kettlebell Circuit", rounds: [15, 20, 25], work: 45, rest: 15, minPerRound: 1, unit: .rounds,
+        details: ["45 sec work, 15 sec to switch, 5 stations per lap: KB swing, goblet squat, KB clean & press (switch arms each lap), renegade row, TRX atomic push-up."])
+    static let trxCircuit = Cardio(
+        name: "TRX & Bodyweight Circuit", rounds: [15, 20, 25], work: 45, rest: 15, minPerRound: 1, unit: .rounds,
+        details: ["45 sec work, 15 sec to switch, 5 stations per lap: TRX row, push-up, reverse lunge, TRX pike, burpee."])
+    static let dbComplex = Cardio(
+        name: "Dumbbell Complex", rounds: [4, 5, 6], work: nil, rest: nil, minPerRound: 3, unit: .rounds,
+        details: ["One round = 6 of each without putting the bells down: DB hang clean, front squat, push press, renegade row, reverse lunge each leg. Rest 60-90 sec between rounds."])
+    static let agentBag = Cardio(
+        name: "Bag + Carry Circuit", rounds: [12, 16, 20], work: 60, rest: 15, minPerRound: 1.25, unit: .rounds,
+        details: ["60 sec stations, 15 sec to move, 4 per lap: heavy bag, KB suitcase carry (switch hands halfway), mountain climbers, bag again."])
+
+    static let agentCircuits = Spec(
+        doses: [
+            .power: [Dose(4, 5, 5, 90), Dose(5, 5, 5, 90), Dose(5, 3, 3, 90)],
+            .main: [Dose(4, 5, 5, 150), Dose(4, 4, 6, 150), Dose(3, 3, 5, 150)],
+            .strength: [Dose(3, 6, 8, 90), Dose(3, 6, 8, 90), Dose(3, 6, 8, 75)],
+            .accessory: [Dose(2, 8, 12, 45), Dose(3, 10, 12, 45), Dose(3, 10, 15, 30)],
+        ],
+        days: [
+            3: [
+                Day("Lower Power", lower: true, lifts: [m("squat")],
+                    pairs: [pair("trxpistol", "trxfallout")], engine: kbCircuit),
+                Day("Upper Push-Pull", lifts: [m("bench"), s("s1", "pendlay")],
+                    pairs: [pair("trxchestfly", "trxhighrow")], engine: trxCircuit),
+                Day("Hinge + Press", lower: true, lifts: [m("deadlift"), s("s1", "pushpress")],
+                    pairs: [pair("trxpowerpull", "woodchop")], engine: dbComplex),
+            ],
+            4: [
+                Day("Lower Power", lower: true, lifts: [m("squat")],
+                    pairs: [pair("trxpistol", "trxfallout")], engine: kbCircuit),
+                Day("Upper Push-Pull", lifts: [m("bench"), s("s1", "pendlay")],
+                    pairs: [pair("trxchestfly", "trxhighrow")], engine: trxCircuit),
+                Day("Hinge + Carry", lower: true, lifts: [m("deadlift"), s("s1", "hipthrust")],
+                    pairs: [pair("suitcase", "copenhagen")], engine: dbComplex),
+                Day("Athletic", lifts: [p("power", "dbsnatch"), m("pushpress")],
+                    pairs: [pair("trxpowerpull", "woodchop")], engine: agentBag),
+            ],
+            5: [
+                Day("Lower Power", lower: true, lifts: [m("squat")],
+                    pairs: [pair("trxpistol", "trxfallout")], engine: kbCircuit),
+                Day("Upper Push-Pull", lifts: [m("bench"), s("s1", "pendlay")],
+                    pairs: [pair("trxchestfly", "trxhighrow")], engine: trxCircuit),
+                Day("Hinge + Carry", lower: true, lifts: [m("deadlift"), s("s1", "hipthrust")],
+                    pairs: [pair("suitcase", "copenhagen")], engine: dbComplex),
+                Day("Athletic", lifts: [p("power", "dbsnatch"), m("pushpress")],
+                    pairs: [pair("trxpowerpull", "woodchop")], engine: agentBag),
+                Day("Recovery Run + Core", lifts: [],
+                    pairs: [pair("trxbodysaw", "hipdip"), pair("kbwindmill", "shouldertap")], engine: easy),
             ],
         ])
 
@@ -253,6 +364,8 @@ public enum ProgramLibrary {
         case .engineStrength: return engineStrength
         case .define45: return define45
         case .strengthBoxing: return strengthBoxing
+        case .screenReady: return screenReady
+        case .agentCircuits: return agentCircuits
         }
     }
 

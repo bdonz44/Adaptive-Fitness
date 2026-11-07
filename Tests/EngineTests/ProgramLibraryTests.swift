@@ -3,7 +3,7 @@ import Testing
 @testable import Hybrid12Engine
 
 @Suite struct ProgramLibraryTests {
-    let custom: [ProgramID] = [.engineStrength, .define45, .strengthBoxing]
+    let custom = ProgramID.allCases.filter { $0 != .hybrid12 }
 
     func state(_ id: ProgramID, days: Int, week: Int = 1) -> ProgramState {
         ProgramState(week: week, program: id, days: days)

@@ -121,6 +121,10 @@ Plan > Programs picks the program and days a week. Hybrid 12 (5 days) is the ori
 - **Define 45** (Build, Sculpt, Define): upper/lower (3 day: full body), about 12-16 hard sets per muscle a week (Schoenfeld 2016 dose-response), heavy sets 1-3 reps short of failure, short finishers. Nutrition text: 300-500 kcal deficit, 1 g protein per lb of goal weight (above Morton 2018's ~0.73 g/lb).
 - **Strength & Boxing** (Fundamentals, Power, Fight Shape): power cleans, squats, deadlifts, presses and rows, then a "Box" block: technique rounds (3 min on, 1 off, combos change by phase), 30:30 power rounds, roadwork, and a 5th-day bag session.
 
+- **Screen Ready** (Build, Cut, Camera Ready): the actor cut. Modeled on what film trainers report (e.g. Corey Calliet hitting chest, arms and abs twice a week for Michael B. Jordan): heavy compound first, then chest/shoulder/arm/ab supersets, rest shrinking from 60 to 30 sec, abs burner and incline walking. No dehydration "peak week".
+- **Agent Circuits** (Base, Operator, Mission): modeled on Simon Waterson's reported Bond approach (about 45 min, 5 days, compound lifts plus kettlebell, bodyweight and circuit work): one heavy lift, a quick pair, then a kettlebell, TRX, dumbbell-complex or bag circuit.
+- New ab and TRX moves (TRX chest fly, fallout, body saw, oblique tuck, power pull, high row, woodchop, Russian twist and others) are built into all five programs; Hybrid 12 is untouched.
+
 Choices: deadlifts get one set fewer than other main lifts; TRX rows are never used as a heavy (6-8 rep) lift; Beat-up days keep the first superset pair, halve conditioning and drop finishers; back-off weeks take a set off and about 25% off conditioning.
 
 Saving: the program, days, start week and other programs' saved weeks are stored as "@..." entries in the synced program record's done list (`ProgramState.storedDoneSlots`), so the CloudKit schema didn't change. Hybrid 12 records look exactly as before.

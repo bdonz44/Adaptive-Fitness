@@ -3,7 +3,7 @@ import Foundation
 /// The programs you can run. Hybrid 12 is the original (web app) program;
 /// the others are built from `ProgramLibrary` day plans.
 public enum ProgramID: String, Codable, CaseIterable, Sendable {
-    case hybrid12, engineStrength, define45, strengthBoxing
+    case hybrid12, engineStrength, define45, strengthBoxing, screenReady, agentCircuits
 
     public var name: String {
         switch self {
@@ -11,6 +11,8 @@ public enum ProgramID: String, Codable, CaseIterable, Sendable {
         case .engineStrength: return "Engine Strength"
         case .define45: return "Define 45"
         case .strengthBoxing: return "Strength & Boxing"
+        case .screenReady: return "Screen Ready"
+        case .agentCircuits: return "Agent Circuits"
         }
     }
 
@@ -24,6 +26,10 @@ public enum ProgramID: String, Codable, CaseIterable, Sendable {
             return "Upper / lower strength and muscle work, 12-16 hard sets per muscle a week, short conditioning. Defined and stronger."
         case .strengthBoxing:
             return "Power cleans, presses and pulls for punching power, plus heavy bag technique, power and fight-pace rounds."
+        case .screenReady:
+            return "The actor cut: chest, shoulders, arms and abs twice a week on top of heavy lifts, with rest shrinking toward camera-ready."
+        case .agentCircuits:
+            return "About 45 minutes: one heavy lift, then kettlebell, TRX, dumbbell-complex or bag circuits. Lean, athletic, easy on the joints."
         }
     }
 
@@ -37,6 +43,8 @@ public enum ProgramID: String, Codable, CaseIterable, Sendable {
         case .engineStrength: return ["Base", "Build", "Peak"][phase.rawValue]
         case .define45: return ["Build", "Sculpt", "Define"][phase.rawValue]
         case .strengthBoxing: return ["Fundamentals", "Power", "Fight Shape"][phase.rawValue]
+        case .screenReady: return ["Build", "Cut", "Camera Ready"][phase.rawValue]
+        case .agentCircuits: return ["Base", "Operator", "Mission"][phase.rawValue]
         }
     }
 
@@ -52,6 +60,12 @@ public enum ProgramID: String, Codable, CaseIterable, Sendable {
         case (.strengthBoxing, .foundation): return "Learn the combos; heavy 5s."
         case (.strengthBoxing, .build): return "Cleans and heavy 3-5s; hard power rounds."
         case (.strengthBoxing, .define): return "Fight-pace rounds; strength held at 3s."
+        case (.screenReady, .foundation): return "Heavy 6-8s, 10-15 rep pump work. Eat near maintenance."
+        case (.screenReady, .build): return "Same lifts, shorter rest, 300-500 calorie deficit."
+        case (.screenReady, .define): return "4 × 12-15 on 30 sec rest, more abs and incline walking. Main lifts stay heavy."
+        case (.agentCircuits, .foundation): return "Heavy 5s, 3-lap circuits."
+        case (.agentCircuits, .build): return "4-6s, 4-lap circuits."
+        case (.agentCircuits, .define): return "Heavy 3-5s, 5-lap circuits, faster switches."
         }
     }
 
@@ -65,6 +79,10 @@ public enum ProgramID: String, Codable, CaseIterable, Sendable {
             return "Each muscle gets about 12-16 hard sets a week. Stop heavy sets 1-3 reps short of failure. Eat 300-500 calories under maintenance, protein 1 g per lb of goal weight, 8-10k steps a day, 7+ hours of sleep. Weeks 4 and 8 back off."
         case .strengthBoxing:
             return "Strength before the bag on lifting days. Rounds are 3 min with 1 min rest. Hands back to your face after every punch, breathe out on every punch, and stay on the balls of your feet. Wrap your hands. Weeks 4 and 8 back off."
+        case .screenReady:
+            return "What actor trainers do: a heavy compound lift first so you keep strength while cutting, then supersets for chest, shoulders, arms and abs, each hit twice a week. Lower every rep over 2-3 seconds. 10k steps a day, protein 1 g per lb of goal weight, lose 0.5-1% a week. No water cutting: the Camera Ready phase gets you there by being lean, not dehydrated. Weeks 4 and 8 back off."
+        case .agentCircuits:
+            return "About 45 minutes. One heavy lift with full rest, a quick pair, then the circuit at a pace you can hold every lap. Circuits get longer each phase. Weeks 4 and 8 back off."
         }
     }
 }
