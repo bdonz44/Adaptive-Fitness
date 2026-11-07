@@ -2,12 +2,13 @@ import SwiftUI
 import Hybrid12Engine
 
 /// "Add exercise": every exercise in the library, grouped, with search.
-/// Picking one adds it to today's Extras.
+/// Tick as many as you like, then Add puts them in today's Extras in the order picked.
 struct AddExerciseSheet: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     let session: Session
     @State private var search = ""
+    @State private var picked: [String] = []
 
     private var groups: [(title: String, exercises: [Exercise])] {
         let inSession = Set(session.items.compactMap(\.exerciseID))
@@ -34,24 +35,54 @@ struct AddExerciseSheet: View {
                 ForEach(groups, id: \.title) { group in
                     Section(group.title) {
                         ForEach(group.exercises, id: \.id) { e in
+                            let order = picked.firstIndex(of: e.id)
                             Button {
-                                store.addExtra(e.id)
-                                dismiss()
+                                if let order { picked.remove(at: order) } else { picked.append(e.id) }
                             } label: {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(e.name).font(.body.weight(.semibold)).foregroundStyle(Theme.text)
-                                    Text(e.category == Catalog.trxCategory ? "TRX straps" : Self.equipment(e.eq)).font(.caption).foregroundStyle(Theme.secondary)
+                                HStack(spacing: 12) {
+                                    ZStack {
+                                        Circle()
+                                            .strokeBorder(order == nil ? Theme.secondary : Theme.accent, lineWidth: 2)
+                                            .background(Circle().fill(order == nil ? Color.clear : Theme.accent))
+                                        if let order {
+                                            Text("\(order + 1)").font(.caption.weight(.heavy)).foregroundStyle(Theme.onAccent)
+                                        }
+                                    }
+                                    .frame(width: 26, height: 26)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(e.name).font(.body.weight(.semibold)).foregroundStyle(Theme.text)
+                                        Text(e.category == Catalog.trxCategory ? "TRX straps" : Self.equipment(e.eq)).font(.caption).foregroundStyle(Theme.secondary)
+                                    }
+                                    Spacer()
                                 }
+                                .contentShape(Rectangle())
                             }
+                            .accessibilityAddTraits(order == nil ? [] : .isSelected)
                         }
                     }
                 }
             }
             .searchable(text: $search, prompt: "Search exercises")
-            .navigationTitle("Add exercise")
+            .safeAreaInset(edge: .bottom) {
+                if !picked.isEmpty {
+                    Button {
+                        store.addExtras(picked)
+                        dismiss()
+                    } label: {
+                        Text(picked.count == 1 ? "Add 1 exercise" : "Add \(picked.count) exercises").accentButton(height: 56)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+                }
+            }
+            .navigationTitle(picked.isEmpty ? "Add exercises" : "\(picked.count) picked")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                if !picked.isEmpty {
+                    ToolbarItem(placement: .confirmationAction) { Button("Clear") { picked = [] } }
+                }
             }
         }
     }

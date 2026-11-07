@@ -107,3 +107,12 @@ import Testing
         #expect(plank.lifts["trxplank"]?.note == "Harder: add 10 to 15 seconds.")
     }
 }
+
+@Suite struct ManyExtrasTests {
+    @Test func severalAddedAtOnceKeepThePickedOrder() {
+        var d = SessionDraft(slot: .D, week: 1)
+        for id in ["trxrow", "powerclean", "curl", "trxrow"] { d.addExtra(id) }
+        let s = SessionBuilder.build(slot: .D, context: d.context(runMinutes: 25))
+        #expect(s.blocks.first { $0.kind == .extras }?.items.map(\.exerciseID) == ["trxrow", "powerclean", "curl"])
+    }
+}

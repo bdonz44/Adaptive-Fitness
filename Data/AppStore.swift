@@ -436,6 +436,12 @@ final class AppStore {
         saveDraft()
     }
 
+    /// Several at once, in the order picked.
+    func addExtras(_ exerciseIDs: [String]) {
+        for id in exerciseIDs { draft.addExtra(id) }
+        saveDraft()
+    }
+
     func removeExtra(_ item: SessionItem) {
         guard let id = item.exerciseID else { return }
         if coachCue?.key == item.key { coachCue = nil }

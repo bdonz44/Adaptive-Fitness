@@ -42,7 +42,7 @@ struct TodayView: View {
                         BlockSection(block: block, session: session)
                     }
                     Button { showAddExercise = true } label: {
-                        Label("Add exercise", systemImage: "plus.circle.fill")
+                        Label("Add exercises", systemImage: "plus.circle.fill")
                             .font(.headline)
                             .frame(maxWidth: .infinity, minHeight: 50)
                     }
