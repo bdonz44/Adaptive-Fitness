@@ -133,7 +133,8 @@ public enum Progression {
 
     /// Applies a finished session to the stored lifts.
     public static func progress(session: Session, entries: [String: LoggedItem], lifts: [String: LiftRecord],
-                                date: Date, runMinutes: Int, catalog: Catalog = .bundled) -> ProgressResult {
+                                date: Date, runMinutes: Int, catalog: Catalog = .bundled,
+                                adaptive: AdaptiveSettings = .off) -> ProgressResult {
         var lifts = lifts
         var changes: [LiftChange] = []
         var cardio = 0.0
@@ -176,7 +177,11 @@ public enum Progression {
             } else {
                 switch eq {
                 case .bb, .db:
-                    if let used { note = barbellOrDumbbell(&rec, item: item, eq: eq, used: used, reading: reading, catalog: catalog) }
+                    if let used {
+                        let effort = adaptive.effortProgression ? EffortRules.step(reading: reading, rir: log.rir) : .normal
+                        note = barbellOrDumbbell(&rec, item: item, eq: eq, used: used, reading: reading,
+                                                 catalog: catalog, effort: effort)
+                    }
                 case .kb:
                     if let used { note = kettlebell(&rec, id: id, used: used, reading: reading) }
                 case .bw:
@@ -199,7 +204,8 @@ public enum Progression {
     }
 
     static func barbellOrDumbbell(_ rec: inout LiftRecord, item: SessionItem, eq: Equipment, used: Double,
-                                  reading: SetReading, catalog: Catalog) -> String? {
+                                  reading: SetReading, catalog: Catalog, effort: EffortRules.Step = .normal) -> String? {
+        let inc = eq == .bb ? (catalog.exercise(item.exerciseID ?? "")?.inc ?? 5) : 5
         if reading.hitAll {
             rec.fails = 0
             rec.holds = 0
@@ -207,9 +213,17 @@ public enum Progression {
                 rec.workingWeight = Suggestions.dumbbellMax
                 return maxDumbbellNote
             }
-            let inc = eq == .bb ? (catalog.exercise(item.exerciseID ?? "")?.inc ?? 5) : 5
-            rec.workingWeight = Suggestions.clamp(used + inc, equipment: eq)
-            return nil
+            switch effort {
+            case .hold:
+                rec.workingWeight = used
+                return EffortRules.holdNote
+            case .double:
+                rec.workingWeight = Suggestions.clamp(used + inc * 2, equipment: eq)
+                return EffortRules.doubleNote
+            case .normal, .bump:
+                rec.workingWeight = Suggestions.clamp(used + inc, equipment: eq)
+                return nil
+            }
         }
         if reading.miss {
             if rec.fails >= 1 {
@@ -223,6 +237,11 @@ public enum Progression {
         }
         // In range, not the top.
         rec.fails = 0
+        if effort == .bump {
+            rec.holds = 0
+            rec.workingWeight = Suggestions.clamp(used + inc, equipment: eq)
+            return EffortRules.bumpNote
+        }
         if item.kind == .main {
             rec.holds += 1
             if rec.holds >= 3 {

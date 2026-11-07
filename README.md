@@ -80,6 +80,9 @@ Or open `Package.swift` in Xcode and press Cmd-U. GitHub also runs them on every
 - **Rule 2 suggestion wording** (best e1RM exists): "From your recent best (estimated max X lb)."
 - **Kettlebell with no stored bell:** "Start with the X lb bell."
 - **Beat up on a deload week:** main sets drop by 1, not 2.
+- **Effort chips (adaptive 1):** the existing Easy / Solid / Grinder buttons stand in for the spec's 0 / 1 / 2 / 3+ chips (Easy = 3+, Solid = 2, Grinder = 0); the last one tapped on a lift counts. Effort rules apply to barbell and dumbbell lifts; kettlebells keep their bell jumps.
+- **"Average RIR instead of 2 in reserve" (adaptive 1):** taken literally, easy sets would make suggestions lighter. Instead, logged reps left count toward the estimated max (up to 3), and suggestions still leave 2 in the tank.
+- **Smart coaching switches** are saved on each phone (not synced through iCloud). Effort counts starts on.
 - **A miss resets after any non-miss session**, for main lifts too, so "second miss in a row" means in a row.
 - **Light days (deload, Beat up)** still store a weight the first time a lift is ever logged.
 - **`firstWeight`** was added to the lift record so "heavier than where you started" survives the 12-entry history limit.

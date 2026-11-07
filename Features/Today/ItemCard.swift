@@ -28,7 +28,7 @@ struct ItemCard: View {
                     Text(prescription).font(.subheadline).foregroundStyle(Theme.secondary)
                 }
                 Spacer()
-                if (item.kind == .accessory || item.kind == .engine || item.kind == .finisher) && skipped == nil {
+                if (item.kind == .accessory || item.kind == .engine || item.kind == .finisher) && skipped == nil && !item.isExtra {
                     Button {
                         store.swap(item)
                     } label: {
@@ -130,6 +130,11 @@ struct ExerciseMenu: View {
     var body: some View {
         let e = store.entry(item.key)
         Menu {
+            if item.isExtra {
+                Button(role: .destructive) { store.removeExtra(item) } label: {
+                    Label("Remove from today", systemImage: "trash")
+                }
+            }
             if e.skipped == nil {
                 Button { store.markAllDone(item) } label: { Label("All sets done", systemImage: "checkmark.circle.fill") }
                 Button { store.removeSet(item) } label: { Label("Remove a set", systemImage: "minus.circle") }

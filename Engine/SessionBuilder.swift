@@ -5,7 +5,7 @@ public enum ItemKind: String, Codable, Sendable {
 }
 
 public enum BlockKind: String, Codable, Sendable {
-    case getStrong, engine, run, buildTheLook, burnIt
+    case getStrong, engine, run, buildTheLook, extras, burnIt
 
     public var title: String {
         switch self {
@@ -13,6 +13,7 @@ public enum BlockKind: String, Codable, Sendable {
         case .engine: return "Engine"
         case .run: return "Run"
         case .buildTheLook: return "Build the look"
+        case .extras: return "Extras"
         case .burnIt: return "Burn it"
         }
     }
@@ -47,6 +48,10 @@ public struct SessionItem: Equatable, Sendable {
     public var intervalRest: Int? = nil
 
     public var isLift: Bool { kind == .main || kind == .accessory }
+    /// Added by hand for today ("Add exercise"), keyed "x-<exercise id>".
+    public var isExtra: Bool { key.hasPrefix(SessionItem.extraPrefix) }
+    public static let extraPrefix = "x-"
+    public static func extraKey(_ exerciseID: String) -> String { extraPrefix + exerciseID }
     public var isCardio: Bool { kind == .engine || kind == .finisher || kind == .run }
     /// First item of a superset pair: its tick starts a 20 sec transition, not the rest.
     public var startsPair: Bool { position == 0 }
@@ -80,9 +85,13 @@ public struct SessionContext: Equatable, Sendable {
     public var condSwap: Int?
     public var finSwap: Int?
     public var runMinutes: Int
+    /// Exercises added by hand for today, in order.
+    public var extras: [String]
 
     public init(week: Int, readiness: Readiness = .normal, swaps: [String: String] = [:],
-                condSwap: Int? = nil, finSwap: Int? = nil, runMinutes: Int = Program.defaultRunMinutes) {
+                condSwap: Int? = nil, finSwap: Int? = nil, runMinutes: Int = Program.defaultRunMinutes,
+                extras: [String] = []) {
+        self.extras = extras
         self.week = week
         self.readiness = readiness
         self.swaps = swaps
@@ -200,6 +209,23 @@ public enum SessionBuilder {
             if !items.isEmpty { blocks.append(SessionBlock(kind: .buildTheLook, items: items)) }
         }
 
+        // 4b. Extras added by hand: accessory sets, reps and rest for the phase.
+        let extraItems: [SessionItem] = context.extras.compactMap { id in
+            guard let ex = catalog.exercise(id) else { return nil }
+            let range: (low: Int, high: Int)
+            switch ex.unit {
+            case .sec: range = (scheme.holdLow, scheme.holdHigh)
+            case .yd: range = (Program.carryYards, Program.carryYards)
+            default: range = (scheme.accLow, scheme.accHigh)
+            }
+            return SessionItem(
+                key: SessionItem.extraKey(ex.id), tag: "+", kind: .accessory,
+                exerciseID: ex.id, name: ex.name, equipment: ex.eq, unit: ex.unit, side: ex.side,
+                sets: max(1, scheme.accSets - (week.isDeload ? 1 : 0)), low: range.low, high: range.high,
+                restSeconds: scheme.accRest, detail: ex.cue)
+        }
+        if !extraItems.isEmpty { blocks.append(SessionBlock(kind: .extras, items: extraItems)) }
+
         // 5. Burn it (A, B, D, E)
         if [Slot.A, .B, .D, .E].contains(slot) {
             let list = catalog.finishers(for: slot)
@@ -223,7 +249,7 @@ public enum SessionBuilder {
 
     /// Swap: the next exercise in the same category not already in the session.
     public static func swapOption(for key: String, in session: Session, catalog: Catalog = .bundled) -> String? {
-        guard let item = session.item(key), item.kind == .accessory,
+        guard let item = session.item(key), item.kind == .accessory, !item.isExtra,
               let id = item.exerciseID, let ex = catalog.exercise(id) else { return nil }
         let list = catalog.accessories(in: ex.category)
         guard let index = list.firstIndex(where: { $0.id == id }) else { return nil }

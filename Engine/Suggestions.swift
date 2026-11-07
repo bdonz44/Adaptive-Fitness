@@ -96,10 +96,13 @@ public enum Suggestions {
     }
 
     /// Highest e1RM across the last 3 history entries that have both weight and reps.
-    public static func best1RM(_ record: LiftRecord?) -> Double? {
+    /// With `countEffort`, reps left in the tank (logged RIR) count toward the estimate.
+    public static func best1RM(_ record: LiftRecord?, countEffort: Bool = false) -> Double? {
         guard let record else { return nil }
         let usable = record.history.filter { ($0.weight ?? 0) > 0 && ($0.reps ?? 0) > 0 }.suffix(3)
-        return usable.map { e1RM(weight: $0.weight!, reps: $0.reps!) }.max()
+        return usable.map { e in
+            e1RM(weight: e.weight!, reps: e.reps! + (countEffort ? EffortRules.extraReps(e.rir) : 0))
+        }.max()
     }
 
     /// Weight for a rep target, leaving `reserve` reps in the tank (2 by default).
@@ -137,7 +140,8 @@ public enum Suggestions {
     // MARK: Suggestion
 
     public static func suggest(item: SessionItem, lifts: [String: LiftRecord], lightenToday: Bool,
-                               catalog: Catalog = .bundled) -> Suggestion {
+                               catalog: Catalog = .bundled, adaptive: AdaptiveSettings = .off) -> Suggestion {
+        let effort = adaptive.effortProgression
         guard item.isLift, let id = item.exerciseID, let eq = item.equipment else {
             return Suggestion(weight: nil, reason: "")
         }
@@ -166,10 +170,10 @@ public enum Suggestions {
             } else {
                 reason += "Same weight, beat your reps."
             }
-        } else if let best = best1RM(record) {
+        } else if let best = best1RM(record, countEffort: effort) {
             base = weight(forReps: target, e1RM: best)
             reason = "From your recent best (estimated max \(Fmt.lb(round5(best))) lb)."
-        } else if let rel = related[id], let relBest = best1RM(lifts[rel.from]) {
+        } else if let rel = related[id], let relBest = best1RM(lifts[rel.from], countEffort: effort) {
             base = weight(forReps: target, e1RM: relBest * rel.ratio)
             reason = "Estimated from your \(catalog.exercise(rel.from)?.name ?? rel.from)."
         } else if let stored = record?.workingWeight {

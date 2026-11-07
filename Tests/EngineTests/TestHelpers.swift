@@ -23,13 +23,14 @@ func foundationMain(_ id: String) -> SessionItem {
 }
 
 func finish(_ item: SessionItem, _ logged: [LoggedSet], record: LiftRecord? = nil,
-            week: Int = 1, readiness: Readiness = .normal, rir: Int? = nil) -> ProgressResult {
+            week: Int = 1, readiness: Readiness = .normal, rir: Int? = nil,
+            adaptive: AdaptiveSettings = .off) -> ProgressResult {
     let session = Session(slot: .A, title: "Test", week: ProgramWeek(week), readiness: readiness,
                           blocks: [SessionBlock(kind: .getStrong, items: [item])])
     var lifts: [String: LiftRecord] = [:]
     if let record { lifts[record.exerciseID] = record }
     return Progression.progress(session: session, entries: [item.key: LoggedItem(sets: logged, rir: rir)],
-                                lifts: lifts, date: t0, runMinutes: Program.defaultRunMinutes)
+                                lifts: lifts, date: t0, runMinutes: Program.defaultRunMinutes, adaptive: adaptive)
 }
 
 func entry(_ weight: Double, _ reps: Int, targetHi: Int = 5, daysAgo: Double = 7) -> HistoryEntry {

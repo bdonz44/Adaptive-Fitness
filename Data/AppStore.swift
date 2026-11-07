@@ -56,6 +56,10 @@ final class AppStore {
     private(set) var waist: [WaistEntry]
     /// Every log's slot, week and date (for "This week" in the Plan tab).
     @ObservationIgnored private var weekLogs: [(slot: String, week: Int, date: Date)] = []
+    /// Adaptive-layer switches (Plan > Smart coaching). Saved on this phone.
+    var adaptive: AdaptiveSettings = AppStore.loadAdaptive() {
+        didSet { AppStore.saveAdaptive(adaptive) }
+    }
     /// The coach's call after the last set ticked.
     private(set) var coachCue: (key: String, cue: CoachCues.Cue)?
 
@@ -206,7 +210,8 @@ final class AppStore {
     var workingWeights: [Tracking.WorkingWeight] { Tracking.workingWeights(lifts: lifts, catalog: catalog) }
 
     func suggestion(for item: SessionItem, in session: Session) -> Suggestion {
-        Suggestions.suggest(item: item, lifts: lifts, lightenToday: session.isLightDay, catalog: catalog)
+        Suggestions.suggest(item: item, lifts: lifts, lightenToday: session.isLightDay, catalog: catalog,
+                            adaptive: adaptive)
     }
 
     func entry(_ key: String) -> LoggedItem {
@@ -397,6 +402,19 @@ final class AppStore {
         saveDraft()
     }
 
+    /// "Add exercise": puts an exercise at the end of today's session.
+    func addExtra(_ exerciseID: String) {
+        draft.addExtra(exerciseID)
+        saveDraft()
+    }
+
+    func removeExtra(_ item: SessionItem) {
+        guard let id = item.exerciseID else { return }
+        if coachCue?.key == item.key { coachCue = nil }
+        draft.removeExtra(id)
+        saveDraft()
+    }
+
     func setWarmWeight(_ weight: Double?, step index: Int) {
         draft.setWarmWeight(weight, step: index)
         saveDraft()
@@ -418,7 +436,7 @@ final class AppStore {
     func finish(now: Date = Date()) -> FinishSummary {
         let s = session
         let result = Progression.progress(session: s, entries: draft.entries, lifts: lifts, date: now,
-                                          runMinutes: program.runMinutes, catalog: catalog)
+                                          runMinutes: program.runMinutes, catalog: catalog, adaptive: adaptive)
         let workout = Workouts.record(session: s, entries: draft.entries, startedAt: draft.startedAt,
                                       finishedAt: now, cardioMinutes: result.cardioMinutes)
         if let workout { Task { await HealthService.shared.save(workout) } }
@@ -672,4 +690,25 @@ final class AppStore {
         resetDraft()
     }
     #endif
+}
+
+// MARK: Adaptive settings
+
+extension AppStore {
+    private static let adaptiveKey = "adaptiveSettings"
+
+    /// Effort-based progression starts on: the Easy / Solid / Grinder buttons already feed it.
+    static func loadAdaptive() -> AdaptiveSettings {
+        if let data = UserDefaults.standard.data(forKey: adaptiveKey),
+           let saved = try? JSONDecoder().decode(AdaptiveSettings.self, from: data) {
+            return saved
+        }
+        return AdaptiveSettings(effortProgression: true)
+    }
+
+    static func saveAdaptive(_ settings: AdaptiveSettings) {
+        if let data = try? JSONEncoder().encode(settings) {
+            UserDefaults.standard.set(data, forKey: adaptiveKey)
+        }
+    }
 }

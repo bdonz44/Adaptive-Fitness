@@ -23,6 +23,10 @@ struct PlanTab: View {
                         NavigationLink { WhoopSettingsView() } label: {
                             linkRow("WHOOP", detail: "Recovery sets your readiness", icon: "heart.text.square.fill")
                         }
+                        NavigationLink { SmartCoachingView() } label: {
+                            linkRow("Smart coaching", detail: store.adaptive.effortProgression ? "Effort counts: on" : "All off",
+                                    icon: "brain.head.profile")
+                        }
                         NavigationLink { ProgramsView() } label: {
                             linkRow("Programs", detail: "Hybrid 12 · more coming", icon: "square.stack.3d.up.fill")
                         }

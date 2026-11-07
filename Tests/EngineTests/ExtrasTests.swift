@@ -1,0 +1,63 @@
+import Foundation
+import Testing
+@testable import Hybrid12Engine
+
+@Suite struct ExtrasTests {
+    func build(_ d: SessionDraft) -> Session {
+        SessionBuilder.build(slot: d.slot, context: d.context(runMinutes: 25))
+    }
+
+    @Test func addedExercisesShowAsAnExtrasBlockBeforeTheFinisher() throws {
+        var d = SessionDraft(slot: .A, week: 1)
+        d.addExtra("curl")
+        d.addExtra("bbrow")
+        d.addExtra("curl")
+        let s = build(d)
+        let kinds = s.blocks.map(\.kind)
+        let i = try #require(kinds.firstIndex(of: .extras))
+        #expect(kinds.firstIndex(of: .burnIt).map { $0 > i } ?? true)
+        let extras = s.blocks[i].items
+        #expect(extras.map(\.exerciseID) == ["curl", "bbrow"])
+        #expect(extras.allSatisfy { $0.isExtra && $0.isLift && $0.kind == .accessory })
+        #expect(extras[0].key == "x-curl")
+    }
+
+    @Test func noExtrasNoBlock() {
+        #expect(!build(SessionDraft(slot: .A, week: 1)).blocks.contains { $0.kind == .extras })
+    }
+
+    @Test func removingTakesItsLogWithIt() {
+        var d = SessionDraft(slot: .A, week: 1)
+        d.addExtra("curl")
+        d.entries["x-curl"] = LoggedItem(sets: sets(25, [12]))
+        d.removeExtra("curl")
+        #expect(d.extras == nil)
+        #expect(d.entries["x-curl"] == nil)
+        #expect(!build(d).blocks.contains { $0.kind == .extras })
+    }
+
+    @Test func extrasProgressLikeAccessories() {
+        var d = SessionDraft(slot: .A, week: 1)
+        d.addExtra("curl")
+        let s = build(d)
+        let r = Progression.progress(session: s, entries: ["x-curl": LoggedItem(sets: sets(25, [12, 12, 12]))],
+                                     lifts: [:], date: t0, runMinutes: 25)
+        #expect(r.lifts["curl"]?.workingWeight == 30)
+    }
+
+    @Test func extrasCannotBeSwapped() {
+        var d = SessionDraft(slot: .A, week: 1)
+        d.addExtra("curl")
+        #expect(SessionBuilder.swapOption(for: "x-curl", in: build(d)) == nil)
+    }
+
+    @Test func oldDraftsWithoutExtrasStillLoad() throws {
+        var d = SessionDraft(slot: .B, week: 2)
+        d.addExtra("curl")
+        var json = try #require(String(data: JSONEncoder().encode(d), encoding: .utf8))
+        json = json.replacingOccurrences(of: #","extras":["curl"]"#, with: "")
+            .replacingOccurrences(of: #""extras":["curl"],"#, with: "")
+        let back = try JSONDecoder().decode(SessionDraft.self, from: Data(json.utf8))
+        #expect(back.extras == nil)
+    }
+}

@@ -19,6 +19,8 @@ public struct SessionDraft: Codable, Equatable, Sendable {
     public var startedAt: Date?
     /// Warm-up weights changed by hand, by step index ("0", "1"...).
     public var warmWeights: [String: Double]?
+    /// Exercises added by hand for today ("Add exercise"), in order.
+    public var extras: [String]?
 
     public init(slot: Slot, week: Int, readiness: Readiness = .normal) {
         self.slot = slot
@@ -40,7 +42,7 @@ public struct SessionDraft: Codable, Equatable, Sendable {
 
     public func context(runMinutes: Int) -> SessionContext {
         SessionContext(week: week, readiness: readiness, swaps: swaps,
-                       condSwap: condSwap, finSwap: finSwap, runMinutes: runMinutes)
+                       condSwap: condSwap, finSwap: finSwap, runMinutes: runMinutes, extras: extras ?? [])
     }
 
     /// A draft from an earlier week is discarded.
@@ -53,6 +55,21 @@ public struct SessionDraft: Codable, Equatable, Sendable {
         guard newValue != readiness else { return }
         readiness = newValue
         entries = entries.filter { $0.value.hasCompletedWork }
+    }
+
+    /// Adds an exercise to the end of today's session (once).
+    public mutating func addExtra(_ exerciseID: String) {
+        var list = extras ?? []
+        guard !list.contains(exerciseID) else { return }
+        list.append(exerciseID)
+        extras = list
+    }
+
+    /// Takes an added exercise back out, with anything logged for it.
+    public mutating func removeExtra(_ exerciseID: String) {
+        extras?.removeAll { $0 == exerciseID }
+        if extras?.isEmpty == true { extras = nil }
+        entries[SessionItem.extraKey(exerciseID)] = nil
     }
 
     /// Accessory: next exercise in the same category not already in the session.

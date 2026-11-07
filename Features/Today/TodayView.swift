@@ -14,6 +14,7 @@ struct TodayView: View {
 
     @State private var showFocus = false
     @State private var showRest = false
+    @State private var showAddExercise = false
 
     var body: some View {
         let session = store.session
@@ -39,6 +40,13 @@ struct TodayView: View {
                     ForEach(session.blocks, id: \.kind) { block in
                         BlockSection(block: block, session: session)
                     }
+                    Button { showAddExercise = true } label: {
+                        Label("Add exercise", systemImage: "plus.circle.fill")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, minHeight: 50)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(Theme.accent)
                     finishButtons(session)
                 }
                 .padding()
@@ -67,6 +75,9 @@ struct TodayView: View {
                 }
             }
             .toolbarBackground(look.background, for: .navigationBar)
+            .sheet(isPresented: $showAddExercise) {
+                AddExerciseSheet(session: session)
+            }
             .sheet(item: $summary) { s in
                 SummaryView(summary: s)
             }
