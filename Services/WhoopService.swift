@@ -121,6 +121,26 @@ final class WhoopService {
         return t
     }
 
+    /// WHOOP's scored workouts between two times (for the Finish screen).
+    @MainActor
+    func workouts(from start: Date, to end: Date) async -> [WhoopWorkout]? {
+        guard isConnected else { return nil }
+        var c = URLComponents()
+        c.queryItems = [.init(name: "start", value: WhoopDate.string(start)),
+                        .init(name: "end", value: WhoopDate.string(end)),
+                        .init(name: "limit", value: "10")]
+        let query = c.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B") ?? ""
+        do {
+            return WhoopWorkout.parse(try await get("/developer/v2/activity/workout?" + query))
+        } catch WhoopError.signedOut {
+            disconnect()
+            lastError = "WHOOP signed you out. Connect again."
+            return nil
+        } catch {
+            return nil
+        }
+    }
+
     // MARK: HTTP
 
     enum WhoopError: Error { case signedOut, http(Int) }

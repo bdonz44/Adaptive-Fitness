@@ -4,6 +4,7 @@ import Hybrid12Engine
 
 struct TodayView: View {
     @Environment(AppStore.self) private var store
+    @Environment(HeartRateMonitor.self) private var heart
     @Environment(RestTimer.self) private var timer
     @Environment(HoldTimer.self) private var hold
     @State private var summary: FinishSummary?
@@ -36,6 +37,7 @@ struct TodayView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .background(Theme.accent.opacity(0.2), in: RoundedRectangle(cornerRadius: look.radius))
                     }
+                    LiveHeartBar(compact: true)
                     NowCard(session: session, openFocus: { showFocus = true })
                     if !timer.isActive { CoachCueCard() }
                     ForEach(session.blocks, id: \.kind) { block in
@@ -99,7 +101,7 @@ struct TodayView: View {
 
     private func finishNow() {
         timer.done()
-        summary = store.finish()
+        summary = store.finish(heart: { [heart] start, end in heart.summary(from: start, to: end) })
         banner = nil
     }
 

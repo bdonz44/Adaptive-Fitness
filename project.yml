@@ -43,7 +43,8 @@ targets:
         UILaunchScreen: {}
         UIRequiresFullScreen: true
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
-        UIBackgroundModes: [remote-notification]
+        UIBackgroundModes: [remote-notification, bluetooth-central]
+        NSBluetoothAlwaysUsageDescription: Hybrid 12 reads live heart rate from your WHOOP (Heart Rate Broadcast) to show your zone during intervals and rest.
         NSSupportsLiveActivities: true
         WhoopClientID: $(WHOOP_CLIENT_ID)
         WhoopClientSecret: $(WHOOP_CLIENT_SECRET)

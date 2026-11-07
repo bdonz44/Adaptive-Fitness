@@ -91,6 +91,7 @@ struct RestView: View {
                 .frame(width: 290, height: 290)
                 .padding(.top, 10)
 
+                LiveHeartBar(compact: true)
                 CoachCueCard()
                 if let next = nextLine {
                     VStack(alignment: .leading, spacing: 4) {

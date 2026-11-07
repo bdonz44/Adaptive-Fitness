@@ -27,6 +27,10 @@ struct FinishSummary: Identifiable {
     var weekDone: Int = 0
     /// When this finish rolled the week over: the state to go back to.
     var undoState: ProgramState? = nil
+    /// The session's time span (for matching WHOOP's workout) and live heart rate, if recorded.
+    var startedAt: Date? = nil
+    var finishedAt: Date = Date()
+    var heart: HeartRate.Summary? = nil
 }
 
 /// One row in "Recent sessions".
@@ -467,7 +471,10 @@ final class AppStore {
 
     // MARK: Finishing
 
-    func finish(now: Date = Date()) -> FinishSummary {
+    /// `heart` gives the live heart rate recorded between two times (from the heart-rate monitor).
+    func finish(now: Date = Date(), heart: ((Date, Date) -> HeartRate.Summary?)? = nil) -> FinishSummary {
+        let started = draft.startedAt
+        let heartSummary = started.flatMap { heart?($0, now) }
         let s = session
         let result = Progression.progress(session: s, entries: draft.entries, lifts: lifts, date: now,
                                           runMinutes: program.runMinutes, catalog: catalog, adaptive: adaptive)
@@ -507,7 +514,8 @@ final class AppStore {
 
         return FinishSummary(title: s.title, changes: result.changes, cardioMinutes: result.cardioMinutes,
                              weekMessage: advance.message, minutes: workout?.minutes, setsDone: stats.setsDone,
-                             volume: stats.volume, records: records, weekDone: program.doneCount, undoState: undo)
+                             volume: stats.volume, records: records, weekDone: program.doneCount, undoState: undo,
+                             startedAt: started, finishedAt: now, heart: heartSummary)
     }
 
     /// Skip marks a slot done with no log.

@@ -68,6 +68,8 @@ struct SummaryView: View {
                     .overlay(RoundedRectangle(cornerRadius: look.radius).stroke(look.accent, lineWidth: 2))
                 }
 
+                FinishHeartCard(summary: summary)
+
                 SectionLabel(text: "Next time")
                 VStack(spacing: 0) {
                     if summary.changes.isEmpty {

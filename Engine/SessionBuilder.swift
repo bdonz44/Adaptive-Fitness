@@ -49,6 +49,9 @@ public struct SessionItem: Equatable, Sendable {
     public var intervalRest: Int? = nil
     /// False for program conditioning blocks that have no alternatives.
     public var canSwap: Bool = true
+    /// Heart-rate target for the work, as % of max (nil: a default by kind, see `HeartRate.target`).
+    public var hrLow: Int? = nil
+    public var hrHigh: Int? = nil
 
     public var isLift: Bool { kind == .main || kind == .accessory }
     /// Added by hand for today ("Add exercise"), keyed "x-<exercise id>".

@@ -91,6 +91,7 @@ struct WhoopSettingsView: View {
                 if let error = whoop.lastError {
                     Text(error).font(.footnote).foregroundStyle(.red)
                 }
+                LiveHeartSettings()
             }
             .padding()
         }
@@ -113,3 +114,58 @@ struct WhoopSettingsView: View {
         }
     }
 }
+
+/// Plan > WHOOP > Live heart rate: on/off, connection, and max heart rate for zones.
+struct LiveHeartSettings: View {
+    @Environment(HeartRateMonitor.self) private var heart
+
+    var body: some View {
+        @Bindable var heart = heart
+        let look = Theme.look
+        VStack(alignment: .leading, spacing: 12) {
+            SectionLabel(text: "Live heart rate", color: look.accent)
+            Toggle(isOn: Binding(get: { heart.isEnabled }, set: { heart.setEnabled($0) })) {
+                Text("Show my heart rate during workouts").font(.headline)
+            }
+            Text("In the WHOOP app: tap your profile picture, then Device Settings, and turn on Heart Rate Broadcast. Hybrid 12 then shows your live heart rate and zone on the round timer, the rest screen and Today, and buzzes when you're under your target during work rounds.")
+                .font(.subheadline).foregroundStyle(look.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if heart.isEnabled {
+                HStack {
+                    Text(status).font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Button("Find again") { heart.findAgain() }.font(.subheadline)
+                }
+                LiveHeartBar()
+                HStack(spacing: 14) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Max heart rate").font(.headline)
+                        Text("Zones are % of this. The estimate for 45 is 176; if WHOOP has shown you higher in a hard workout, use that.")
+                            .font(.caption).foregroundStyle(look.secondary)
+                    }
+                    Spacer()
+                    Button { heart.maxHR -= 1 } label: { Image(systemName: "minus").frame(width: 40, height: 40).background(look.field, in: Circle()) }
+                        .buttonStyle(.plain).accessibilityLabel("Lower max heart rate")
+                    Text("\(heart.maxHR)").font(look.number(30)).monospacedDigit().frame(minWidth: 60)
+                    Button { heart.maxHR += 1 } label: { Image(systemName: "plus").frame(width: 40, height: 40).background(look.field, in: Circle()) }
+                        .buttonStyle(.plain).accessibilityLabel("Raise max heart rate")
+                }
+                .padding(14)
+                .lookCard()
+            }
+        }
+        .padding(.top, 8)
+    }
+
+    private var status: String {
+        switch heart.state {
+        case .off: return "Off"
+        case .bluetoothOff: return "Bluetooth is off"
+        case .notAllowed: return "Allow Bluetooth for Hybrid 12 in Settings"
+        case .searching: return "Looking for your WHOOP…"
+        case .connecting(let n): return "Connecting to \(n)…"
+        case .connected(let n): return "Connected: \(n)"
+        }
+    }
+}
+

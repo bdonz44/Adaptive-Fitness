@@ -35,6 +35,8 @@ public enum ProgramLibrary {
         let unit: ExerciseUnit
         /// One description, or one per phase.
         let details: [String]
+        /// Heart-rate target during the work, % of max.
+        var target: ClosedRange<Int>? = nil
         func detail(_ phase: Phase) -> String { details.count == 3 ? details[phase.rawValue] : details[0] }
     }
 
@@ -74,28 +76,28 @@ public enum ProgramLibrary {
 
     static let norwegian = Cardio(
         name: "Norwegian 4×4", rounds: [4, 4, 5], work: 240, rest: 180, minPerRound: 7, unit: .rounds,
-        details: ["Treadmill at 6-10% incline (or a hill). 4 min hard: 85-95% of max heart rate (about 150-168 bpm), breathing hard, only a few words. 3 min easy walk. Same speed every round; add speed or incline when round 4 feels steady."])
+        details: ["Treadmill at 6-10% incline (or a hill). 4 min hard: 85-95% of max heart rate (about 150-168 bpm), breathing hard, only a few words. 3 min easy walk. Same speed every round; add speed or incline when round 4 feels steady."], target: 85...95)
     static let snatch = Cardio(
         name: "KB Snatch 15:15", rounds: [20, 30, 40], work: 15, rest: 15, minPerRound: 0.5, unit: .rounds,
-        details: ["15 sec of kettlebell snatches, 15 sec rest, switch hands every round. 20 or 35 lb bell. Smooth hips, punch through at the top. If form slips, swap to swings for the round."])
+        details: ["15 sec of kettlebell snatches, 15 sec rest, switch hands every round. 20 or 35 lb bell. Smooth hips, punch through at the top. If form slips, swap to swings for the round."], target: 80...90)
     static let circuit = Cardio(
         name: "Engine Circuit 40:20", rounds: [20, 25, 30], work: 40, rest: 20, minPerRound: 1, unit: .rounds,
-        details: ["40 sec work, 20 sec to switch. Stations in order: DB thruster, TRX row, KB swing, push-up, TRX mountain climber. Each 5 stations is one lap."])
+        details: ["40 sec work, 20 sec to switch. Stations in order: DB thruster, TRX row, KB swing, push-up, TRX mountain climber. Each 5 stations is one lap."], target: 80...90)
     static let bagIntervals = Cardio(
         name: "Heavy Bag Intervals", rounds: [6, 8, 10], work: 120, rest: 60, minPerRound: 3, unit: .rounds,
-        details: ["2 min hard on the bag, 1 min easy. Keep your hands moving the whole 2 min: jab, cross, hooks, body shots. Hard enough you can only say a few words."])
+        details: ["2 min hard on the bag, 1 min easy. Keep your hands moving the whole 2 min: jab, cross, hooks, body shots. Hard enough you can only say a few words."], target: 80...90)
     static let hills = Cardio(
         name: "Hill Sprints", rounds: [6, 8, 10], work: 30, rest: 90, minPerRound: 2, unit: .rounds,
-        details: ["30 sec hard on the treadmill at 8-10% incline (or a real hill), 90 sec easy walk."])
+        details: ["30 sec hard on the treadmill at 8-10% incline (or a real hill), 90 sec easy walk."], target: 85...95)
     static let easy = Cardio(
         name: "Easy Aerobic", rounds: [30, 40, 45], work: nil, rest: nil, minPerRound: 1, unit: .min,
-        details: ["Trails, treadmill walk on an incline or an easy jog. You should be able to talk the whole time (about 115-135 bpm)."])
+        details: ["Trails, treadmill walk on an incline or an easy jog. You should be able to talk the whole time (about 115-135 bpm)."], target: 60...70)
     static let swingEMOM = Cardio(
         name: "Swing EMOM", rounds: [8, 10, 12], work: 60, rest: 0, minPerRound: 1, unit: .rounds,
-        details: ["Every minute on the minute: 15 KB swings, rest the rest of the minute. 35 or 50 lb bell."])
+        details: ["Every minute on the minute: 15 KB swings, rest the rest of the minute. 35 or 50 lb bell."], target: 75...90)
     static let bagFinisher = Cardio(
         name: "Bag Finisher", rounds: [4, 5, 6], work: 60, rest: 30, minPerRound: 1.5, unit: .rounds,
-        details: ["1 min all-out punching, 30 sec rest. Straight punches and hooks, keep the hands up."])
+        details: ["1 min all-out punching, 30 sec rest. Straight punches and hooks, keep the hands up."], target: 85...95)
 
     // Boxing
     static let technique = Cardio(
@@ -104,20 +106,20 @@ public enum ProgramLibrary {
             "Shadowbox 1 round first. R1 jab only, moving. R2 jab-cross (1-2). R3 1-2-3 (lead hook). R4 1-2 to the body, 1-2 to the head. R5 freestyle, sharp and light. Hands back to the face after every punch; breathe out on each.",
             "R1 1-2-3-2. R2 slip left, slip right, then 1-2. R3 lead hook to the body, lead hook to the head. R4 3-2-3. R5 1-2, roll under, 2-3-2. R6 freestyle with feints and angles.",
             "Fight pace. Every minute, 20 sec of nonstop 4-6 punch combos, then move and pick shots. Last 20 sec of each round: straight punches as fast as you can. Finish the round strong.",
-        ])
+        ], target: 70...85)
     static let longTechnique = Cardio(
         name: "Bag Rounds", rounds: [6, 8, 8], work: 180, rest: 60, minPerRound: 4, unit: .rounds,
         details: [
             "Shadowbox 2 rounds, then bag. Odd rounds: technique (1-2, 1-2-3, 1-1-2). Even rounds: move and counter. Stay on the balls of your feet.",
             "Odd rounds: power combos (2-3-2, 3-3-2, uppercut-hook). Even rounds: volume, keep punching the whole 3 min.",
             "Fight simulation: every round 3 min of real pace. Defense after every combo (slip, roll or step out).",
-        ])
+        ], target: 70...85)
     static let powerRounds = Cardio(
         name: "Power Rounds", rounds: [10, 12, 16], work: 30, rest: 30, minPerRound: 1, unit: .rounds,
-        details: ["30 sec: the hardest shots you can throw with good form (crosses, hooks, uppercuts), turning the hips into each. 30 sec: bounce and shadowbox easy."])
+        details: ["30 sec: the hardest shots you can throw with good form (crosses, hooks, uppercuts), turning the hips into each. 30 sec: bounce and shadowbox easy."], target: 85...95)
     static let roadwork = Cardio(
         name: "Roadwork", rounds: [20, 25, 30], work: nil, rest: nil, minPerRound: 1, unit: .min,
-        details: ["Easy run or brisk incline walk at a pace you can talk at. Boxers' base."])
+        details: ["Easy run or brisk incline walk at a pace you can talk at. Boxers' base."], target: 60...70)
 
     // MARK: Engine Strength
 
@@ -251,10 +253,10 @@ public enum ProgramLibrary {
 
     static let absBurner = Cardio(
         name: "Abs Burner", rounds: [8, 10, 12], work: 40, rest: 20, minPerRound: 1, unit: .rounds,
-        details: ["40 sec on, 20 off, rotating: V-ups, bicycle crunch, plank shoulder taps, reverse crunch. Quality reps, ribs down."])
+        details: ["40 sec on, 20 off, rotating: V-ups, bicycle crunch, plank shoulder taps, reverse crunch. Quality reps, ribs down."], target: 65...80)
     static let inclineWalk = Cardio(
         name: "Incline Walk", rounds: [30, 35, 40], work: nil, rest: nil, minPerRound: 1, unit: .min,
-        details: ["Treadmill at 10-12% incline, a brisk walk you could talk through. Burns fat without eating into recovery."])
+        details: ["Treadmill at 10-12% incline, a brisk walk you could talk through. Burns fat without eating into recovery."], target: 60...70)
 
     static let screenReady = Spec(
         doses: [
@@ -307,16 +309,16 @@ public enum ProgramLibrary {
 
     static let kbCircuit = Cardio(
         name: "Kettlebell Circuit", rounds: [15, 20, 25], work: 45, rest: 15, minPerRound: 1, unit: .rounds,
-        details: ["45 sec work, 15 sec to switch, 5 stations per lap: KB swing, goblet squat, KB clean & press (switch arms each lap), renegade row, TRX atomic push-up."])
+        details: ["45 sec work, 15 sec to switch, 5 stations per lap: KB swing, goblet squat, KB clean & press (switch arms each lap), renegade row, TRX atomic push-up."], target: 80...90)
     static let trxCircuit = Cardio(
         name: "TRX & Bodyweight Circuit", rounds: [15, 20, 25], work: 45, rest: 15, minPerRound: 1, unit: .rounds,
-        details: ["45 sec work, 15 sec to switch, 5 stations per lap: TRX row, push-up, reverse lunge, TRX pike, burpee."])
+        details: ["45 sec work, 15 sec to switch, 5 stations per lap: TRX row, push-up, reverse lunge, TRX pike, burpee."], target: 75...90)
     static let dbComplex = Cardio(
         name: "Dumbbell Complex", rounds: [4, 5, 6], work: 120, rest: 75, minPerRound: 3.25, unit: .rounds,
-        details: ["One round = 6 of each without putting the bells down: DB hang clean, front squat, push press, renegade row, reverse lunge each leg. Rest 75 sec between rounds."])
+        details: ["One round = 6 of each without putting the bells down: DB hang clean, front squat, push press, renegade row, reverse lunge each leg. Rest 75 sec between rounds."], target: 80...90)
     static let agentBag = Cardio(
         name: "Bag + Carry Circuit", rounds: [12, 16, 20], work: 60, rest: 15, minPerRound: 1.25, unit: .rounds,
-        details: ["60 sec stations, 15 sec to move, 4 per lap: heavy bag, KB suitcase carry (switch hands halfway), mountain climbers, bag again."])
+        details: ["60 sec stations, 15 sec to move, 4 per lap: heavy bag, KB suitcase carry (switch hands halfway), mountain climbers, bag again."], target: 80...90)
 
     static let agentCircuits = Spec(
         doses: [
@@ -482,6 +484,7 @@ public enum ProgramLibrary {
                 sets: 1, low: rounds, high: rounds, restSeconds: 0, rounds: rounds, minutesPerRound: c.minPerRound,
                 detail: c.detail(phase), intervalWork: c.work, intervalRest: c.rest)
             item.canSwap = false
+            if let t = c.target { item.hrLow = t.lowerBound; item.hrHigh = t.upperBound }
             return item
         }
         if let e = day.engine {

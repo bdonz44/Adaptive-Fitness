@@ -6,6 +6,8 @@ import Hybrid12Engine
 struct RoundTimerView: View {
     @Environment(AppStore.self) private var store
     @Environment(RoundTimer.self) private var timer
+    @Environment(HeartRateMonitor.self) private var heart
+    @State private var push = HeartPush()
     @Environment(\.dismiss) private var dismiss
     let item: SessionItem
     @State private var settings: RoundPlan.Settings
@@ -119,6 +121,7 @@ struct RoundTimerView: View {
                             .frame(height: 10)
                     }
                 }
+                LiveHeartBar(target: phase?.kind == .work ? HeartRate.target(for: item) : nil)
                 Spacer()
                 if pos.finished {
                     Button { finish(pos.roundsDone) } label: { Text("Log \(pos.roundsDone) rounds").accentButton(height: 64) }
@@ -142,6 +145,10 @@ struct RoundTimerView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(phase?.kind == .work ? color.opacity(0.12) : look.background)
             .onChange(of: pos) { _, p in react(p) }
+            .onChange(of: heart.lastReading) { _, _ in
+                push.update(bpm: heart.freshBPM(), max: heart.maxHR, target: HeartRate.target(for: item),
+                            working: phase?.kind == .work && !timer.isPaused)
+            }
         }
     }
 
