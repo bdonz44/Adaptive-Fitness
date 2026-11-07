@@ -52,7 +52,7 @@ struct SmartCoachingView: View {
                     Toggle(isOn: $store.adaptive.nutrition) {
                         Text("Protein and calorie numbers").font(.headline)
                     }
-                    Text("Protein: 1 g per lb of your goal weight, every day. Calories, from your weigh-in trend: flat for 2 weeks above goal, cut 300 a day; losing more than 1% a week, add 200; otherwise hold. Set your goal weight on the Progress tab. Off hides every nutrition number.")
+                    Text("Protein: 1 g per lb of your goal weight, every day. Calories, from your weigh-in trend: flat for 2 weeks above goal, cut 300 a day; losing more than 1% a week, add 200; otherwise hold. Log food and set your goal weight from the protein tile on Home or Progress > Nutrition > Log food. Off hides every nutrition number.")
                         .font(.subheadline).foregroundStyle(look.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }

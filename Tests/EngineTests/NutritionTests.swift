@@ -40,3 +40,17 @@ import Testing
         #expect(s.nutrition)
     }
 }
+
+@Suite struct FoodLogTests {
+    @Test func totalsAreForTheDayOnly() {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/Chicago")!
+        let noon = cal.date(from: DateComponents(year: 2026, month: 11, day: 7, hour: 12))!
+        let entries = [FoodEntry(date: noon, protein: 40, calories: 500),
+                       FoodEntry(date: noon.addingTimeInterval(3600 * 6), protein: 30, calories: 0),
+                       FoodEntry(date: noon.addingTimeInterval(-86400), protein: 50, calories: 700)]
+        let t = Nutrition.totals(entries, on: noon, calendar: cal)
+        #expect(t.protein == 70 && t.calories == 500)
+        #expect(Nutrition.progressText(70, of: 185, unit: "g") == "70 / 185 g")
+        #expect(Nutrition.progressText(70, of: nil, unit: "g") == "70 g")
+    }
+}

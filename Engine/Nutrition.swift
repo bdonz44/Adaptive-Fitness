@@ -65,3 +65,29 @@ public enum Nutrition {
                     "Losing about \(String(format: "%.1f", -rate)) lb a week. Same food, same training.")
     }
 }
+
+/// Food logged today (protein and calories), one entry per quick add.
+public struct FoodEntry: Codable, Equatable, Identifiable, Sendable {
+    public var id: String
+    public var date: Date
+    public var protein: Int
+    public var calories: Int
+    public init(id: String = UUID().uuidString, date: Date, protein: Int, calories: Int) {
+        self.id = id; self.date = date; self.protein = protein; self.calories = calories
+    }
+}
+
+extension Nutrition {
+    public static let quickProtein = [10, 20, 30, 40, 50]
+
+    /// Protein and calories logged on the same day as `date`.
+    public static func totals(_ entries: [FoodEntry], on date: Date, calendar: Calendar = .current) -> (protein: Int, calories: Int) {
+        let day = entries.filter { calendar.isDate($0.date, inSameDayAs: date) }
+        return (day.reduce(0) { $0 + $1.protein }, day.reduce(0) { $0 + $1.calories })
+    }
+
+    /// "92 / 185 g"
+    public static func progressText(_ done: Int, of target: Int?, unit: String) -> String {
+        target.map { "\(done) / \($0) \(unit)" } ?? "\(done) \(unit)"
+    }
+}

@@ -333,6 +333,32 @@ final class AppStore {
         didSet { if let d = try? JSONEncoder().encode(nutritionSettings) { UserDefaults.standard.set(d, forKey: "nutrition.settings") } }
     }
 
+    /// Food logged on this phone (protein and calories), kept 60 days.
+    private(set) var food: [FoodEntry] = {
+        UserDefaults.standard.data(forKey: "nutrition.food")
+            .flatMap { try? JSONDecoder().decode([FoodEntry].self, from: $0) } ?? []
+    }()
+
+    var foodToday: [FoodEntry] { food.filter { Calendar.current.isDateInToday($0.date) }.sorted { $0.date > $1.date } }
+    var proteinToday: Int { Nutrition.totals(food, on: Date()).protein }
+    var caloriesToday: Int { Nutrition.totals(food, on: Date()).calories }
+
+    func logFood(protein: Int, calories: Int = 0, date: Date = Date()) {
+        guard protein > 0 || calories > 0 else { return }
+        food.append(FoodEntry(date: date, protein: max(0, protein), calories: max(0, calories)))
+        food.removeAll { $0.date < date.addingTimeInterval(-60 * 86400) }
+        saveFood()
+    }
+
+    func removeFood(_ entry: FoodEntry) {
+        food.removeAll { $0.id == entry.id }
+        saveFood()
+    }
+
+    private func saveFood() {
+        if let d = try? JSONEncoder().encode(food) { UserDefaults.standard.set(d, forKey: "nutrition.food") }
+    }
+
     /// Nil when nutrition is switched off.
     var nutritionAdvice: Nutrition.Advice? {
         guard adaptive.nutrition else { return nil }

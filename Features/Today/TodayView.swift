@@ -211,7 +211,7 @@ struct WeekHeader: View {
                 Text("\(store.program.doneCount) of \(store.program.order.count) done")
                 Spacer()
                 if let p = store.nutritionAdvice?.proteinGrams {
-                    Text("Protein \(p) g").monospacedDigit()
+                    Text("Protein \(store.proteinToday)/\(p) g").monospacedDigit()
                     Spacer()
                 }
                 Text("Cardio \(store.cardioThisWeek) / \(Program.cardioGoalMinutes) min").monospacedDigit()

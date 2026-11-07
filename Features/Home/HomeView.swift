@@ -6,6 +6,7 @@ struct HomeView: View {
     @Environment(AppStore.self) private var store
     @Environment(WhoopService.self) private var whoop
     let go: () -> Void
+    @State private var logFood = false
 
     var body: some View {
         let look = Theme.look
@@ -25,6 +26,7 @@ struct HomeView: View {
             }
             .background(look.background)
             .toolbar(.hidden, for: .navigationBar)
+            .sheet(isPresented: $logFood) { FoodLogSheet() }
         }
     }
 
@@ -134,7 +136,11 @@ struct HomeView: View {
             tile("\(store.cardioThisWeek)/\(Program.cardioGoalMinutes)", "Cardio min", icon: "figure.run",
                  good: store.cardioThisWeek >= Program.cardioGoalMinutes)
             if let p = store.nutritionAdvice?.proteinGrams {
-                tile("\(p) g", "Protein today", icon: "fork.knife")
+                Button { logFood = true } label: {
+                    tile("\(store.proteinToday)/\(p) g", "Protein eaten · tap to log", icon: "fork.knife",
+                         good: store.proteinToday >= p)
+                }
+                .buttonStyle(.plain)
             }
             if whoop.isConnected {
                 tile(whoop.today?.strain.map { String(format: "%.1f", $0) } ?? "--", "Strain today", icon: "bolt.fill")

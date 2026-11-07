@@ -265,9 +265,10 @@ struct HardMinutesCard: View {
     }
 }
 
-/// Adaptive 6: protein target and the calorie call (hidden when switched off).
+/// Adaptive 6: today's protein against the target, the calorie call, and the food log (hidden when switched off).
 struct NutritionCard: View {
     @Environment(AppStore.self) private var store
+    @State private var logging = false
 
     var body: some View {
         if let a = store.nutritionAdvice {
@@ -275,15 +276,16 @@ struct NutritionCard: View {
             Card(title: "Nutrition") {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(a.proteinGrams.map { "\($0) g" } ?? "--").font(look.number(36)).monospacedDigit()
-                        Text("Protein every day").font(.caption).foregroundStyle(look.secondary)
+                        Text(Nutrition.progressText(store.proteinToday, of: a.proteinGrams, unit: "g"))
+                            .font(look.number(32)).monospacedDigit()
+                        Text("Protein eaten today").font(.caption).foregroundStyle(look.secondary)
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(a.calorieChange == 0 ? "Hold" : (a.calorieChange > 0 ? "+\(a.calorieChange)" : "\(a.calorieChange)"))
-                            .font(look.number(36)).monospacedDigit()
+                            .font(look.number(32)).monospacedDigit()
                             .foregroundStyle(a.calorieChange < 0 ? look.accent : (a.calorieChange > 0 ? look.done : look.text))
-                        Text(a.calorieTarget.map { "\($0) cal a day" } ?? "Calories a day").font(.caption).foregroundStyle(look.secondary)
+                        Text(a.calorieTarget.map { "Aim for \($0) cal a day" } ?? "Calorie change a day").font(.caption).foregroundStyle(look.secondary)
                     }
                 }
                 Text(a.headline).font(.headline)
@@ -293,24 +295,14 @@ struct NutritionCard: View {
                     Text("Trend: \(r <= 0 ? "losing" : "gaining") \(String(format: "%.1f", abs(r))) lb a week (last 28 days).")
                         .font(.caption).foregroundStyle(look.secondary)
                 }
-                Divider()
-                setting("Goal weight", value: store.nutritionSettings.goalWeight.map { "\(lb($0)) lb" } ?? "Not set",
-                        placeholder: "Goal", unit: "lb") { store.nutritionSettings.goalWeight = $0 }
-                setting("Eating now", value: store.nutritionSettings.currentCalories.map { "\($0) cal a day" } ?? "Optional",
-                        placeholder: "Calories", unit: "cal") { store.nutritionSettings.currentCalories = Int($0.rounded()) }
+                Button { logging = true } label: { Label("Log food", systemImage: "plus.circle.fill").accentButton(height: 50) }
+                    .buttonStyle(.plain)
+                if store.nutritionSettings.goalWeight == nil {
+                    Text("Set your goal weight in Log food → Targets so protein matches your goal.")
+                        .font(.caption).foregroundStyle(look.accent)
+                }
             }
-        }
-    }
-
-    private func setting(_ title: String, value: String, placeholder: String, unit: String,
-                         set: @escaping (Double) -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(title).font(.subheadline.weight(.semibold))
-                Spacer()
-                Text(value).font(.subheadline).foregroundStyle(Theme.secondary)
-            }
-            LogField(placeholder: placeholder, unit: unit, onLog: set)
+            .sheet(isPresented: $logging) { FoodLogSheet() }
         }
     }
 }
