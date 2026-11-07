@@ -72,7 +72,22 @@ final class AppStore {
 
     /// Adaptive-layer switches (Plan > Smart coaching). Saved on this phone.
     var adaptive: AdaptiveSettings = AppStore.loadAdaptive() {
-        didSet { AppStore.saveAdaptive(adaptive) }
+        didSet {
+            AppStore.saveAdaptive(adaptive)
+            if adaptive.weeklyReview != oldValue.weeklyReview { WeeklyReviewNotice.schedule(adaptive.weeklyReview) }
+        }
+    }
+
+    /// The last 7 days (Plan > Weekly review, and the Sunday notification).
+    func weeklyReview(now: Date = Date()) -> WeeklyReview {
+        let cutoff = now.addingTimeInterval(-8 * 86400)
+        let stored = (try? context.fetch(FetchDescriptor<StoredLog>(predicate: #Predicate { $0.date >= cutoff }))) ?? []
+        let logs = stored.map { log in
+            WeeklyReview.Log(date: log.date, title: log.title, cardioMinutes: log.cardioMinutes,
+                             heart: Self.heart(in: log), counts: log.slot != Slot.R.rawValue)
+        }
+        return WeeklyReview.build(now: now, logs: logs, lifts: lifts, weighIns: weighIns, waist: waist,
+                                  state: program, catalog: catalog)
     }
     /// Every saved session heart rate (for the weekly zone 4-5 chart).
     private(set) var heartLogs: [(week: Int, heart: SessionHeart)] = []

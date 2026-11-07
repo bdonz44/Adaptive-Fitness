@@ -4,6 +4,7 @@ struct RootTabView: View {
     @State private var tab = RootTabView.launchTab
     @AppStorage(Look.storageKey) private var lookName = Look.iron.rawValue
     @State private var showLook = false
+    @Bindable private var router = NotificationRouter.shared
 
     var body: some View {
         let look = Look(rawValue: lookName) ?? .iron
@@ -13,6 +14,7 @@ struct RootTabView: View {
             .id(look)
             // Outside the rebuilt screens, so it stays open while you try looks.
             .sheet(isPresented: $showLook) { LookSettingsView() }
+            .sheet(isPresented: $router.showWeeklyReview) { WeeklyReviewView() }
             .onAppear { Self.styleBars(look) }
             .preferredColorScheme(look.scheme)
             .tint(look.accent)

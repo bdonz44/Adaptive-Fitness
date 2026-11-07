@@ -48,6 +48,15 @@ struct SmartCoachingView: View {
                         .font(.caption).foregroundStyle(look.secondary)
                 }
 
+                Card(title: "Sunday review") {
+                    Toggle(isOn: $store.adaptive.weeklyReview) {
+                        Text("Weekly review notification").font(.headline)
+                    }
+                    Text("Sunday at 6:41 pm: sessions done, cardio, zone 4-5 minutes, WHOOP strain, what went up, PRs, weight and waist change, and what's next. Open it any time from the Progress tab.")
+                        .font(.subheadline).foregroundStyle(look.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 Card(title: "Time today") {
                     Toggle(isOn: $store.adaptive.timeBox) {
                         Text("Fit the workout to my time").font(.headline)

@@ -10,6 +10,7 @@ struct ProgressTab: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    WeeklyReviewButton()
                     CoachCard()
                     CardioCard()
                     HardMinutesCard()

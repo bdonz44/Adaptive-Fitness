@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UserNotifications
 import Hybrid12Engine
 
 @main
@@ -17,6 +18,7 @@ struct Hybrid12App: App {
 
     init() {
         RestAlerts.endLeftovers()
+        UNUserNotificationCenter.current().delegate = NotificationRouter.shared
         let schema = Schema(Schema12.models)
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-initCloudKitSchema") {
@@ -71,7 +73,10 @@ struct Hybrid12App: App {
                 .environment(heart)
                 .environment(progress)
                 .modelContainer(container)
-                .task { await syncWhoop() }
+                .task {
+                    WeeklyReviewNotice.schedule(store.adaptive.weeklyReview)
+                    await syncWhoop()
+                }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active { Task { await syncWhoop() } }
                 }
