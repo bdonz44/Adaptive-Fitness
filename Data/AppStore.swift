@@ -302,6 +302,28 @@ final class AppStore {
     /// Logged cardio this program week plus WHOOP activities (runs, walks, rides...) since it started.
     var cardioThisWeek: Int { (cardioByWeek[program.week] ?? 0) + whoopCardioThisWeek }
 
+    // MARK: Home
+
+    /// Full weeks in a row, every session logged.
+    var streak: Int {
+        HomeInsights.streak(logged: weekLogs.map { (slot: $0.slot, week: $0.week) }, currentWeek: program.week,
+                            sessionsPerWeek: program.order.count)
+    }
+
+    /// A session (not the optional run) was finished today.
+    var loggedToday: Bool { logs.contains { $0.slot != .R && Calendar.current.isDateInToday($0.date) } }
+
+    var hardMinutesThisWeek: Double {
+        heartLogs.filter { $0.week == program.week }.reduce(0) { $0 + $1.heart.hardMinutes }
+    }
+
+    var homeFacts: HomeInsights.Facts {
+        HomeInsights.Facts(cardioMinutes: cardioThisWeek, cardioGoal: Program.cardioGoalMinutes,
+                           sessionsDone: program.doneCount, sessionsPerWeek: program.order.count, streak: streak,
+                           liftsUpLately: HomeInsights.risingLifts(lifts, catalog: catalog),
+                           hardMinutes: hardMinutesThisWeek, isDeload: week.isDeload, doneToday: loggedToday)
+    }
+
     // MARK: Nutrition (adaptive 6)
 
     var nutritionSettings: Nutrition.Settings = {

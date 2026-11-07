@@ -48,21 +48,24 @@ struct RootTabView: View {
 
     private var tabs: some View {
         TabView(selection: $tab) {
+            HomeView(go: { tab = 1 })
+                .tabItem { Label("Home", systemImage: "house.fill") }
+                .tag(0)
             TodayView()
                 .tabItem { Label("Today", systemImage: "dumbbell") }
-                .tag(0)
+                .tag(1)
             ProgressTab()
                 .tabItem { Label("Progress", systemImage: "chart.line.uptrend.xyaxis") }
-                .tag(1)
+                .tag(2)
             PlanTab()
                 .tabItem { Label("Plan", systemImage: "calendar") }
-                .tag(2)
+                .tag(3)
         }
     }
 }
 
 extension RootTabView {
-    /// Debug builds: `-tab 1` opens Progress, `-tab 2` opens Plan (for simulator screenshots).
+    /// Debug builds: `-tab 1` opens Today, `-tab 2` Progress, `-tab 3` Plan (for simulator screenshots). Home is 0.
     static var launchTab: Int {
         #if DEBUG
         return UserDefaults.standard.integer(forKey: "tab")
