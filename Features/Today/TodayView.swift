@@ -210,6 +210,10 @@ struct WeekHeader: View {
             HStack {
                 Text("\(store.program.doneCount) of \(store.program.order.count) done")
                 Spacer()
+                if let p = store.nutritionAdvice?.proteinGrams {
+                    Text("Protein \(p) g").monospacedDigit()
+                    Spacer()
+                }
                 Text("Cardio \(store.cardioThisWeek) / \(Program.cardioGoalMinutes) min").monospacedDigit()
             }
             .font(.caption)

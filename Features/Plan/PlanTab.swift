@@ -12,7 +12,8 @@ struct PlanTab: View {
 
     private var smartDetail: String {
         let on = [store.adaptive.effortProgression ? "Effort" : nil, store.adaptive.timeBox ? "Time today" : nil,
-                  store.adaptive.reEntry ? "Coming back" : nil].compactMap { $0 }
+                  store.adaptive.reEntry ? "Coming back" : nil, store.adaptive.nutrition ? "Nutrition" : nil,
+                  store.adaptive.weeklyReview ? "Review" : nil].compactMap { $0 }
         return on.isEmpty ? "All off" : on.joined(separator: " · ") + " on"
     }
 

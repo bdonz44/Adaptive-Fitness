@@ -302,6 +302,21 @@ final class AppStore {
     /// Logged cardio this program week plus WHOOP activities (runs, walks, rides...) since it started.
     var cardioThisWeek: Int { (cardioByWeek[program.week] ?? 0) + whoopCardioThisWeek }
 
+    // MARK: Nutrition (adaptive 6)
+
+    var nutritionSettings: Nutrition.Settings = {
+        UserDefaults.standard.data(forKey: "nutrition.settings")
+            .flatMap { try? JSONDecoder().decode(Nutrition.Settings.self, from: $0) } ?? .init()
+    }() {
+        didSet { if let d = try? JSONEncoder().encode(nutritionSettings) { UserDefaults.standard.set(d, forKey: "nutrition.settings") } }
+    }
+
+    /// Nil when nutrition is switched off.
+    var nutritionAdvice: Nutrition.Advice? {
+        guard adaptive.nutrition else { return nil }
+        return Nutrition.advice(weighIns: weighIns, settings: nutritionSettings, now: Date())
+    }
+
     // MARK: Cardio typed in by hand
 
     /// Entries are listed from this phone; their minutes go into the synced weekly cardio total.

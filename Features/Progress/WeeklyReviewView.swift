@@ -89,6 +89,13 @@ struct WeeklyReviewView: View {
                         }
                     }
 
+                    if let n = store.nutritionAdvice {
+                        Card(title: "Nutrition this week") {
+                            Text(n.proteinGrams.map { "Protein \($0) g every day. " } ?? "").font(.subheadline.weight(.semibold))
+                            + Text(n.headline).font(.subheadline)
+                        }
+                    }
+
                     Card(title: "Next") {
                         Text(r.nextWeek).font(.subheadline).fixedSize(horizontal: false, vertical: true)
                     }
