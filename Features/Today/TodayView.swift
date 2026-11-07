@@ -38,8 +38,7 @@ struct TodayView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .background(Theme.accent.opacity(0.2), in: RoundedRectangle(cornerRadius: look.radius))
                     }
-                    WorkoutClock()
-                    LiveHeartBar(compact: true)
+                    if store.draft.startedAt == nil { WorkoutClock() }
                     NowCard(session: session, openFocus: { showFocus = true })
                     if !timer.isActive { CoachCueCard() }
                     ForEach(session.blocks, id: \.kind) { block in
@@ -58,6 +57,8 @@ struct TodayView: View {
             }
             .background(look.background)
             .scrollDismissesKeyboard(.interactively)
+            // Workout time and heart rate stay pinned at the top while you scroll.
+            .safeAreaInset(edge: .top, spacing: 0) { WorkoutStatusBar() }
             .safeAreaInset(edge: .bottom) {
                 if timer.isActive && !showFocus {
                     VStack(spacing: 0) {

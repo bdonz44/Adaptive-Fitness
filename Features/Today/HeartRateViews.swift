@@ -278,3 +278,54 @@ struct WorkoutClock: View {
                          : String(format: "%d:%02d", s / 60, s % 60)
     }
 }
+
+/// Pinned to the top of Today once the workout starts (or live heart rate is on):
+/// the workout clock and live heart rate with its zone.
+struct WorkoutStatusBar: View {
+    @Environment(AppStore.self) private var store
+    @Environment(HeartRateMonitor.self) private var heart
+
+    var body: some View {
+        let look = Theme.look
+        let start = store.draft.startedAt
+        if start != nil || heart.isEnabled {
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                HStack(spacing: 16) {
+                    if let start {
+                        HStack(spacing: 6) {
+                            Image(systemName: "stopwatch.fill").foregroundStyle(look.accent)
+                            Text(WorkoutClock.elapsed(from: start, to: context.date))
+                                .font(look.number(26)).monospacedDigit()
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Workout time \(WorkoutClock.elapsed(from: start, to: context.date))")
+                    }
+                    Spacer(minLength: 0)
+                    if heart.isEnabled {
+                        let bpm = heart.freshBPM(at: context.date)
+                        let zone = bpm.map { HeartRate.zone(bpm: $0, max: heart.maxHR) }
+                        HStack(spacing: 6) {
+                            Image(systemName: "heart.fill")
+                                .foregroundStyle(zone.map(LiveHeartBar.zoneColor) ?? look.secondary)
+                            Text(bpm.map(String.init) ?? "--").font(look.number(26)).monospacedDigit()
+                            if let zone {
+                                Text("Z\(zone)")
+                                    .font(.caption.weight(.heavy))
+                                    .padding(.horizontal, 7).padding(.vertical, 3)
+                                    .foregroundStyle(.black)
+                                    .background(LiveHeartBar.zoneColor(zone), in: Capsule())
+                            }
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(bpm.map { "Heart rate \($0), zone \(zone ?? 0)" } ?? "Heart rate not connected")
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity)
+                .background(look.background.opacity(0.96))
+                .overlay(alignment: .bottom) { Rectangle().fill(look.line).frame(height: 1) }
+            }
+        }
+    }
+}
