@@ -519,6 +519,29 @@ final class AppStore {
         heartLogs = all.compactMap { l in Self.heart(in: l).map { (week: l.week, heart: $0) } }
     }
 
+    /// Fills in WHOOP's numbers for past sessions saved without heart rate (last 120 days).
+    /// Sessions WHOOP has nothing for are remembered so they aren't asked about again.
+    func backfillWhoop(_ fetch: (Date, Date) async -> [WhoopWorkout]?, now: Date = Date()) async {
+        let checkedKey = "whoop.backfillChecked"
+        var checked = Set(UserDefaults.standard.stringArray(forKey: checkedKey) ?? [])
+        let all = (try? context.fetch(FetchDescriptor<StoredLog>())) ?? []
+        let missing = all.filter { log in
+            log.slot != Slot.R.rawValue && log.date > now.addingTimeInterval(-120 * 86400)
+                && Self.heart(in: log) == nil && !checked.contains(String(Int(log.date.timeIntervalSince1970)))
+        }
+        guard let first = missing.map(\.date).min(), let last = missing.map(\.date).max(),
+              let workouts = await fetch(first.addingTimeInterval(-3 * 3600), last.addingTimeInterval(3600)) else { return }
+        for log in missing {
+            if let w = WhoopWorkout.match(workouts, finishedAt: log.date) {
+                attachWhoop(w, toLogAt: log.date)
+            } else if now.timeIntervalSince(log.date) > 86400 {
+                // WHOOP scores within hours; after a day, nothing is coming.
+                checked.insert(String(Int(log.date.timeIntervalSince1970)))
+            }
+        }
+        UserDefaults.standard.set(Array(checked), forKey: checkedKey)
+    }
+
     private static func heart(in log: StoredLog) -> SessionHeart? {
         guard !log.entries.isEmpty, let e = decode([String: LoggedItem].self, log.entries) else { return nil }
         return SessionHeart.read(e)

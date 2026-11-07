@@ -116,3 +116,15 @@ import Testing
         #expect(byWeek.map(\.minutes) == [16, 32])
     }
 }
+
+@Suite struct WhoopBackfillTests {
+    @Test func pastSessionsMatchByFinishTime() throws {
+        let end = try #require(WhoopDate.parse("2026-11-05T23:30:00Z"))
+        let lift = WhoopWorkout(start: end.addingTimeInterval(-3900), end: end.addingTimeInterval(-60), sport: "weightlifting",
+                                strain: 11, averageHR: 120, maxHR: 165, kilojoules: 2000, zoneSeconds: [0, 0, 0, 0, 600, 60])
+        let walkLater = WhoopWorkout(start: end.addingTimeInterval(3600), end: end.addingTimeInterval(5400), sport: "walking",
+                                     strain: 3, averageHR: 95, maxHR: 110, kilojoules: 500, zoneSeconds: [0, 0, 0, 0, 0, 0])
+        #expect(WhoopWorkout.match([walkLater, lift], finishedAt: end)?.sport == "weightlifting")
+        #expect(WhoopWorkout.match([walkLater], finishedAt: end) == nil)
+    }
+}

@@ -145,6 +145,12 @@ public struct WhoopWorkout: Equatable, Codable, Sendable {
         }
     }
 
+    /// For a session saved before heart rate was stored: only its finish time is known,
+    /// so look at the 90 minutes before it.
+    public static func match(_ workouts: [WhoopWorkout], finishedAt end: Date) -> WhoopWorkout? {
+        match(workouts, start: end.addingTimeInterval(-90 * 60), end: end.addingTimeInterval(5 * 60))
+    }
+
     /// The WHOOP workout that overlaps the session most (at least 5 minutes), if any.
     public static func match(_ workouts: [WhoopWorkout], start: Date, end: Date) -> WhoopWorkout? {
         func overlap(_ w: WhoopWorkout) -> TimeInterval {

@@ -56,6 +56,7 @@ struct Hybrid12App: App {
     private func syncWhoop() async {
         await whoop.sync()
         store.applyWhoop(whoop.today)
+        await store.backfillWhoop { [whoop] start, end in await whoop.workouts(from: start, to: end) }
     }
 
     var body: some Scene {

@@ -125,13 +125,22 @@ final class WhoopService {
     @MainActor
     func workouts(from start: Date, to end: Date) async -> [WhoopWorkout]? {
         guard isConnected else { return nil }
-        var c = URLComponents()
-        c.queryItems = [.init(name: "start", value: WhoopDate.string(start)),
-                        .init(name: "end", value: WhoopDate.string(end)),
-                        .init(name: "limit", value: "10")]
-        let query = c.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B") ?? ""
+        var all: [WhoopWorkout] = []
+        var next: String? = nil
         do {
-            return WhoopWorkout.parse(try await get("/developer/v2/activity/workout?" + query))
+            for _ in 0..<12 {   // 25 per page; 300 workouts is months of training
+                var c = URLComponents()
+                c.queryItems = [.init(name: "start", value: WhoopDate.string(start)),
+                                .init(name: "end", value: WhoopDate.string(end)),
+                                .init(name: "limit", value: "25")]
+                if let next { c.queryItems?.append(.init(name: "nextToken", value: next)) }
+                let query = c.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B") ?? ""
+                let page = try await get("/developer/v2/activity/workout?" + query)
+                all += WhoopWorkout.parse(page)
+                next = page["next_token"] as? String
+                if next == nil || next == "" { break }
+            }
+            return all
         } catch WhoopError.signedOut {
             disconnect()
             lastError = "WHOOP signed you out. Connect again."
