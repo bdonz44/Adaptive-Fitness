@@ -312,8 +312,8 @@ public enum ProgramLibrary {
         name: "TRX & Bodyweight Circuit", rounds: [15, 20, 25], work: 45, rest: 15, minPerRound: 1, unit: .rounds,
         details: ["45 sec work, 15 sec to switch, 5 stations per lap: TRX row, push-up, reverse lunge, TRX pike, burpee."])
     static let dbComplex = Cardio(
-        name: "Dumbbell Complex", rounds: [4, 5, 6], work: nil, rest: nil, minPerRound: 3, unit: .rounds,
-        details: ["One round = 6 of each without putting the bells down: DB hang clean, front squat, push press, renegade row, reverse lunge each leg. Rest 60-90 sec between rounds."])
+        name: "Dumbbell Complex", rounds: [4, 5, 6], work: 120, rest: 75, minPerRound: 3.25, unit: .rounds,
+        details: ["One round = 6 of each without putting the bells down: DB hang clean, front squat, push press, renegade row, reverse lunge each leg. Rest 75 sec between rounds."])
     static let agentBag = Cardio(
         name: "Bag + Carry Circuit", rounds: [12, 16, 20], work: 60, rest: 15, minPerRound: 1.25, unit: .rounds,
         details: ["60 sec stations, 15 sec to move, 4 per lap: heavy bag, KB suitcase carry (switch hands halfway), mountain climbers, bag again."])

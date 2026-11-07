@@ -32,16 +32,23 @@ final class RoundTimer {
 
     // MARK: Saved settings (per workout name)
 
+    /// Keyed by the workout's planned work/rest too, so a change to the plan
+    /// (for example adding the rest it was missing) isn't hidden by an old save.
+    private static func key(for item: SessionItem) -> String {
+        let d = RoundPlan.defaults(for: item)
+        return "roundTimer.\(item.name).\(d.work)-\(d.rest)"
+    }
+
     static func saved(for item: SessionItem) -> RoundPlan.Settings {
         let defaults = RoundPlan.defaults(for: item)
-        guard let data = UserDefaults.standard.data(forKey: "roundTimer." + item.name),
+        guard let data = UserDefaults.standard.data(forKey: key(for: item)),
               let saved = try? JSONDecoder().decode(RoundPlan.Settings.self, from: data) else { return defaults }
         // Work and rest are remembered; rounds follow the plan for the week.
         return RoundPlan.Settings(rounds: defaults.rounds, work: saved.work, rest: saved.rest)
     }
 
     static func save(_ s: RoundPlan.Settings, for item: SessionItem) {
-        if let data = try? JSONEncoder().encode(s) { UserDefaults.standard.set(data, forKey: "roundTimer." + item.name) }
+        if let data = try? JSONEncoder().encode(s) { UserDefaults.standard.set(data, forKey: key(for: item)) }
     }
 
     // MARK: Control
