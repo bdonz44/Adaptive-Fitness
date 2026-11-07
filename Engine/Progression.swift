@@ -140,7 +140,7 @@ public enum Progression {
     /// Applies a finished session to the stored lifts.
     public static func progress(session: Session, entries: [String: LoggedItem], lifts: [String: LiftRecord],
                                 date: Date, runMinutes: Int, catalog: Catalog = .bundled,
-                                adaptive: AdaptiveSettings = .off) -> ProgressResult {
+                                adaptive: AdaptiveSettings = .off, gear: GearProfile = .standard) -> ProgressResult {
         var lifts = lifts
         var changes: [LiftChange] = []
         var cardio = 0.0
@@ -185,11 +185,11 @@ public enum Progression {
                 case .bb, .db:
                     if let used {
                         let effort = adaptive.effortProgression ? EffortRules.step(reading: reading, rir: log.rir) : .normal
-                        note = barbellOrDumbbell(&rec, item: item, eq: eq, used: used, reading: reading,
+                        note = barbellOrDumbbell(&rec, item: item, eq: eq, used: used, gear: gear, reading: reading,
                                                  catalog: catalog, effort: effort)
                     }
                 case .kb:
-                    if let used { note = kettlebell(&rec, id: id, used: used, reading: reading) }
+                    if let used { note = kettlebell(&rec, id: id, used: used, reading: reading, gear: gear) }
                 case .bw:
                     if reading.hitAll {
                         let trx = catalog.exercise(id)?.category == Catalog.trxCategory
@@ -213,13 +213,14 @@ public enum Progression {
     }
 
     static func barbellOrDumbbell(_ rec: inout LiftRecord, item: SessionItem, eq: Equipment, used: Double,
+                                  gear: GearProfile = .standard,
                                   reading: SetReading, catalog: Catalog, effort: EffortRules.Step = .normal) -> String? {
         let inc = eq == .bb ? (catalog.exercise(item.exerciseID ?? "")?.inc ?? 5) : 5
         if reading.hitAll {
             rec.fails = 0
             rec.holds = 0
-            if eq == .db && used >= Suggestions.dumbbellMax {
-                rec.workingWeight = Suggestions.dumbbellMax
+            if eq == .db && used >= gear.dumbbellMax {
+                rec.workingWeight = gear.dumbbellMax
                 return maxDumbbellNote
             }
             switch effort {
@@ -227,17 +228,17 @@ public enum Progression {
                 rec.workingWeight = used
                 return EffortRules.holdNote
             case .double:
-                rec.workingWeight = Suggestions.clamp(used + inc * 2, equipment: eq)
+                rec.workingWeight = Suggestions.clamp(used + inc * 2, equipment: eq, gear: gear)
                 return EffortRules.doubleNote
             case .normal, .bump:
-                rec.workingWeight = Suggestions.clamp(used + inc, equipment: eq)
+                rec.workingWeight = Suggestions.clamp(used + inc, equipment: eq, gear: gear)
                 return nil
             }
         }
         if reading.miss {
             if rec.fails >= 1 {
                 rec.fails = 0
-                rec.workingWeight = Suggestions.clamp(used * 0.9, equipment: eq)
+                rec.workingWeight = Suggestions.clamp(used * 0.9, equipment: eq, gear: gear)
                 return droppedTenNote
             }
             rec.fails += 1
@@ -248,14 +249,14 @@ public enum Progression {
         rec.fails = 0
         if effort == .bump {
             rec.holds = 0
-            rec.workingWeight = Suggestions.clamp(used + inc, equipment: eq)
+            rec.workingWeight = Suggestions.clamp(used + inc, equipment: eq, gear: gear)
             return EffortRules.bumpNote
         }
         if item.kind == .main {
             rec.holds += 1
             if rec.holds >= 3 {
                 rec.holds = 0
-                rec.workingWeight = Suggestions.clamp(used * 0.95, equipment: eq)
+                rec.workingWeight = Suggestions.clamp(used * 0.95, equipment: eq, gear: gear)
                 return stuckNote
             }
         }
@@ -263,21 +264,22 @@ public enum Progression {
         return nil
     }
 
-    static func kettlebell(_ rec: inout LiftRecord, id: String, used: Double, reading: SetReading) -> String? {
-        let bell = Suggestions.snapBell(used)
+    static func kettlebell(_ rec: inout LiftRecord, id: String, used: Double, reading: SetReading,
+                           gear: GearProfile = .standard) -> String? {
+        let bell = gear.bell(used)
         if reading.hitAll {
             rec.fails = 0
-            if bell >= 50 {
-                rec.workingWeight = 50
-                return ownFiftyNote
+            guard let up = gear.heavierBell(than: bell) else {
+                rec.workingWeight = bell
+                return bell == 50 ? ownFiftyNote : "Heaviest bell you own. Add 2 reps per set or slow it down."
             }
-            rec.workingWeight = bell == 20 ? 35 : 50
+            rec.workingWeight = up
             return nil
         }
         if reading.miss {
-            if rec.fails >= 1 && bell > Suggestions.defaultBell(id) {
+            if rec.fails >= 1 && bell > Suggestions.defaultBell(id, gear: gear), let down = gear.lighterBell(than: bell) {
                 rec.fails = 0
-                rec.workingWeight = bell == 50 ? 35 : 20
+                rec.workingWeight = down
                 return nil
             }
             rec.fails += 1

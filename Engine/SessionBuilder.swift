@@ -107,6 +107,8 @@ public struct SessionContext: Equatable, Sendable {
     public var extras: [String]
     /// Coming back after missed days (set by the app from the log).
     public var reEntry: ReEntry.Plan? = nil
+    /// The equipment you own (set by the app); planned exercises you can't do are swapped.
+    public var gear: GearProfile = .standard
     /// The program, days a week, and the absolute week it started on (week 1 of the program).
     public var program: ProgramID
     public var days: Int
@@ -161,6 +163,7 @@ public enum SessionBuilder {
             ? buildHybrid(slot: slot, context: context, week: week, catalog: catalog)
             : ProgramLibrary.build(slot: slot, context: context, week: week, catalog: catalog)
         session.reEntry = context.reEntry
+        fitGear(&session, gear: context.gear, catalog: catalog)
         if let extras = extrasBlock(context: context, week: week, catalog: catalog) {
             let at = session.blocks.firstIndex { $0.kind == .burnIt } ?? session.blocks.count
             session.blocks.insert(extras, at: at)
@@ -291,8 +294,48 @@ public enum SessionBuilder {
         return extraItems.isEmpty ? nil : SessionBlock(kind: .extras, items: extraItems)
     }
 
-    /// Swap: the next exercise in the same category not already in the session.
-    public static func swapOption(for key: String, in session: Session, catalog: Catalog = .bundled) -> String? {
+    /// Without these, a planned lift becomes the first of its stand-ins you can do.
+    static let standIns: [String: [String]] = [
+        "squat": ["gobletsq", "bulgarian", "trxsquat"], "fsquat": ["gobletsq", "bulgarian", "trxsquat"],
+        "bench": ["floorpress", "dbfloor", "dbincline", "trxpress", "pushup"], "incline": ["dbincline", "dbfloor", "trxpress", "pushup"],
+        "floorpress": ["dbfloor", "trxpress", "pushup"], "ohp": ["dbpress", "arnold", "kbbottoms", "trxyfly"],
+        "pushpress": ["dbpress", "kbcp", "thruster"], "deadlift": ["slrdl", "kbswingh", "trxhamcurl"],
+        "rdl": ["slrdl", "kbswingh", "trxhamcurl"], "goodmorning": ["slrdl", "kbswingh"],
+        "hipthrust": ["trxhippress", "kbswingh"], "bbrow": ["dbrow", "csrow", "trxrow"], "pendlay": ["dbrow", "gorilla", "trxrow"],
+        "dbrow": ["gorilla", "trxsarow", "trxrow"], "csrow": ["dbrow", "trxrow"], "bbcurl": ["curl", "trxcurl"],
+        "dbincline": ["dbfloor", "trxpress", "pushup"], "dbfly": ["trxchestfly", "pushup"], "skull": ["ohtri", "trxtricep"],
+        "inclinecurl": ["curl", "trxcurl"], "dbpress": ["arnold", "kbbottoms"], "arnold": ["dbpress", "kbbottoms"],
+        "bulgarian": ["splitsq", "trxlunge", "revlunge"], "stepup": ["lunge", "revlunge", "trxlunge"],
+        "powerclean": ["dbhangclean", "kbclean"], "hangclean": ["dbhangclean", "kbclean"],
+        "powersnatch": ["dbsnatch", "kbsnatch"], "hangsnatch": ["dbsnatch", "kbsnatch"], "copenhagen": ["sideplank", "hipdip"],
+    ]
+
+    /// Replaces planned lifts that need gear you don't own (stand-ins first, then the same category).
+    static func fitGear(_ session: inout Session, gear: GearProfile, catalog: Catalog) {
+        var used = Set(session.items.compactMap(\.exerciseID))
+        for bi in session.blocks.indices {
+            for ii in session.blocks[bi].items.indices {
+                let item = session.blocks[bi].items[ii]
+                guard item.isLift, let id = item.exerciseID, let ex = catalog.exercise(id), !gear.has(ex) else { continue }
+                let candidates = (standIns[id] ?? []).compactMap(catalog.exercise)
+                    + catalog.swapChoices(for: ex.category).filter { $0.unit == ex.unit }
+                guard let pick = candidates.first(where: { gear.has($0) && !used.contains($0.id) }) else { continue }
+                used.insert(pick.id)
+                var new = item
+                new.exerciseID = pick.id
+                new.name = pick.name
+                new.equipment = pick.eq
+                new.unit = pick.unit
+                new.side = pick.side
+                new.detail = pick.cue
+                session.blocks[bi].items[ii] = new
+            }
+        }
+    }
+
+    /// Swap: the next exercise in the same category not already in the session (and that you have the gear for).
+    public static func swapOption(for key: String, in session: Session, catalog: Catalog = .bundled,
+                                  gear: GearProfile = .standard) -> String? {
         guard let item = session.item(key), item.kind == .accessory, !item.isExtra,
               let id = item.exerciseID, let ex = catalog.exercise(id) else { return nil }
         let list = catalog.swapChoices(for: ex.category)
@@ -300,7 +343,7 @@ public enum SessionBuilder {
         let inSession = Set(session.items.compactMap(\.exerciseID))
         for step in 1..<max(1, list.count) {
             let candidate = list[(index + step) % list.count]
-            if !inSession.contains(candidate.id) { return candidate.id }
+            if !inSession.contains(candidate.id) && gear.has(candidate) { return candidate.id }
         }
         return nil
     }

@@ -61,6 +61,15 @@ final class AppStore {
     private(set) var waist: [WaistEntry]
     /// Every log's slot, week and date (for "This week" in the Plan tab).
     @ObservationIgnored private var weekLogs: [(slot: String, week: Int, date: Date)] = []
+    /// The equipment you own (Plan > Equipment). Saved on this phone.
+    var gear: GearProfile = AppStore.loadGear() {
+        didSet { if let d = try? JSONEncoder().encode(gear) { UserDefaults.standard.set(d, forKey: "gearProfile") } }
+    }
+
+    static func loadGear() -> GearProfile {
+        UserDefaults.standard.data(forKey: "gearProfile").flatMap { try? JSONDecoder().decode(GearProfile.self, from: $0) } ?? .standard
+    }
+
     /// Adaptive-layer switches (Plan > Smart coaching). Saved on this phone.
     var adaptive: AdaptiveSettings = AppStore.loadAdaptive() {
         didSet { AppStore.saveAdaptive(adaptive) }
@@ -230,6 +239,7 @@ final class AppStore {
     var session: Session {
         var context = draft.context(for: program)
         context.reEntry = reEntry
+        context.gear = gear
         let built = SessionBuilder.build(slot: draft.slot, context: context, catalog: catalog)
         guard adaptive.timeBox, let budget = draft.timeBudget else { return built }
         let logged = Set(draft.entries.filter { $0.value.hasCompletedWork }.keys)
@@ -281,7 +291,8 @@ final class AppStore {
 
     func suggestion(for item: SessionItem, in session: Session) -> Suggestion {
         Suggestions.suggest(item: item, lifts: lifts, lightenToday: session.isLightDay, catalog: catalog,
-                            adaptive: adaptive, lightenFactor: session.lightenFactor, lightenNote: session.lightenNote)
+                            adaptive: adaptive, lightenFactor: session.lightenFactor, lightenNote: session.lightenNote,
+                            gear: gear)
     }
 
     func entry(_ key: String) -> LoggedItem {
@@ -420,7 +431,7 @@ final class AppStore {
         }
         let left = sets.prefix(activeSets(item)).enumerated().filter { $0.offset > index && !$0.element.isDone }.count
         let cue = CoachCues.afterSet(item: item, reps: sets[index].reps, weight: sets[index].weight, effort: effort,
-                                     setsLeft: left, lightDay: session.isLightDay)
+                                     setsLeft: left, lightDay: session.isLightDay, gear: gear)
         coachCue = (item.key, cue)
     }
 
@@ -478,7 +489,7 @@ final class AppStore {
     func lastSkip(_ item: SessionItem) -> String? { item.exerciseID.flatMap { lifts[$0]?.lastSkip } }
 
     func swap(_ item: SessionItem) {
-        draft.swap(item.key, in: session, catalog: catalog)
+        draft.swap(item.key, in: session, catalog: catalog, gear: gear)
         saveDraft()
     }
 
@@ -582,7 +593,7 @@ final class AppStore {
         SessionHeart.write(heartSummary.map(SessionHeart.init(live:)), into: &savedEntries)
         let s = session
         let result = Progression.progress(session: s, entries: draft.entries, lifts: lifts, date: now,
-                                          runMinutes: program.runMinutes, catalog: catalog, adaptive: adaptive)
+                                          runMinutes: program.runMinutes, catalog: catalog, adaptive: adaptive, gear: gear)
         let workout = Workouts.record(session: s, entries: draft.entries, startedAt: draft.startedAt,
                                       finishedAt: now, cardioMinutes: result.cardioMinutes)
         if let workout { Task { await HealthService.shared.save(workout) } }

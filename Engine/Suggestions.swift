@@ -79,13 +79,15 @@ public enum Suggestions {
         "dbrow": ("csrow", 1.20),
     ]
 
-    /// Kettlebell starting bells.
-    public static func defaultBell(_ id: String) -> Double {
+    /// Kettlebell starting bells (the nearest one you own).
+    public static func defaultBell(_ id: String, gear: GearProfile = .standard) -> Double {
+        let planned: Double
         switch id {
-        case "kbswingh", "kbswing", "gobletsq", "suitcase", "gorilla": return 50
-        case "kbbottoms": return 20
-        default: return 35
+        case "kbswingh", "kbswing", "gobletsq", "suitcase", "gorilla": planned = 50
+        case "kbbottoms": planned = 20
+        default: planned = 35
         }
+        return gear.bell(planned)
     }
 
     // MARK: Math
@@ -112,36 +114,27 @@ public enum Suggestions {
 
     public static func round5(_ w: Double) -> Double { (w / 5).rounded() * 5 }
 
-    public static func snapBell(_ w: Double) -> Double {
-        if w >= 43 { return 50 }
-        if w >= 28 { return 35 }
-        return 20
-    }
+    public static func snapBell(_ w: Double, gear: GearProfile = .standard) -> Double { gear.bell(w) }
 
-    /// Clamp to real equipment.
-    public static func clamp(_ w: Double, equipment: Equipment) -> Double {
+    /// Clamp to the equipment you own.
+    public static func clamp(_ w: Double, equipment: Equipment, gear: GearProfile = .standard) -> Double {
         switch equipment {
-        case .bb: return max(barbellMin, round5(w))
-        case .db: return min(dumbbellMax, max(dumbbellMin, round5(w)))
-        case .kb: return snapBell(w)
+        case .bb: return gear.barbellWeight(w)
+        case .db: return gear.dumbbell(w)
+        case .kb: return gear.bell(w)
         case .bw: return round5(w)
         }
     }
 
-    /// Tapping the bell cycles 20, 35, 50.
-    public static func nextBellInCycle(_ w: Double) -> Double {
-        switch snapBell(w) {
-        case 20: return 35
-        case 35: return 50
-        default: return 20
-        }
-    }
+    /// Tapping the bell cycles through your bells (20, 35, 50 by default).
+    public static func nextBellInCycle(_ w: Double, gear: GearProfile = .standard) -> Double { gear.nextBell(after: w) }
 
     // MARK: Suggestion
 
     public static func suggest(item: SessionItem, lifts: [String: LiftRecord], lightenToday: Bool,
                                catalog: Catalog = .bundled, adaptive: AdaptiveSettings = .off,
-                               lightenFactor: Double = 0.9, lightenNote: String = " Lightened 10% for today.") -> Suggestion {
+                               lightenFactor: Double = 0.9, lightenNote: String = " Lightened 10% for today.",
+                               gear: GearProfile = .standard) -> Suggestion {
         let effort = adaptive.effortProgression
         guard item.isLift, let id = item.exerciseID, let eq = item.equipment else {
             return Suggestion(weight: nil, reason: "")
@@ -151,7 +144,7 @@ public enum Suggestions {
         case .bw:
             return Suggestion(weight: nil, reason: record?.note ?? "")
         case .kb:
-            return kettlebell(id: id, record: record, lightenToday: lightenToday, factor: lightenFactor, note: lightenNote)
+            return kettlebell(id: id, record: record, lightenToday: lightenToday, factor: lightenFactor, note: lightenNote, gear: gear)
         case .bb, .db:
             break
         }
@@ -184,29 +177,30 @@ public enum Suggestions {
             return Suggestion(weight: nil, reason: "Pick a weight you could lift for 2 more reps than the target.")
         }
 
-        var w = clamp(base, equipment: eq)
+        var w = clamp(base, equipment: eq, gear: gear)
         if lightenToday {
-            w = clamp(w * lightenFactor, equipment: eq)
+            w = clamp(w * lightenFactor, equipment: eq, gear: gear)
             reason += lightenNote
         }
         return Suggestion(weight: w, reason: reason)
     }
 
     static func kettlebell(id: String, record: LiftRecord?, lightenToday: Bool,
-                           factor: Double = 0.9, note: String = " Lightened 10% for today.") -> Suggestion {
+                           factor: Double = 0.9, note: String = " Lightened 10% for today.",
+                           gear: GearProfile = .standard) -> Suggestion {
         var bell: Double
         var reason: String
         if let stored = record?.workingWeight {
-            bell = snapBell(stored)
-            reason = bell >= 50
+            bell = snapBell(stored, gear: gear)
+            reason = bell >= gear.heaviestBell
                 ? "Once you own every rep here, add reps."
                 : "Your \(Fmt.lb(bell)) lb. Hit every rep and it moves you to the next bell."
         } else {
-            bell = defaultBell(id)
+            bell = defaultBell(id, gear: gear)
             reason = "Start with the \(Fmt.lb(bell)) lb bell."
         }
         if lightenToday {
-            bell = snapBell(bell * factor)
+            bell = snapBell(bell * factor, gear: gear)
             reason += note
         }
         return Suggestion(weight: bell, reason: reason)

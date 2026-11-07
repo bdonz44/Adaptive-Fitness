@@ -14,7 +14,7 @@ struct AddExerciseSheet: View {
         let inSession = Set(session.items.compactMap(\.exerciseID))
         let query = search.trimmingCharacters(in: .whitespaces).lowercased()
         func keep(_ e: Exercise) -> Bool {
-            !inSession.contains(e.id) && (query.isEmpty || e.name.lowercased().contains(query)
+            store.gear.has(e) && !inSession.contains(e.id) && (query.isEmpty || e.name.lowercased().contains(query)
                                           || e.category.lowercased().contains(query))
         }
         var result: [(String, [Exercise])] = []
@@ -93,7 +93,7 @@ struct AddExerciseSheet: View {
 
     static let names = ["bicep": "Biceps", "tricep": "Triceps", "delt": "Shoulders", "chest": "Chest",
                         "row": "Back", "quad": "Legs", "hinge": "Hinge", "core": "Core", "abs": "Abs", "full": "Full body",
-                        "main": "Big lifts", "power": "Cleans and snatches", "trx": "TRX"]
+                        "main": "Big lifts", "power": "Cleans and snatches", "trx": "TRX", "pull": "Pull-up bar"]
 
     /// "bicep" -> "Biceps"; unknown "rearDelt" -> "Rear Delt"
     static func title(_ category: String) -> String {

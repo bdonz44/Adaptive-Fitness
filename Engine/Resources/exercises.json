@@ -116,6 +116,8 @@
     { "id": "trxsquatrow", "name": "TRX Squat Row", "category": "trx", "eq": "bw", "unit": "reps", "side": false, "cue": "Squat down holding the handles, drive up and row at the top." },
     { "id": "trxsideplankreach", "name": "TRX Side Plank Reach", "category": "trx", "eq": "bw", "unit": "reps", "side": true, "cue": "Feet stacked in the straps, reach the top arm under and back up." },
     { "id": "kbswing", "name": "KB Swing", "category": "full", "eq": "kb", "unit": "reps", "side": false, "cue": "Snap the hips, arms are just ropes." },
-    { "id": "burpee", "name": "Burpee", "category": "full", "eq": "bw", "unit": "reps", "side": false, "cue": "Chest to the floor, jump at the top." }
+    { "id": "burpee", "name": "Burpee", "category": "full", "eq": "bw", "unit": "reps", "side": false, "cue": "Chest to the floor, jump at the top." },
+    { "id": "pullup", "name": "Pull-Up", "category": "pull", "eq": "bw", "unit": "reps", "side": false, "cue": "Dead hang, pull your chest to the bar, lower all the way." },
+    { "id": "chinup", "name": "Chin-Up", "category": "pull", "eq": "bw", "unit": "reps", "side": false, "cue": "Palms facing you, chin over the bar, full hang at the bottom." }
   ]
 }

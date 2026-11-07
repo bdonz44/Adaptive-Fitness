@@ -58,9 +58,9 @@ public enum CoachCues {
 
     /// The call after a set. `setsLeft` is how many sets of this item remain.
     public static func afterSet(item: SessionItem, reps: Int?, weight: Double?, effort: Effort?,
-                                setsLeft: Int, lightDay: Bool) -> Cue {
+                                setsLeft: Int, lightDay: Bool, gear: GearProfile = .standard) -> Cue {
         let done = reps ?? item.high
-        let step = stepFor(item, weight: weight)
+        let (up, down) = steps(item, weight: weight, gear: gear)
         if setsLeft == 0 {
             if lightDay { return Cue(tone: .done, text: "Done. Easy day banked. Next week we go hard.", newWeight: nil) }
             if done >= item.high && effort != .grind {
@@ -70,15 +70,14 @@ public enum CoachCues {
         }
         if lightDay { return Cue(tone: .steady, text: "Easy day. Same again, perfect reps.", newWeight: nil) }
         if done < item.low {
-            if let w = weight, let step, w - step > 0 {
-                let lower = w - step
+            if let lower = down, lower > 0 {
                 return Cue(tone: .ease, text: "Short of \(item.low). Drop to \(Fmt.lb(lower)) and finish every set strong. No quitting.", newWeight: lower)
             }
             return Cue(tone: .ease, text: "Short of \(item.low). Take 30 extra seconds and get it back.", newWeight: nil)
         }
         let tooEasy = done > item.high || (done >= item.high && effort == .easy)
-        if tooEasy, let w = weight, let step {
-            return Cue(tone: .push, text: "Too easy. Go \(Fmt.lb(w + step)) next set. Prove it.", newWeight: w + step)
+        if tooEasy, let heavier = up {
+            return Cue(tone: .push, text: "Too easy. Go \(Fmt.lb(heavier)) next set. Prove it.", newWeight: heavier)
         }
         if tooEasy {
             return Cue(tone: .push, text: "Too easy. 3-second lowering next set. Make it hurt.", newWeight: nil)
@@ -92,16 +91,23 @@ public enum CoachCues {
         return Cue(tone: .steady, text: "\(done) in the bag. Next set: \(min(done + 1, item.high)). Go get it.", newWeight: nil)
     }
 
-    /// Weight step for an in-session change: 5 lb (10 lb for a barbell over 200), next bell for kettlebells.
-    static func stepFor(_ item: SessionItem, weight: Double?) -> Double? {
-        guard let w = weight else { return nil }
+    /// The next weight up and down for an in-session change, using what you own:
+    /// barbell 5 lb (10 over 200, or two of your smallest plates), your next dumbbell or bell.
+    /// A weight that isn't one of yours (typed by hand) moves 5 lb.
+    static func steps(_ item: SessionItem, weight: Double?, gear: GearProfile = .standard) -> (up: Double?, down: Double?) {
+        guard let w = weight else { return (nil, nil) }
         switch item.equipment {
-        case .bb: return w >= 200 ? 10 : 5
-        case .db: return 5
+        case .bb:
+            let step = max(w >= 200 ? 10 : 5, gear.smallestPlate * 2)
+            let up = gear.barbellMax.map { w + step <= $0 } ?? true ? w + step : nil
+            return (up, w - step >= GearProfile.barbellBar ? w - step : nil)
+        case .db:
+            guard gear.dumbbells.contains(w) else { return (w + 5, w - 5) }
+            return (gear.dumbbells.first { $0 > w }, gear.dumbbells.last { $0 < w })
         case .kb:
-            let next = Suggestions.nextBellInCycle(w)
-            return next > w ? next - w : nil
-        default: return nil
+            return (gear.heavierBell(than: w), gear.lighterBell(than: w))
+        default:
+            return (nil, nil)
         }
     }
 

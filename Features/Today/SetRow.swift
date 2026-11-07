@@ -63,7 +63,7 @@ struct SetRow: View {
         case .kb:
             let bell = set.weight ?? suggestion.weight ?? 35
             Button {
-                store.setWeight(Suggestions.nextBellInCycle(bell), item: item, set: index, applyToLater: true)
+                store.setWeight(Suggestions.nextBellInCycle(bell, gear: store.gear), item: item, set: index, applyToLater: true)
             } label: {
                 Text("\(lb(bell)) lb")
                     .font(.subheadline.weight(.semibold).monospacedDigit())

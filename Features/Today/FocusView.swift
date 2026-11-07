@@ -90,7 +90,7 @@ struct FocusView: View {
                     }
                     .frame(maxWidth: .infinity)
                     if item.equipment == .kb {
-                        stepButton("Bell", label: "Next bell") { weight = Suggestions.nextBellInCycle(w) }
+                        stepButton("Bell", label: "Next bell") { weight = Suggestions.nextBellInCycle(w, gear: store.gear) }
                     } else {
                         stepButton("+5", label: "5 pounds more") { weight = w + 5 }
                     }

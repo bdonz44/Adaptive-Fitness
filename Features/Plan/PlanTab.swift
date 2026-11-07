@@ -33,6 +33,10 @@ struct PlanTab: View {
                             linkRow("Smart coaching", detail: smartDetail,
                                     icon: "brain.head.profile")
                         }
+                        NavigationLink { EquipmentView() } label: {
+                            linkRow("Equipment", detail: store.gear == .standard ? "Standard home gym" : "Your gear",
+                                    icon: "dumbbell.fill")
+                        }
                         NavigationLink { ProgramsView() } label: {
                             linkRow("Programs", detail: programDetail, icon: "square.stack.3d.up.fill")
                         }

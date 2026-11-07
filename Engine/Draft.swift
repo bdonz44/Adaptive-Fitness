@@ -101,12 +101,13 @@ public struct SessionDraft: Codable, Equatable, Sendable {
     /// Accessory: next exercise in the same category not already in the session.
     /// Engine and finisher: next index. Clears what was logged for that item.
     @discardableResult
-    public mutating func swap(_ key: String, in session: Session, catalog: Catalog = .bundled) -> Bool {
+    public mutating func swap(_ key: String, in session: Session, catalog: Catalog = .bundled,
+                              gear: GearProfile = .standard) -> Bool {
         guard let item = session.item(key) else { return false }
         let w = ProgramWeek(week)
         switch item.kind {
         case .accessory:
-            guard let next = SessionBuilder.swapOption(for: key, in: session, catalog: catalog) else { return false }
+            guard let next = SessionBuilder.swapOption(for: key, in: session, catalog: catalog, gear: gear) else { return false }
             swaps[key] = next
         case .engine:
             condSwap = (condSwap ?? (w.wk - 1 + w.cycle - 1)) + 1
