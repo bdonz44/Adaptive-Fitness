@@ -21,7 +21,7 @@ struct SetRow: View {
 
             weightControl(set)
 
-            NumberField(placeholder: "\(item.high)", value: set.reps.map { Double($0) }, decimal: false) { value in
+            NumberField(placeholder: "\(set.plannedReps ?? item.high)", value: set.reps.map { Double($0) }, decimal: false) { value in
                 store.update(item.key, sets: item.sets) { $0.sets[index].reps = value.map { Int($0) } }
             }
             Text(unitWord(item.unit))
@@ -42,7 +42,7 @@ struct SetRow: View {
                         .background(Theme.accent, in: Capsule())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Start \(set.reps ?? item.high) second timer for set \(index + 1)")
+                .accessibilityLabel("Start \(set.reps ?? set.plannedReps ?? item.high) second timer for set \(index + 1)")
             }
 
             Button {

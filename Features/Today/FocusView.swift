@@ -50,7 +50,8 @@ struct FocusView: View {
         let look = Theme.look
         let key = "\(open.key)#\(open.set)"
         let shownWeight = weight ?? store.weight(for: item, set: open.set, in: session)
-        let shownReps = reps ?? store.entry(item.key).sets[safe: open.set]?.reps ?? item.high
+        let shownSet = store.entry(item.key).sets[safe: open.set]
+        let shownReps = reps ?? shownSet?.reps ?? shownSet?.plannedReps ?? item.high
         let position = (session.items.filter(\.isLift).firstIndex { $0.key == item.key } ?? 0) + 1
         return VStack(alignment: .leading, spacing: 18) {
             HStack {

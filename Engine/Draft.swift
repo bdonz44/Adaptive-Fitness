@@ -142,9 +142,26 @@ public struct SessionDraft: Codable, Equatable, Sendable {
         guard done.isDone else { return }
         for i in (index + 1)..<max(e.sets.count, index + 1) where !e.sets[i].isDone {
             if e.sets[i].weight == nil { e.sets[i].weight = done.weight }
-            if e.sets[i].reps == nil { e.sets[i].reps = done.reps }
+            // A suggestion only: filling `reps` would count the set as done.
+            if let r = done.reps { e.sets[i].plannedReps = r }
         }
         entries[key] = e
+    }
+
+    /// Drafts saved before `plannedReps` existed had carried reps written as real reps, which made
+    /// untouched sets count as done. Unticked sets after the last ticked set that repeat its reps
+    /// go back to being suggestions.
+    public mutating func repairCarriedReps() {
+        for (key, var e) in entries {
+            guard let last = e.sets.lastIndex(where: \.ticked), let r = e.sets[last].reps else { continue }
+            var changed = false
+            for i in (last + 1)..<e.sets.count where !e.sets[i].ticked && e.sets[i].reps == r {
+                e.sets[i].reps = nil
+                e.sets[i].plannedReps = r
+                changed = true
+            }
+            if changed { entries[key] = e }
+        }
     }
 
     /// Takes the last not-done set off today's list (keeps at least one).
@@ -152,11 +169,11 @@ public struct SessionDraft: Codable, Equatable, Sendable {
         var e = entries[key] ?? LoggedItem()
         let active = e.activeSets(planned: planned)
         guard active > 1 else { return }
-        let last = active - 1
-        if last < e.sets.count {
-            guard !e.sets[last].isDone else { return }
-            e.sets[last] = LoggedSet()
-        }
+        e.ensureSets(active)
+        // The last set that isn't done (usually the last one); done sets are never removed.
+        guard let open = (0..<active).last(where: { !e.sets[$0].isDone }) else { return }
+        e.sets.remove(at: open)
+        e.ensureSets(active)
         e.removedSets = (e.removedSets ?? 0) + 1
         entries[key] = e
     }

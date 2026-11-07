@@ -15,7 +15,8 @@ struct NowCard: View {
             CardioNow(item: item, openFocus: openFocus)
         } else if let open = store.nextOpenSet, let item = session.item(open.key) {
             let weight = store.weight(for: item, set: open.set, in: session)
-            let reps = store.entry(item.key).sets[safe: open.set]?.reps ?? item.high
+            let set = store.entry(item.key).sets[safe: open.set]
+            let reps = set?.reps ?? set?.plannedReps ?? item.high
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     SectionLabel(text: "Now · \(kindName(item))", color: look.accent)

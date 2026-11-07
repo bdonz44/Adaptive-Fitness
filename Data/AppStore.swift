@@ -114,7 +114,11 @@ final class AppStore {
 
         cardioByWeek = loadCardio()
 
-        let saved = newestDraft().flatMap { Self.decode(SessionDraft.self, $0.json) }
+        let saved = newestDraft().flatMap { Self.decode(SessionDraft.self, $0.json) }.map { d -> SessionDraft in
+            var d = d
+            d.repairCarriedReps()
+            return d
+        }
         if var saved {
             if saved.isCurrent(for: state) {
                 draft = saved

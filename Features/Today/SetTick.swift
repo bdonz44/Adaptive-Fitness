@@ -15,6 +15,8 @@ enum SetTick {
         store.update(item.key, sets: item.sets) { e in
             e.sets[index].ticked = ticking
             if let reps { e.sets[index].reps = reps }
+            // Ticked with a blank reps box: log the suggested reps.
+            if ticking, e.sets[index].reps == nil, let planned = e.sets[index].plannedReps { e.sets[index].reps = planned }
             if let weight { e.sets[index].weight = weight }
             if ticking, e.sets[index].weight == nil, item.equipment != .bw, let w = suggested {
                 e.sets[index].weight = w

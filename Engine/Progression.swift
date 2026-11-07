@@ -2,13 +2,17 @@ import Foundation
 
 public struct LoggedSet: Codable, Equatable, Sendable {
     public var weight: Double?
+    /// Reps done (typed or ticked). Typed reps count the set as done.
     public var reps: Int?
     public var ticked: Bool
+    /// Reps carried over from the last finished set: shown as the suggestion, never counts as done.
+    public var plannedReps: Int?
 
-    public init(weight: Double? = nil, reps: Int? = nil, ticked: Bool = false) {
+    public init(weight: Double? = nil, reps: Int? = nil, ticked: Bool = false, plannedReps: Int? = nil) {
         self.weight = weight
         self.reps = reps
         self.ticked = ticked
+        self.plannedReps = plannedReps
     }
 }
 

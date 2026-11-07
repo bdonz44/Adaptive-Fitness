@@ -139,7 +139,8 @@ struct ExerciseMenu: View {
             if e.skipped == nil {
                 Button { store.markAllDone(item) } label: { Label("All sets done", systemImage: "checkmark.circle.fill") }
                 Button { store.removeSet(item) } label: { Label("Remove a set", systemImage: "minus.circle") }
-                    .disabled(store.activeSets(item) <= 1)
+                    .disabled(store.activeSets(item) <= 1
+                               || e.sets.count >= store.activeSets(item) && e.sets.prefix(store.activeSets(item)).allSatisfy(\.isDone))
                 if (e.removedSets ?? 0) > 0 {
                     Button { store.restoreSets(item) } label: { Label("Put removed sets back", systemImage: "plus.circle") }
                 }

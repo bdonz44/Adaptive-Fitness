@@ -125,7 +125,8 @@ import Testing
         d.carryForward(key: "main", from: 0, setCount: 4)
         let sets = d.entries["main"]!.sets
         #expect(sets.count == 4)
-        #expect(sets[1...].allSatisfy { $0.weight == 235 && $0.reps == 5 && !$0.ticked })
+        // Weight fills in; reps are only a suggestion, so the sets are still open.
+        #expect(sets[1...].allSatisfy { $0.weight == 235 && $0.reps == nil && $0.plannedReps == 5 && !$0.isDone })
     }
 
     @Test func keepsWhatWasTypedAndDoneSets() {
@@ -136,9 +137,9 @@ import Testing
                                               LoggedSet()])
         d.carryForward(key: "main", from: 0, setCount: 4)
         let sets = d.entries["main"]!.sets
-        #expect(sets[1].weight == 225 && sets[1].reps == 4)
+        #expect(sets[1].weight == 225 && sets[1].reps == nil && sets[1].plannedReps == 4)
         #expect(sets[2].weight == 240 && sets[2].reps == 5)
-        #expect(sets[3].weight == 235 && sets[3].reps == 4)
+        #expect(sets[3].weight == 235 && sets[3].reps == nil && sets[3].plannedReps == 4)
     }
 
     @Test func blankRepsStayBlank() {
@@ -168,5 +169,57 @@ import Testing
         json.removeValue(forKey: "startedAt")
         let back = try JSONDecoder().decode(SessionDraft.self, from: JSONSerialization.data(withJSONObject: json))
         #expect(back.week == 2 && back.warmTicks == [0] && back.warmWeights == nil)
+    }
+}
+
+@Suite struct RemoveSetAfterTickTests {
+    @Test func removeSetWorksAfterTheFirstSetIsTicked() {
+        var d = SessionDraft(slot: .D, week: 1)
+        d.entries["main"] = LoggedItem(sets: [LoggedSet(weight: 185, reps: 5, ticked: true)])
+        d.carryForward(key: "main", from: 0, setCount: 4)
+        #expect(d.entries["main"]!.sets.map(\.isDone) == [true, false, false, false])
+        d.removeSet(key: "main", planned: 4)
+        #expect(d.entries["main"]!.removedSets == 1)
+        #expect(d.entries["main"]!.activeSets(planned: 4) == 3)
+    }
+
+    @Test func nextSetIsSetTwoAfterTickingSetOne() throws {
+        let s = SessionBuilder.build(slot: .D, context: SessionContext(week: 1))
+        var d = SessionDraft(slot: .D, week: 1)
+        d.entries["main"] = LoggedItem(sets: [LoggedSet(weight: 185, reps: 5, ticked: true)])
+        d.carryForward(key: "main", from: 0, setCount: s.item("main")!.sets)
+        let next = try #require(SessionInsights.nextOpenSet(session: s, entries: d.entries, after: "main"))
+        #expect(next.key == "main" && next.set == 1)
+    }
+
+    @Test func oldDraftsWithCarriedRepsAreRepaired() {
+        var d = SessionDraft(slot: .D, week: 1)
+        d.entries["main"] = LoggedItem(sets: [LoggedSet(weight: 185, reps: 5, ticked: true),
+                                              LoggedSet(weight: 185, reps: 5), LoggedSet(weight: 185, reps: 5),
+                                              LoggedSet(weight: 185, reps: 3)])   // typed 3: a real entry
+        d.repairCarriedReps()
+        let sets = d.entries["main"]!.sets
+        #expect(sets.map(\.isDone) == [true, false, false, true])
+        #expect(sets[1].plannedReps == 5)
+    }
+}
+
+@Suite struct RemoveOpenSetTests {
+    @Test func removesTheLastOpenSetEvenIfTheLastSetIsDone() {
+        var d = SessionDraft(slot: .D, week: 1)
+        d.entries["main"] = LoggedItem(sets: [LoggedSet(weight: 185, reps: 5, ticked: true), LoggedSet(weight: 185),
+                                              LoggedSet(weight: 185), LoggedSet(weight: 190, reps: 5, ticked: true)])
+        d.removeSet(key: "main", planned: 4)
+        let e = d.entries["main"]!
+        #expect(e.activeSets(planned: 4) == 3)
+        #expect(Array(e.sets.prefix(3)).map(\.isDone) == [true, false, true])
+        #expect(e.sets[2].weight == 190)
+    }
+
+    @Test func allDoneMeansNothingToRemove() {
+        var d = SessionDraft(slot: .D, week: 1)
+        d.entries["main"] = LoggedItem(sets: sets(185, [5, 5]))
+        d.removeSet(key: "main", planned: 2)
+        #expect(d.entries["main"]!.removedSets == nil)
     }
 }
