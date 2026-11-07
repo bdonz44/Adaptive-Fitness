@@ -21,6 +21,18 @@ public struct SessionDraft: Codable, Equatable, Sendable {
     public var warmWeights: [String: Double]?
     /// Exercises added by hand for today ("Add exercise"), in order.
     public var extras: [String]?
+    /// The program and days-a-week this draft was built for (nil: Hybrid 12, 5 days).
+    public var program: ProgramID?
+    public var days: Int?
+
+    /// A new draft for the running program.
+    public init(slot: Slot, state: ProgramState, readiness: Readiness = .normal) {
+        self.init(slot: slot, week: state.week, readiness: readiness)
+        if state.program != .hybrid12 || state.days != state.program.defaultDays {
+            program = state.program
+            days = state.days
+        }
+    }
 
     public init(slot: Slot, week: Int, readiness: Readiness = .normal) {
         self.slot = slot
@@ -40,13 +52,25 @@ public struct SessionDraft: Codable, Equatable, Sendable {
         if startedAt == nil, hasWork || !warmTicks.isEmpty { startedAt = date }
     }
 
+    /// Session inputs for the running program.
+    public func context(for state: ProgramState) -> SessionContext {
+        var c = context(runMinutes: state.runMinutes)
+        c.program = state.program
+        c.days = state.days
+        c.startWeek = state.startWeek
+        return c
+    }
+
     public func context(runMinutes: Int) -> SessionContext {
         SessionContext(week: week, readiness: readiness, swaps: swaps,
                        condSwap: condSwap, finSwap: finSwap, runMinutes: runMinutes, extras: extras ?? [])
     }
 
     /// A draft from an earlier week is discarded.
-    public func isCurrent(for state: ProgramState) -> Bool { week == state.week }
+    public func isCurrent(for state: ProgramState) -> Bool {
+        week == state.week && (program ?? .hybrid12) == state.program
+            && (days ?? ProgramID.hybrid12.defaultDays) == state.days
+    }
 
     public var hasWork: Bool { entries.values.contains { $0.hasCompletedWork } }
 

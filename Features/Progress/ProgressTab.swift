@@ -304,7 +304,7 @@ struct RecentSessionsCard: View {
                             .foregroundStyle(Theme.secondary)
                     }
                     Spacer()
-                    Text("Week \(ProgramWeek(log.week).wk)")
+                    Text("Week \(store.displayWeek(log.week))")
                         .font(.subheadline)
                         .foregroundStyle(Theme.secondary)
                 }

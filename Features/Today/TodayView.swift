@@ -177,7 +177,7 @@ struct WeekHeader: View {
         let look = Theme.look
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                SectionLabel(text: "Week \(week.wk) / 12 · \(week.phase.name)" + (week.cycle > 1 ? " · Cycle \(week.cycle)" : ""))
+                SectionLabel(text: "Week \(week.wk) / 12 · \(store.program.program.phaseName(week.phase))" + (week.cycle > 1 ? " · Cycle \(week.cycle)" : ""))
                 Spacer()
                 if week.isDeload {
                     Text("Back-off week")
@@ -193,7 +193,7 @@ struct WeekHeader: View {
                 .minimumScaleFactor(0.6)
             // One segment per session this week: done, today, still to do.
             HStack(spacing: 6) {
-                ForEach(Program.order, id: \.self) { slot in
+                ForEach(store.program.order, id: \.self) { slot in
                     Capsule()
                         .fill(store.program.isDone(slot) ? look.accent
                               : slot == store.draft.slot ? look.text : look.field)
@@ -201,9 +201,9 @@ struct WeekHeader: View {
                 }
             }
             .accessibilityElement()
-            .accessibilityLabel("\(store.program.doneCount) of 5 sessions done this week")
+            .accessibilityLabel("\(store.program.doneCount) of \(store.program.order.count) sessions done this week")
             HStack {
-                Text("\(store.program.doneCount) of 5 done")
+                Text("\(store.program.doneCount) of \(store.program.order.count) done")
                 Spacer()
                 Text("Cardio \(store.cardioThisWeek) / \(Program.cardioGoalMinutes) min").monospacedDigit()
             }
@@ -223,17 +223,22 @@ struct SlotChips: View {
         let next = store.nextSlot
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ForEach(Program.order + [Slot.R], id: \.self) { slot in
+                ForEach(slots, id: \.self) { slot in
                     chip(slot, isNext: slot == next)
                 }
             }
         }
     }
 
+    /// The week's sessions, plus Hybrid 12's optional easy run.
+    private var slots: [Slot] {
+        store.program.order + (store.program.program == .hybrid12 ? [Slot.R] : [])
+    }
+
     private func chip(_ slot: Slot, isNext: Bool) -> some View {
         let selected = store.draft.slot == slot
         let done = store.program.isDone(slot)
-        let plan = Program.plan(slot)
+        let day = store.program.order.firstIndex(of: slot).map { $0 + 1 }
         return Button {
             if !selected { timer.done() }
             store.select(slot)
@@ -241,13 +246,13 @@ struct SlotChips: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     if done { Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.done) }
-                    Text(plan.day.map { "Day \($0)" } ?? "Optional")
+                    Text(day.map { "Day \($0)" } ?? "Optional")
                         .font(.caption2.weight(.semibold))
                     if isNext && !done {
                         Text("Next").font(.caption2.weight(.bold)).foregroundStyle(Theme.accent)
                     }
                 }
-                Text(slot == .R ? "Easy Run" : plan.name)
+                Text(slot == .R ? "Easy Run" : store.slotName(slot))
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
             }

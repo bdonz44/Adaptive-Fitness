@@ -86,7 +86,8 @@ final class AppStore {
         let storedLogs = (try? context.fetch(FetchDescriptor<StoredLog>(sortBy: [SortDescriptor(\.date, order: .reverse)]))) ?? []
         let pm = canonicalProgram(newestLog: storedLogs.first)
         programModel = pm
-        let state = ProgramState(week: pm.week, doneSlots: pm.doneSlots, startDate: pm.startDate, runMinutes: pm.runMinutes)
+        var state = ProgramState(week: pm.week, doneSlots: [], startDate: pm.startDate, runMinutes: pm.runMinutes)
+        state.applyStored(doneSlots: pm.doneSlots)
         program = state
         weekLogs = storedLogs.map { (slot: $0.slot, week: $0.week, date: $0.date) }
 
@@ -110,12 +111,14 @@ final class AppStore {
             } else if saved.hasWork {
                 // Never throw away logged sets: keep them on the current week.
                 saved.week = state.week
+                saved.program = state.program == .hybrid12 && state.days == 5 ? nil : state.program
+                saved.days = saved.program == nil ? nil : state.days
                 draft = saved
             } else {
-                draft = SessionDraft(slot: Program.nextSlot(state: state, logs: stamps, now: Date()), week: state.week)
+                draft = SessionDraft(slot: Program.nextSlot(state: state, logs: stamps, now: Date()), state: state)
             }
         } else if !draft.hasWork || !draft.isCurrent(for: state) {
-            draft = SessionDraft(slot: Program.nextSlot(state: state, logs: stamps, now: Date()), week: state.week)
+            draft = SessionDraft(slot: Program.nextSlot(state: state, logs: stamps, now: Date()), state: state)
         }
         try? context.save()
     }
@@ -192,10 +195,25 @@ final class AppStore {
 
     // MARK: Reading
 
-    var week: ProgramWeek { ProgramWeek(program.week) }
+    /// The week within the running program.
+    var week: ProgramWeek { program.programWeek }
+
+    /// "Week 3" for a log's stored (absolute) week, counted in the running program when it's from it.
+    func displayWeek(_ absolute: Int) -> Int {
+        absolute >= program.startWeek ? ProgramWeek(absolute - program.startWeek + 1).wk : ProgramWeek(absolute).wk
+    }
+
+    func slotName(_ slot: Slot) -> String { program.slotName(slot) }
+
+    /// Switch programs or days a week. Today's unfinished session is dropped.
+    func chooseProgram(_ id: ProgramID, days: Int) {
+        setProgram(Program.switchTo(id, days: days, state: program))
+        resetDraft()
+        markLoggedThisWeek()
+    }
 
     var session: Session {
-        let built = SessionBuilder.build(slot: draft.slot, context: draft.context(runMinutes: program.runMinutes),
+        let built = SessionBuilder.build(slot: draft.slot, context: draft.context(for: program),
                                          catalog: catalog)
         guard adaptive.timeBox, let budget = draft.timeBudget else { return built }
         let logged = Set(draft.entries.filter { $0.value.hasCompletedWork }.keys)
@@ -261,7 +279,7 @@ final class AppStore {
 
     func select(_ slot: Slot) {
         guard slot != draft.slot else { return }
-        draft = SessionDraft(slot: slot, week: program.week)
+        draft = SessionDraft(slot: slot, state: program)
         saveDraft()
     }
 
@@ -437,7 +455,7 @@ final class AppStore {
 
     /// Clears today's logging but keeps the slot and readiness.
     func restartSession() {
-        draft = SessionDraft(slot: draft.slot, week: program.week, readiness: draft.readiness)
+        draft = SessionDraft(slot: draft.slot, state: program, readiness: draft.readiness)
         saveDraft()
     }
 
@@ -479,7 +497,7 @@ final class AppStore {
         let undo = advance.finishedWeek == nil ? nil : Program.setDone(s.slot, true, state: state)
         setProgram(advance.state)
         resetDraft()
-        Nudges.schedule(CoachCues.nudge(after: now, next: nextSlot))
+        Nudges.schedule(CoachCues.nudge(after: now, next: nextSlot, name: slotName(nextSlot)))
 
         return FinishSummary(title: s.title, changes: result.changes, cardioMinutes: result.cardioMinutes,
                              weekMessage: advance.message, minutes: workout?.minutes, setsDone: stats.setsDone,
@@ -548,7 +566,7 @@ final class AppStore {
         cardioByWeek = [:]
         weighIns = []
         waist = []
-        setProgram(ProgramState())
+        setProgram(ProgramState(program: program.program, days: program.days))
         resetDraft()
     }
 
@@ -609,14 +627,14 @@ final class AppStore {
     }
 
     private func resetDraft() {
-        draft = SessionDraft(slot: nextSlot, week: program.week)
+        draft = SessionDraft(slot: nextSlot, state: program)
         saveDraft()
     }
 
     private func setProgram(_ state: ProgramState) {
         program = state
         programModel.week = state.week
-        programModel.doneSlots = state.doneSlots
+        programModel.doneSlots = state.storedDoneSlots
         programModel.startDate = state.startDate
         programModel.runMinutes = state.runMinutes
         save()

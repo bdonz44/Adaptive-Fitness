@@ -106,10 +106,11 @@ public enum CoachCues {
     }
 
     /// The nudge after a session: when to remind, and what to say.
-    public static func nudge(after date: Date, next: Slot, calendar: Calendar = .current) -> (date: Date, text: String) {
+    public static func nudge(after date: Date, next: Slot, name: String? = nil,
+                             calendar: Calendar = .current) -> (date: Date, text: String) {
         let twoDays = calendar.date(byAdding: .day, value: 2, to: date) ?? date
         let morning = calendar.date(bySettingHour: 7, minute: 30, second: 0, of: twoDays) ?? twoDays
-        let name = Program.plan(next).name
+        let name = name ?? Program.plan(next).name
         return (morning, "Two days off. \(name) is waiting. No more excuses: get it in today.")
     }
 }

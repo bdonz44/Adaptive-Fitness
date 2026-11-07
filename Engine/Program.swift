@@ -123,22 +123,46 @@ public enum Program {
 // MARK: - Program state, week advance, plan controls
 
 public struct ProgramState: Codable, Equatable, Sendable {
+    /// Absolute week number: only ever goes up (logs are stamped with it).
     public var week: Int
     public var doneSlots: [String]
     public var startDate: Date?
     public var runMinutes: Int
+    /// The program being run, how many days a week, and the absolute week it started on.
+    public var program: ProgramID
+    public var days: Int
+    public var startWeek: Int
+    /// Where to pick other programs back up (program id -> program week).
+    public var resumeWeeks: [String: Int]
 
-    public init(week: Int = 1, doneSlots: [String] = [], startDate: Date? = nil, runMinutes: Int = Program.defaultRunMinutes) {
+    public init(week: Int = 1, doneSlots: [String] = [], startDate: Date? = nil, runMinutes: Int = Program.defaultRunMinutes,
+                program: ProgramID = .hybrid12, days: Int? = nil, startWeek: Int = 1, resumeWeeks: [String: Int] = [:]) {
         self.week = week
         self.doneSlots = doneSlots
         self.startDate = startDate
         self.runMinutes = runMinutes
+        self.program = program
+        self.days = days ?? program.defaultDays
+        self.startWeek = startWeek
+        self.resumeWeeks = resumeWeeks
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        week = try c.decode(Int.self, forKey: .week)
+        doneSlots = try c.decode([String].self, forKey: .doneSlots)
+        startDate = try c.decodeIfPresent(Date.self, forKey: .startDate)
+        runMinutes = try c.decode(Int.self, forKey: .runMinutes)
+        program = try c.decodeIfPresent(ProgramID.self, forKey: .program) ?? .hybrid12
+        days = try c.decodeIfPresent(Int.self, forKey: .days) ?? program.defaultDays
+        startWeek = try c.decodeIfPresent(Int.self, forKey: .startWeek) ?? 1
+        resumeWeeks = try c.decodeIfPresent([String: Int].self, forKey: .resumeWeeks) ?? [:]
     }
 
     public func isDone(_ slot: Slot) -> Bool { doneSlots.contains(slot.rawValue) }
-    public var doneCount: Int { Program.order.filter { isDone($0) }.count }
-    /// Four (or, after a repair, five) done shows a "Start next week" link.
-    public var canStartNextWeek: Bool { doneCount >= 4 }
+    public var doneCount: Int { order.filter { isDone($0) }.count }
+    /// One short of the week (or, after a repair, all done) shows a "Start next week" link.
+    public var canStartNextWeek: Bool { doneCount >= max(1, order.count - 1) }
 }
 
 public struct WeekAdvance: Equatable, Sendable {
@@ -161,7 +185,7 @@ extension Program {
         var s = state
         guard slot != .R else { return WeekAdvance(state: s, finishedWeek: nil, message: nil) }
         if !s.doneSlots.contains(slot.rawValue) { s.doneSlots.append(slot.rawValue) }
-        guard required.allSatisfy({ s.isDone($0) }) else {
+        guard s.order.allSatisfy({ s.isDone($0) }) else {
             return WeekAdvance(state: s, finishedWeek: nil, message: nil)
         }
         return advance(s)
@@ -172,7 +196,7 @@ extension Program {
     /// advances the week; the easy run is ignored.
     public static func addingLogged(_ slots: [Slot], state: ProgramState) -> ProgramState {
         var s = state
-        for slot in order where slots.contains(slot) && !s.doneSlots.contains(slot.rawValue) {
+        for slot in s.order where slots.contains(slot) && !s.doneSlots.contains(slot.rawValue) {
             s.doneSlots.append(slot.rawValue)
         }
         return s
@@ -188,7 +212,7 @@ extension Program {
 
     /// Each session of the week and why it counts (or not). `logged` = newest log date per slot this week.
     public static func weekStatus(state: ProgramState, logged: [Slot: Date]) -> [(slot: Slot, status: SlotStatus)] {
-        order.map { slot in
+        state.order.map { slot in
             guard state.isDone(slot) else { return (slot, .toDo) }
             if let d = logged[slot] { return (slot, .logged(d)) }
             return (slot, .markedDone)
@@ -214,11 +238,11 @@ extension Program {
 
     private static func advance(_ state: ProgramState) -> WeekAdvance {
         var s = state
-        let finished = s.week
+        let finished = s.programWeek.week
         s.week += 1
         s.doneSlots = []
         var message = "Week \(finished) done."
-        if ProgramWeek(s.week).isDeload { message += " Next week is a back-off week." }
+        if s.programWeek.isDeload { message += " Next week is a back-off week." }
         return WeekAdvance(state: s, finishedWeek: finished, message: message)
     }
 
@@ -226,7 +250,7 @@ extension Program {
     public static func jump(toWeekInCycle n: Int, state: ProgramState) -> ProgramState {
         var s = state
         let target = min(12, max(1, n))
-        s.week = (ProgramWeek(state.week).cycle - 1) * 12 + target
+        s.week = s.startWeek - 1 + (state.programWeek.cycle - 1) * 12 + target
         s.doneSlots = []
         return s
     }
@@ -235,8 +259,9 @@ extension Program {
     /// last 48 hours, skip to the first open slot that is not A or E.
     /// All five done: the optional run.
     public static func nextSlot(state: ProgramState, logs: [LogStamp], now: Date) -> Slot {
-        let open = order.filter { !state.isDone($0) }
-        guard let first = open.first else { return .R }
+        let open = state.order.filter { !state.isDone($0) }
+        guard let first = open.first else { return state.program == .hybrid12 ? .R : state.order.last ?? .A }
+        let lower = state.lower
         let recentLower = logs.contains { log in
             lower.contains(log.slot) && log.date <= now && now.timeIntervalSince(log.date) < 48 * 3600
         }

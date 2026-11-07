@@ -70,6 +70,44 @@ public enum PlanText {
         }
     }
 
+    /// One line per day of a non-Hybrid program for the current week:
+    /// "Day 1 · Squat + 4×4: Back Squat 4×5, Romanian Deadlift 3×6-8, Bulgarian Split Squat + Dead Bug 3×8-12, Norwegian 4×4 (4 rounds)"
+    public static func programSessions(state: ProgramState, catalog: Catalog = .bundled) -> [String] {
+        state.order.enumerated().map { i, slot in
+            let session = SessionBuilder.build(slot: slot, context: SessionDraft(slot: slot, state: state).context(for: state),
+                                               catalog: catalog)
+            var parts: [String] = []
+            var lastPair: Int? = nil
+            for item in session.items {
+                if item.isCardio {
+                    let amount = item.unit == .min ? "\(item.rounds ?? 0) min" : "\(item.rounds ?? 0) rounds"
+                    parts.append("\(item.name) (\(amount))")
+                } else if let pair = item.pair {
+                    let text = "\(item.name) \(item.sets)×\(dose(item))"
+                    if pair == lastPair, let prev = parts.popLast() {
+                        parts.append(prev + " + " + text)
+                    } else {
+                        parts.append(text)
+                    }
+                    lastPair = pair
+                } else {
+                    parts.append("\(item.name) \(item.sets)×\(dose(item))")
+                }
+            }
+            return "Day \(i + 1) · \(session.title): " + parts.joined(separator: ", ")
+        }
+    }
+
+    /// "5", "6-8", "30-45 sec"
+    static func dose(_ item: SessionItem) -> String {
+        let r = range(item.low, item.high)
+        switch item.unit {
+        case .sec: return "\(r) sec"
+        case .yd: return "\(r) yd"
+        default: return item.side ? "\(r) each side" : r
+        }
+    }
+
     static func range(_ low: Int, _ high: Int) -> String { low == high ? "\(low)" : "\(low)-\(high)" }
 
     /// 150 -> "2:30"

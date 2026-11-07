@@ -28,7 +28,7 @@ struct ItemCard: View {
                     Text(prescription).font(.subheadline).foregroundStyle(Theme.secondary)
                 }
                 Spacer()
-                if (item.kind == .accessory || item.kind == .engine || item.kind == .finisher) && skipped == nil && !item.isExtra {
+                if (item.kind == .accessory || item.kind == .engine || item.kind == .finisher) && skipped == nil && !item.isExtra && item.canSwap {
                     Button {
                         store.swap(item)
                     } label: {

@@ -33,14 +33,14 @@ struct PlanTab: View {
                                     icon: "brain.head.profile")
                         }
                         NavigationLink { ProgramsView() } label: {
-                            linkRow("Programs", detail: "Hybrid 12 · more coming", icon: "square.stack.3d.up.fill")
+                            linkRow("Programs", detail: programDetail, icon: "square.stack.3d.up.fill")
                         }
                     }
                     .buttonStyle(.plain)
                     thisWeekCard(week)
                     weeksCard(week)
-                    Card(title: "\(week.phase.name) sessions") {
-                        ForEach(PlanText.sessions(week.phase, runMinutes: store.program.runMinutes, catalog: store.catalog), id: \.self) { line in
+                    Card(title: "\(id.phaseName(week.phase)) sessions") {
+                        ForEach(sessionLines(week), id: \.self) { line in
                             Text(line).font(.subheadline).fixedSize(horizontal: false, vertical: true)
                         }
                     }
@@ -50,7 +50,7 @@ struct PlanTab: View {
                         }
                     }
                     Card(title: "How it works") {
-                        Text("Do the five sessions in order, on any days. Finishing all five starts the next week. Weeks 4 and 8 are back-off weeks. After week 12, cycle 2 starts with your weights carried over.")
+                        Text(id.howItWorks)
                             .font(.subheadline)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -83,6 +83,19 @@ struct PlanTab: View {
         }
     }
 
+    private var id: ProgramID { store.program.program }
+
+    private var programDetail: String {
+        store.program.program == .hybrid12 ? "Hybrid 12 · switch any time"
+            : "\(store.program.program.name) · \(store.program.days) days"
+    }
+
+    private func sessionLines(_ week: ProgramWeek) -> [String] {
+        id == .hybrid12
+            ? PlanText.sessions(week.phase, runMinutes: store.program.runMinutes, catalog: store.catalog)
+            : PlanText.programSessions(state: store.program, catalog: store.catalog)
+    }
+
     private func linkRow(_ title: String, detail: String, icon: String) -> some View {
         HStack(spacing: 14) {
             Image(systemName: icon)
@@ -104,8 +117,8 @@ struct PlanTab: View {
 
     private func header(_ week: ProgramWeek) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Week \(week.wk) of 12 · \(week.phase.name)").font(.headline)
-            Text("Cycle \(week.cycle) · \(store.program.doneCount) of 5 sessions done this week")
+            Text("\(id.name) · Week \(week.wk) of 12 · \(id.phaseName(week.phase))").font(.headline)
+            Text("Cycle \(week.cycle) · \(store.program.doneCount) of \(store.program.order.count) sessions done this week")
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondary)
         }
@@ -121,7 +134,7 @@ struct PlanTab: View {
                     Image(systemName: icon(row.status))
                         .foregroundStyle(row.status == .toDo ? Theme.secondary : Theme.done)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(Program.plan(row.slot).name).font(.subheadline.weight(.semibold))
+                        Text(store.slotName(row.slot)).font(.subheadline.weight(.semibold))
                         Text(statusText(row.status)).font(.caption).foregroundStyle(Theme.secondary)
                     }
                     Spacer()
@@ -178,7 +191,7 @@ struct PlanTab: View {
                 }
                 Text("\(w.wk)").font(.title3.weight(.bold)).monospacedDigit()
             }
-            Text(w.isDeload ? "Back-off" : w.phase.name)
+            Text(w.isDeload ? "Back-off" : id.phaseName(w.phase))
                 .font(.caption2)
                 .foregroundStyle(w.isDeload ? Color.blue : Theme.secondary)
                 .lineLimit(1)
@@ -188,21 +201,25 @@ struct PlanTab: View {
         .padding(.vertical, 8)
         .background(current ? Theme.accent.opacity(0.3) : Theme.field, in: RoundedRectangle(cornerRadius: max(Theme.look.radius - 8, 2)))
         .overlay(RoundedRectangle(cornerRadius: max(Theme.look.radius - 8, 2)).stroke(current ? Theme.accent : .clear, lineWidth: 1.5))
-        .accessibilityLabel("Week \(w.wk), \(w.isDeload ? "back-off week" : w.phase.name)\(current ? ", current" : "")")
+        .accessibilityLabel("Week \(w.wk), \(w.isDeload ? "back-off week" : id.phaseName(w.phase))\(current ? ", current" : "")")
     }
 
     private func phaseRow(_ phase: Phase, current: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(phase.name).font(.headline)
+                Text(id.phaseName(phase)).font(.headline)
                 Text(PlanText.weeks(phase)).font(.subheadline).foregroundStyle(Theme.secondary)
                 Spacer()
                 if current {
                     Text("Now").font(.caption.weight(.bold)).foregroundStyle(Theme.accent)
                 }
             }
-            Text(PlanText.focus(phase)).font(.subheadline)
-            Text(PlanText.scheme(phase)).font(.caption).foregroundStyle(Theme.secondary)
+            if id == .hybrid12 {
+                Text(PlanText.focus(phase)).font(.subheadline)
+                Text(PlanText.scheme(phase)).font(.caption).foregroundStyle(Theme.secondary)
+            } else {
+                Text(id.phaseBlurb(phase)).font(.subheadline)
+            }
         }
         .fixedSize(horizontal: false, vertical: true)
     }

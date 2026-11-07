@@ -5,12 +5,13 @@ public enum ItemKind: String, Codable, Sendable {
 }
 
 public enum BlockKind: String, Codable, Sendable {
-    case getStrong, engine, run, buildTheLook, extras, burnIt
+    case getStrong, engine, box, run, buildTheLook, extras, burnIt
 
     public var title: String {
         switch self {
         case .getStrong: return "Get strong"
         case .engine: return "Engine"
+        case .box: return "Box"
         case .run: return "Run"
         case .buildTheLook: return "Build the look"
         case .extras: return "Extras"
@@ -46,6 +47,8 @@ public struct SessionItem: Equatable, Sendable {
     /// Round timer defaults (seconds), from the workout data.
     public var intervalWork: Int? = nil
     public var intervalRest: Int? = nil
+    /// False for program conditioning blocks that have no alternatives.
+    public var canSwap: Bool = true
 
     public var isLift: Bool { kind == .main || kind == .accessory }
     /// Added by hand for today ("Add exercise"), keyed "x-<exercise id>".
@@ -90,11 +93,18 @@ public struct SessionContext: Equatable, Sendable {
     public var runMinutes: Int
     /// Exercises added by hand for today, in order.
     public var extras: [String]
+    /// The program, days a week, and the absolute week it started on (week 1 of the program).
+    public var program: ProgramID
+    public var days: Int
+    public var startWeek: Int
 
     public init(week: Int, readiness: Readiness = .normal, swaps: [String: String] = [:],
                 condSwap: Int? = nil, finSwap: Int? = nil, runMinutes: Int = Program.defaultRunMinutes,
-                extras: [String] = []) {
+                extras: [String] = [], program: ProgramID = .hybrid12, days: Int? = nil, startWeek: Int = 1) {
         self.extras = extras
+        self.program = program
+        self.days = days ?? program.defaultDays
+        self.startWeek = startWeek
         self.week = week
         self.readiness = readiness
         self.swaps = swaps
@@ -132,7 +142,18 @@ public enum SessionBuilder {
     }
 
     public static func build(slot: Slot, context: SessionContext, catalog: Catalog = .bundled) -> Session {
-        let week = ProgramWeek(context.week)
+        let week = ProgramWeek(context.week - context.startWeek + 1)
+        var session = context.program == .hybrid12
+            ? buildHybrid(slot: slot, context: context, week: week, catalog: catalog)
+            : ProgramLibrary.build(slot: slot, context: context, week: week, catalog: catalog)
+        if let extras = extrasBlock(context: context, week: week, catalog: catalog) {
+            let at = session.blocks.firstIndex { $0.kind == .burnIt } ?? session.blocks.count
+            session.blocks.insert(extras, at: at)
+        }
+        return session
+    }
+
+    static func buildHybrid(slot: Slot, context: SessionContext, week: ProgramWeek, catalog: Catalog) -> Session {
         let scheme = PhaseScheme.of(week.phase)
         let plan = Program.plan(slot)
         let beat = context.readiness == .beat
@@ -212,23 +233,6 @@ public enum SessionBuilder {
             if !items.isEmpty { blocks.append(SessionBlock(kind: .buildTheLook, items: items)) }
         }
 
-        // 4b. Extras added by hand: accessory sets, reps and rest for the phase.
-        let extraItems: [SessionItem] = context.extras.compactMap { id in
-            guard let ex = catalog.exercise(id) else { return nil }
-            let range: (low: Int, high: Int)
-            let power = ex.category == Catalog.powerCategory
-            switch ex.unit {
-            case .sec: range = (scheme.holdLow, scheme.holdHigh)
-            case .yd: range = (Program.carryYards, Program.carryYards)
-            default: range = power ? Program.powerReps : (scheme.accLow, scheme.accHigh)
-            }
-            return SessionItem(
-                key: SessionItem.extraKey(ex.id), tag: "+", kind: .accessory,
-                exerciseID: ex.id, name: ex.name, equipment: ex.eq, unit: ex.unit, side: ex.side,
-                sets: max(1, scheme.accSets - (week.isDeload ? 1 : 0)), low: range.low, high: range.high,
-                restSeconds: power ? Program.powerRest : scheme.accRest, detail: ex.cue)
-        }
-        if !extraItems.isEmpty { blocks.append(SessionBlock(kind: .extras, items: extraItems)) }
 
         // 5. Burn it (A, B, D, E)
         if [Slot.A, .B, .D, .E].contains(slot) {
@@ -249,6 +253,27 @@ public enum SessionBuilder {
         }
 
         return Session(slot: slot, title: plan.name, week: week, readiness: context.readiness, blocks: blocks)
+    }
+
+    /// Exercises added by hand: accessory sets, reps and rest for the phase (cleans and snatches: 3-5 reps).
+    static func extrasBlock(context: SessionContext, week: ProgramWeek, catalog: Catalog) -> SessionBlock? {
+        let scheme = PhaseScheme.of(week.phase)
+        let extraItems: [SessionItem] = context.extras.compactMap { id in
+            guard let ex = catalog.exercise(id) else { return nil }
+            let range: (low: Int, high: Int)
+            let power = ex.category == Catalog.powerCategory
+            switch ex.unit {
+            case .sec: range = (scheme.holdLow, scheme.holdHigh)
+            case .yd: range = (Program.carryYards, Program.carryYards)
+            default: range = power ? Program.powerReps : (scheme.accLow, scheme.accHigh)
+            }
+            return SessionItem(
+                key: SessionItem.extraKey(ex.id), tag: "+", kind: .accessory,
+                exerciseID: ex.id, name: ex.name, equipment: ex.eq, unit: ex.unit, side: ex.side,
+                sets: max(1, scheme.accSets - (week.isDeload ? 1 : 0)), low: range.low, high: range.high,
+                restSeconds: power ? Program.powerRest : scheme.accRest, detail: ex.cue)
+        }
+        return extraItems.isEmpty ? nil : SessionBlock(kind: .extras, items: extraItems)
     }
 
     /// Swap: the next exercise in the same category not already in the session.

@@ -112,3 +112,16 @@ Or open `Package.swift` in Xcode and press Cmd-U. GitHub also runs them on every
 - **WHOOP** (Plan > WHOOP): OAuth sign-in once (redirect `hybrid12://whoop`); on launch and on every return to the app (at most every 20 min) it fetches the newest recovery, sleep and cycle from WHOOP API v2. Recovery 67+ sets readiness to Great, 34-66 Normal, under 34 Beat up, unless readiness was picked by hand that day or the session has started. Tokens are in the Keychain. The client ID and secret come from `Config/Secrets.xcconfig` (not committed; made from `~/Downloads/whoop.txt`). Without that file the app builds with WHOOP off. Fine for a personal app; an App Store version would need a server to hold the secret.
 - **Exercise menu (…):** All sets done (ticks every set; blank weights take the suggestion, blank reps count as the top of the range), Remove a set (takes the last unfinished set off today's list, never below one; Put removed sets back), Skip exercise with a reason (Pain, No time, No equipment, Other; clears what was logged). A skipped lift is remembered on its record (`lastSkip`) and flagged next time until it's logged again. Removed or skipped sets don't count, so the weight holds.
 - **Finish check:** if any planned sets on exercises that weren't skipped are unticked, Finish asks to log them as done at the planned weight and reps, or only what was ticked.
+
+## Programs
+
+Plan > Programs picks the program and days a week. Hybrid 12 (5 days) is the original; the others are day plans in `Engine/ProgramLibrary.swift`, each with 3, 4 and 5 day weeks, 12 weeks in three 4-week phases with back-off weeks 4 and 8. Lifts progress by the same rules as Hybrid 12 (and Smart coaching). Each program keeps its own week: switching saves the old program's week and starts the new one on a fresh week number, so logs never mix.
+
+- **Engine Strength** (Base, Build, Peak): heavy lift first, then the engine. Norwegian 4×4 (Helgerud 2007: about +7% VO2 max in 8 weeks, more than steady or threshold work), KB snatch 15:15 (Falatic 2015: about +6% in 4 weeks), 40:20 circuits, heavy bag 2:1. Power before strength before intervals, because same-session endurance work blunts explosive strength but not size or max strength (Schumann 2022).
+- **Define 45** (Build, Sculpt, Define): upper/lower (3 day: full body), about 12-16 hard sets per muscle a week (Schoenfeld 2016 dose-response), heavy sets 1-3 reps short of failure, short finishers. Nutrition text: 300-500 kcal deficit, 1 g protein per lb of goal weight (above Morton 2018's ~0.73 g/lb).
+- **Strength & Boxing** (Fundamentals, Power, Fight Shape): power cleans, squats, deadlifts, presses and rows, then a "Box" block: technique rounds (3 min on, 1 off, combos change by phase), 30:30 power rounds, roadwork, and a 5th-day bag session.
+
+Choices: deadlifts get one set fewer than other main lifts; TRX rows are never used as a heavy (6-8 rep) lift; Beat-up days keep the first superset pair, halve conditioning and drop finishers; back-off weeks take a set off and about 25% off conditioning.
+
+Saving: the program, days, start week and other programs' saved weeks are stored as "@..." entries in the synced program record's done list (`ProgramState.storedDoneSlots`), so the CloudKit schema didn't change. Hybrid 12 records look exactly as before.
+
