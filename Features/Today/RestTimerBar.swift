@@ -72,7 +72,7 @@ struct RestView: View {
                     Spacer()
                     SectionLabel(text: timer.label)
                     Spacer()
-                    Color.clear.frame(width: 44, height: 44)
+                    WorkoutClock(compact: true).fixedSize()
                 }
                 ZStack {
                     Circle().stroke(look.field, lineWidth: 16)

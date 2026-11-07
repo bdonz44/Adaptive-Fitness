@@ -45,6 +45,8 @@ struct FocusView: View {
                 }
                 .buttonStyle(.plain)
                 Spacer()
+                WorkoutClock(compact: true).fixedSize()
+                Spacer()
                 Text("Exercise \(position) of \(session.items.filter(\.isLift).count)")
                     .font(.subheadline).foregroundStyle(look.secondary)
             }

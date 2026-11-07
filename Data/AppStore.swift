@@ -38,6 +38,7 @@ struct RecentLog: Identifiable, Equatable {
     let date: Date
     let title: String
     let week: Int
+    var heart: SessionHeart? = nil
     var id: Date { date }
 }
 
@@ -64,6 +65,8 @@ final class AppStore {
     var adaptive: AdaptiveSettings = AppStore.loadAdaptive() {
         didSet { AppStore.saveAdaptive(adaptive) }
     }
+    /// Every saved session heart rate (for the weekly zone 4-5 chart).
+    private(set) var heartLogs: [(week: Int, heart: SessionHeart)] = []
     /// The coach's call after the last set ticked.
     private(set) var coachCue: (key: String, cue: CoachCues.Cue)?
 
@@ -99,7 +102,10 @@ final class AppStore {
 
         let stamps = storedLogs.compactMap { log in Slot(rawValue: log.slot).map { LogStamp(slot: $0, date: log.date) } }
         logs = stamps
-        recentLogs = storedLogs.prefix(Tracking.recentSessionLimit).map { RecentLog(date: $0.date, title: $0.title, week: $0.week) }
+        recentLogs = storedLogs.prefix(Tracking.recentSessionLimit).map {
+            RecentLog(date: $0.date, title: $0.title, week: $0.week, heart: Self.heart(in: $0))
+        }
+        heartLogs = storedLogs.compactMap { log in Self.heart(in: log).map { (week: log.week, heart: $0) } }
 
         weighIns = ((try? context.fetch(FetchDescriptor<StoredWeighIn>())) ?? [])
             .map { WeighIn(date: $0.date, pounds: $0.pounds) }.sorted { $0.date < $1.date }
@@ -491,6 +497,38 @@ final class AppStore {
         saveDraft()
     }
 
+    /// "Start workout": starts the clock (also used for heart rate and the WHOOP match).
+    func startWorkout(at date: Date = Date()) {
+        guard draft.startedAt == nil else { return }
+        draft.startedAt = date
+        saveDraft()
+    }
+
+    /// WHOOP scored the session: save its strain and zones with the log.
+    func attachWhoop(_ workout: WhoopWorkout, toLogAt date: Date) {
+        let all = (try? context.fetch(FetchDescriptor<StoredLog>())) ?? []
+        guard let log = all.first(where: { abs($0.date.timeIntervalSince(date)) < 1 }) else { return }
+        var entries = Self.decode([String: LoggedItem].self, log.entries) ?? [:]
+        if SessionHeart.read(entries)?.strain == workout.strain && workout.strain != nil { return }
+        var heart = SessionHeart.read(entries) ?? SessionHeart(whoop: workout)
+        heart.apply(workout)
+        SessionHeart.write(heart, into: &entries)
+        log.entries = Self.encode(entries)
+        save()
+        if let i = recentLogs.firstIndex(where: { abs($0.date.timeIntervalSince(date)) < 1 }) { recentLogs[i].heart = heart }
+        heartLogs = all.compactMap { l in Self.heart(in: l).map { (week: l.week, heart: $0) } }
+    }
+
+    private static func heart(in log: StoredLog) -> SessionHeart? {
+        guard !log.entries.isEmpty, let e = decode([String: LoggedItem].self, log.entries) else { return nil }
+        return SessionHeart.read(e)
+    }
+
+    /// Zone 4-5 minutes per week in the running program, oldest first (last 8 weeks with any).
+    var hardMinutesByWeek: [(label: String, minutes: Double)] {
+        SessionHeart.hardMinutesByWeek(heartLogs).suffix(8).map { (label: "Wk \(displayWeek($0.week))", minutes: $0.minutes) }
+    }
+
     /// Clears today's logging but keeps the slot and readiness.
     func restartSession() {
         draft = SessionDraft(slot: draft.slot, state: program, readiness: draft.readiness)
@@ -503,6 +541,8 @@ final class AppStore {
     func finish(now: Date = Date(), heart: ((Date, Date) -> HeartRate.Summary?)? = nil) -> FinishSummary {
         let started = draft.startedAt
         let heartSummary = started.flatMap { heart?($0, now) }
+        var savedEntries = draft.entries
+        SessionHeart.write(heartSummary.map(SessionHeart.init(live:)), into: &savedEntries)
         let s = session
         let result = Progression.progress(session: s, entries: draft.entries, lifts: lifts, date: now,
                                           runMinutes: program.runMinutes, catalog: catalog, adaptive: adaptive)
@@ -525,10 +565,12 @@ final class AppStore {
 
         context.insert(StoredLog(date: now, week: program.week, phase: s.week.phase.rawValue, slot: s.slot.rawValue,
                                  title: s.title, readiness: s.readiness.rawValue,
-                                 cardioMinutes: result.cardioMinutes, entries: Self.encode(draft.entries)))
+                                 cardioMinutes: result.cardioMinutes, entries: Self.encode(savedEntries)))
+        let savedHeart = SessionHeart.read(savedEntries)
+        if let h = savedHeart { heartLogs.insert((week: program.week, heart: h), at: 0) }
         logs.insert(LogStamp(slot: s.slot, date: now), at: 0)
         weekLogs.insert((slot: s.slot.rawValue, week: program.week, date: now), at: 0)
-        recentLogs.insert(RecentLog(date: now, title: s.title, week: program.week), at: 0)
+        recentLogs.insert(RecentLog(date: now, title: s.title, week: program.week, heart: savedHeart), at: 0)
         recentLogs = Array(recentLogs.prefix(Tracking.recentSessionLimit))
 
         var state = program

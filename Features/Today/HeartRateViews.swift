@@ -150,6 +150,7 @@ struct HeartPush {
 struct FinishHeartCard: View {
     @Environment(WhoopService.self) private var whoop
     @Environment(HeartRateMonitor.self) private var heart
+    @Environment(AppStore.self) private var store
     let summary: FinishSummary
     @State private var workout: WhoopWorkout?
     @State private var checking = false
@@ -202,6 +203,7 @@ struct FinishHeartCard: View {
         defer { checking = false; checked = true }
         let list = await whoop.workouts(from: start.addingTimeInterval(-1800), to: summary.finishedAt.addingTimeInterval(1800))
         workout = list.flatMap { WhoopWorkout.match($0, start: start, end: summary.finishedAt) }
+        if let w = workout { store.attachWhoop(w, toLogAt: summary.finishedAt) }
     }
 
     private func stat(_ value: String, _ label: String) -> some View {
@@ -235,4 +237,44 @@ struct FinishHeartCard: View {
     }
 
     private func minutes(_ s: Double) -> String { "\(Int((s / 60).rounded()))m" }
+}
+
+/// "Start workout" before the session begins; a running clock after.
+struct WorkoutClock: View {
+    @Environment(AppStore.self) private var store
+    var compact = false
+
+    var body: some View {
+        let look = Theme.look
+        if let start = store.draft.startedAt {
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                HStack(spacing: 8) {
+                    Image(systemName: "stopwatch.fill").foregroundStyle(look.accent)
+                    Text(Self.elapsed(from: start, to: context.date))
+                        .font(look.number(compact ? 22 : 30)).monospacedDigit()
+                    if !compact {
+                        Text("since \(start.formatted(date: .omitted, time: .shortened))")
+                            .font(.caption).foregroundStyle(look.secondary)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, compact ? 0 : 14).padding(.vertical, compact ? 0 : 10)
+                .background(compact ? Color.clear : look.card, in: RoundedRectangle(cornerRadius: max(look.radius - 6, 2)))
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Workout time \(Self.elapsed(from: start, to: context.date))")
+            }
+        } else if !compact {
+            Button { store.startWorkout() } label: {
+                Label("Start workout", systemImage: "play.fill").accentButton(height: 60)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// "12:34" or "1:02:03"
+    static func elapsed(from start: Date, to now: Date) -> String {
+        let s = max(0, Int(now.timeIntervalSince(start)))
+        return s >= 3600 ? String(format: "%d:%02d:%02d", s / 3600, s / 60 % 60, s % 60)
+                         : String(format: "%d:%02d", s / 60, s % 60)
+    }
 }

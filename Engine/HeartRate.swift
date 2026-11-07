@@ -170,3 +170,71 @@ public enum WhoopDate {
         return f.string(from: date)
     }
 }
+
+/// A finished session's heart rate, saved with the session log (synced through iCloud):
+/// the app's live readings, and WHOOP's numbers once WHOOP scores the workout.
+public struct SessionHeart: Codable, Equatable, Sendable {
+    public var average: Int?
+    public var peak: Int?
+    /// Seconds in zones 0-5 (WHOOP's when known, else the app's live readings).
+    public var zoneSeconds: [Double]
+    public var strain: Double?
+    public var calories: Int?
+    public var fromWhoop: Bool
+
+    public init(live: HeartRate.Summary) {
+        average = live.average
+        peak = live.peak
+        zoneSeconds = live.zoneSeconds
+        fromWhoop = false
+    }
+
+    /// WHOOP's scored workout replaces the live numbers (WHOOP has the full picture).
+    public mutating func apply(_ w: WhoopWorkout) {
+        if let a = w.averageHR { average = a }
+        if let m = w.maxHR { peak = m }
+        if w.zoneSeconds.reduce(0, +) > 0 { zoneSeconds = w.zoneSeconds }
+        strain = w.strain
+        calories = w.calories
+        fromWhoop = true
+    }
+
+    public init(whoop w: WhoopWorkout) {
+        zoneSeconds = [Double](repeating: 0, count: 6)
+        fromWhoop = true
+        apply(w)
+    }
+
+    /// Minutes at 80%+ of max: the VO2 max work.
+    public var hardMinutes: Double { (zoneSeconds.count == 6 ? zoneSeconds[4] + zoneSeconds[5] : 0) / 60 }
+
+    /// "Avg 132 · Max 171 · Zone 4-5 18 min · Strain 12.4"
+    public var line: String {
+        var parts: [String] = []
+        if let a = average { parts.append("Avg \(a)") }
+        if let p = peak { parts.append("Max \(p)") }
+        parts.append("Zone 4-5 \(Int(hardMinutes.rounded())) min")
+        if let s = strain { parts.append(String(format: "Strain %.1f", s)) }
+        return parts.joined(separator: " · ")
+    }
+
+    /// Kept in the log's entries under this key (as an otherwise empty LoggedItem),
+    /// so the synced record's shape doesn't change.
+    public static let entryKey = "_session"
+
+    public static func read(_ entries: [String: LoggedItem]) -> SessionHeart? { entries[entryKey]?.heart }
+
+    public static func write(_ heart: SessionHeart?, into entries: inout [String: LoggedItem]) {
+        guard let heart else { return }
+        var e = entries[entryKey] ?? LoggedItem()
+        e.heart = heart
+        entries[entryKey] = e
+    }
+
+    /// Hard minutes per stored week, oldest first.
+    public static func hardMinutesByWeek(_ logs: [(week: Int, heart: SessionHeart)]) -> [(week: Int, minutes: Double)] {
+        var by: [Int: Double] = [:]
+        for l in logs { by[l.week, default: 0] += l.heart.hardMinutes }
+        return by.keys.sorted().map { (week: $0, minutes: by[$0]!) }
+    }
+}

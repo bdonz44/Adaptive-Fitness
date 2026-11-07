@@ -38,6 +38,7 @@ struct TodayView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .background(Theme.accent.opacity(0.2), in: RoundedRectangle(cornerRadius: look.radius))
                     }
+                    WorkoutClock()
                     LiveHeartBar(compact: true)
                     NowCard(session: session, openFocus: { showFocus = true })
                     if !timer.isActive { CoachCueCard() }

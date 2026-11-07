@@ -29,6 +29,8 @@ public struct LoggedItem: Codable, Equatable, Sendable {
     public var removedSets: Int?
     /// Set when the whole exercise was skipped today: "Pain", "No time", "No equipment", "Other".
     public var skipped: String?
+    /// Only on the "_session" entry of a saved log: the session's heart rate.
+    public var heart: SessionHeart?
 
     public init(sets: [LoggedSet] = [], rounds: Int? = nil, ticked: Bool = false,
                 rir: Int? = nil, runRating: RunRating? = nil, miles: Double? = nil,

@@ -12,6 +12,7 @@ struct ProgressTab: View {
                 VStack(alignment: .leading, spacing: 20) {
                     CoachCard()
                     CardioCard()
+                    HardMinutesCard()
                     BodyweightCard()
                     WaistCard()
                     WorkingWeightsCard()
@@ -212,6 +213,30 @@ struct CardioCard: View {
     }
 }
 
+/// Minutes at 80%+ of max heart rate per week: the work that raises VO2 max.
+struct HardMinutesCard: View {
+    @Environment(AppStore.self) private var store
+
+    var body: some View {
+        let weeks = store.hardMinutesByWeek
+        if !weeks.isEmpty {
+            Card(title: "Zone 4-5 minutes") {
+                Chart(Array(weeks.enumerated()), id: \.offset) { _, w in
+                    BarMark(x: .value("Week", w.label), y: .value("Minutes", w.minutes))
+                        .foregroundStyle(Theme.accent)
+                        .annotation(position: .top) {
+                            Text("\(Int(w.minutes.rounded()))").font(.caption2).foregroundStyle(Theme.secondary)
+                        }
+                }
+                .frame(height: 150)
+                Text("Time at 80%+ of max heart rate, from WHOOP or live heart rate. This is the work that raises VO2 max; 4×4 days add about 16 minutes each.")
+                    .font(.caption).foregroundStyle(Theme.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+}
+
 struct BodyweightCard: View {
     @Environment(AppStore.self) private var store
 
@@ -302,6 +327,11 @@ struct RecentSessionsCard: View {
                         Text(log.date, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day())
                             .font(.caption)
                             .foregroundStyle(Theme.secondary)
+                        if let h = log.heart {
+                            Label(h.line, systemImage: "heart.fill")
+                                .font(.caption)
+                                .foregroundStyle(Theme.secondary)
+                        }
                     }
                     Spacer()
                     Text("Week \(store.displayWeek(log.week))")

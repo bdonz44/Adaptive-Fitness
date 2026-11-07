@@ -84,3 +84,35 @@ import Testing
         #expect(WhoopWorkout.match(ws, start: end.addingTimeInterval(7200), end: end.addingTimeInterval(9000)) == nil)
     }
 }
+
+@Suite struct SessionHeartTests {
+    let live = HeartRate.Summary(zoneSeconds: [60, 120, 600, 900, 720, 240], average: 131, peak: 168)
+
+    @Test func savedInsideTheLogEntriesAndReadBack() throws {
+        var entries: [String: LoggedItem] = ["main": LoggedItem(sets: sets(185, [5, 5]))]
+        SessionHeart.write(SessionHeart(live: live), into: &entries)
+        let data = try JSONEncoder().encode(entries)
+        let back = try JSONDecoder().decode([String: LoggedItem].self, from: data)
+        let h = try #require(SessionHeart.read(back))
+        #expect(h.average == 131 && h.peak == 168 && !h.fromWhoop)
+        #expect(h.hardMinutes == 16)
+        #expect(back["main"]?.sets.count == 2)
+    }
+
+    @Test func whoopNumbersReplaceTheLiveOnes() {
+        var h = SessionHeart(live: live)
+        let w = WhoopWorkout(start: t0, end: t0.addingTimeInterval(3600), sport: "weightlifting", strain: 12.4,
+                             averageHR: 128, maxHR: 171, kilojoules: 2510, zoneSeconds: [0, 0, 0, 0, 1200, 300])
+        h.apply(w)
+        #expect(h.fromWhoop && h.strain == 12.4 && h.peak == 171 && h.calories == 600)
+        #expect(h.hardMinutes == 25)
+        #expect(h.line == "Avg 128 · Max 171 · Zone 4-5 25 min · Strain 12.4")
+    }
+
+    @Test func hardMinutesAddUpByWeek() {
+        let a = SessionHeart(live: live)
+        let byWeek = SessionHeart.hardMinutesByWeek([(week: 3, heart: a), (week: 2, heart: a), (week: 3, heart: a)])
+        #expect(byWeek.map(\.week) == [2, 3])
+        #expect(byWeek.map(\.minutes) == [16, 32])
+    }
+}
