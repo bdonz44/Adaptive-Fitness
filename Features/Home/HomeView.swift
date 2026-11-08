@@ -26,6 +26,7 @@ struct HomeView: View {
                     weekStrip
                     scoreboard
                     coachLine
+                    muscleLine
                     heatmap
                     liftTrends
                     sinceStart
@@ -230,6 +231,25 @@ struct HomeView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Log \(title.lowercased())")
+    }
+
+    @ViewBuilder
+    private var muscleLine: some View {
+        let short = MuscleMap.short(store.muscleSets()).prefix(3)
+        if !short.isEmpty && store.logs.count >= 3 {
+            let look = Theme.look
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "figure.strengthtraining.traditional").foregroundStyle(look.accent).font(.title3)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Under 10 sets this week").font(.caption.weight(.heavy)).foregroundStyle(look.accent)
+                    Text(short.map(\.name).joined(separator: ", ") + ". Add a few sets with Add exercises.")
+                        .font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .lookCard()
+        }
     }
 
     // MARK: Heatmap and lift trends

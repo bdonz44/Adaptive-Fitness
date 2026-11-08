@@ -35,6 +35,8 @@ public struct LoggedItem: Codable, Equatable, Sendable {
     public var skipped: String?
     /// Only on the "_session" entry of a saved log: the session's heart rate.
     public var heart: SessionHeart?
+    /// The exercise this was, saved with the log (for sets per muscle).
+    public var exerciseID: String?
 
     public init(sets: [LoggedSet] = [], rounds: Int? = nil, ticked: Bool = false,
                 rir: Int? = nil, runRating: RunRating? = nil, miles: Double? = nil,

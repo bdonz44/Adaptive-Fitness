@@ -327,6 +327,29 @@ final class AppStore {
                            hardMinutes: hardMinutesThisWeek, isDeload: week.isDeload, doneToday: loggedToday)
     }
 
+    // MARK: Sets per muscle
+
+    /// Hard sets per muscle in the last 7 days, including today's session so far.
+    func muscleSets(now: Date = Date()) -> [Muscle: Double] {
+        let cutoff = now.addingTimeInterval(-7 * 86400)
+        let stored = (try? context.fetch(FetchDescriptor<StoredLog>(predicate: #Predicate { $0.date >= cutoff }))) ?? []
+        var done: [(exerciseID: String, sets: Int)] = []
+        for log in stored where log.slot != Slot.R.rawValue {
+            guard let entries = Self.decode([String: LoggedItem].self, log.entries), let slot = Slot(rawValue: log.slot) else { continue }
+            let needsRebuild = entries.contains { $0.key != SessionHeart.entryKey && $0.value.exerciseID == nil }
+            var rebuilt: Session? = nil
+            if needsRebuild {
+                var ctx = SessionDraft(slot: slot, state: program).context(for: program)
+                ctx.week = log.week
+                ctx.gear = gear
+                rebuilt = SessionBuilder.build(slot: slot, context: ctx, catalog: catalog)
+            }
+            done += MuscleMap.done(entries: entries, session: rebuilt)
+        }
+        done += MuscleMap.done(entries: draft.entries, session: session)
+        return MuscleMap.sets(done, catalog: catalog)
+    }
+
     // MARK: Nutrition (adaptive 6)
 
     var nutritionSettings: Nutrition.Settings = {
@@ -736,9 +759,10 @@ final class AppStore {
     func finish(now: Date = Date(), heart: ((Date, Date) -> HeartRate.Summary?)? = nil) -> FinishSummary {
         let started = draft.startedAt
         let heartSummary = started.flatMap { heart?($0, now) }
-        var savedEntries = draft.entries
-        SessionHeart.write(heartSummary.map(SessionHeart.init(live:)), into: &savedEntries)
         let s = session
+        var savedEntries = draft.entries
+        for item in s.items { if let id = item.exerciseID, savedEntries[item.key] != nil { savedEntries[item.key]?.exerciseID = id } }
+        SessionHeart.write(heartSummary.map(SessionHeart.init(live:)), into: &savedEntries)
         let result = Progression.progress(session: s, entries: draft.entries, lifts: lifts, date: now,
                                           runMinutes: program.runMinutes, catalog: catalog, adaptive: adaptive, gear: gear)
         let workout = Workouts.record(session: s, entries: draft.entries, startedAt: draft.startedAt,
