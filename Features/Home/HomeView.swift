@@ -278,18 +278,19 @@ struct HomeView: View {
 
     @ViewBuilder
     private var muscleLine: some View {
-        let short = MuscleMap.short(store.muscleSets()).prefix(3)
-        if !short.isEmpty && store.logs.count >= 3 {
+        let sets = store.muscleSets()
+        let short = MuscleMap.short(sets).prefix(3)
+        if store.logs.count >= 1 {
             let look = Theme.look
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "figure.strengthtraining.traditional").foregroundStyle(look.accent).font(.title3)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Under 10 sets this week").font(.caption.weight(.heavy)).foregroundStyle(look.accent)
-                    Text(short.map(\.name).joined(separator: ", ") + ". Add a few sets with Add exercises.")
+            VStack(alignment: .leading, spacing: 10) {
+                SectionLabel(text: "Muscles this week", color: look.accent)
+                BodyMap(sets: sets, compact: true)
+                if !short.isEmpty {
+                    Text("Under 10 sets: " + short.map(\.name).joined(separator: ", ") + ". Add a few with Add exercises.")
                         .font(.subheadline).fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(14)
+            .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .lookCard()
         }

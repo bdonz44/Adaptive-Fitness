@@ -9,6 +9,7 @@ struct MuscleSetsCard: View {
         let look = Theme.look
         let sets = store.muscleSets()
         Card(title: "Sets per muscle · last 7 days") {
+            BodyMap(sets: sets)
             Text("10-20 hard sets a week is the growth range. Helpers count half.")
                 .font(.caption).foregroundStyle(look.secondary)
             ForEach(Muscle.allCases, id: \.self) { m in
