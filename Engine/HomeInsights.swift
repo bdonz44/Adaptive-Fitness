@@ -111,3 +111,85 @@ public enum HomeInsights {
         return lines[day % lines.count]
     }
 }
+
+// MARK: - Home upgrades
+
+extension HomeInsights {
+    /// One line: WHOOP + the plan. "Green 78%, slept 7:40. Heavy Upper: Bench 195 × 5 is a PR. 52 min. Go."
+    public static func brief(recovery: Int?, sleepHours: Double?, title: String, mainLine: String?, isPR: Bool,
+                             minutes: Int, doneToday: Bool) -> String {
+        var parts: [String] = []
+        if let r = recovery {
+            let zone = WhoopReadiness.zone(r)
+            var s = "\(zone == .green ? "Green" : zone == .yellow ? "Yellow" : "Red") \(r)%"
+            if let h = sleepHours {
+                let m = Int((h * 60).rounded())
+                s += ", slept \(m / 60):\(String(format: "%02d", m % 60))"
+            }
+            parts.append(s + ".")
+        }
+        if doneToday { return (parts + ["Work's done. Recover and come back hungry."]).joined(separator: " ") }
+        var plan = "\(title)"
+        if let m = mainLine { plan += ": \(m)\(isPR ? " is a PR" : "")" }
+        parts.append(plan + ".")
+        parts.append("\(minutes) min. Go.")
+        return parts.joined(separator: " ")
+    }
+
+    /// Trained or not, for each of the last `days` days (oldest first, today last).
+    public static func trainingDays(_ dates: [Date], now: Date, days: Int = 84, calendar: Calendar = .current) -> [Bool] {
+        let set = Set(dates.map { calendar.startOfDay(for: $0) })
+        let today = calendar.startOfDay(for: now)
+        return (0..<days).reversed().map { back in
+            set.contains(calendar.date(byAdding: .day, value: -back, to: today)!)
+        }
+    }
+
+    public static func daysSince(_ dates: [Date], now: Date, calendar: Calendar = .current) -> Int? {
+        guard let last = dates.filter({ $0 <= now }).max() else { return nil }
+        return calendar.dateComponents([.day], from: calendar.startOfDay(for: last), to: calendar.startOfDay(for: now)).day
+    }
+
+    /// Estimated max over time for a lift (one point per logged session with weight and reps).
+    public static func e1RMSeries(_ rec: LiftRecord?) -> [(date: Date, e1RM: Double)] {
+        (rec?.history ?? []).compactMap { e in
+            guard let w = e.weight, w > 0, let r = e.reps, r > 0 else { return nil }
+            return (e.date, Suggestions.e1RM(weight: w, reps: r))
+        }
+    }
+
+    /// Plate milestones for big barbell lifts.
+    public static let milestones: [Double] = [135, 185, 225, 275, 315, 365, 405, 455, 495, 545, 585]
+
+    /// "On pace for a 315 deadlift by Jan 12": a straight line through the last 8 sessions' estimated max.
+    /// Nil when it isn't climbing or would take more than 6 months.
+    public static func projection(_ series: [(date: Date, e1RM: Double)], now: Date) -> (target: Double, date: Date)? {
+        let pts = Array(series.suffix(8))
+        guard pts.count >= 4, let first = pts.first else { return nil }
+        let xs = pts.map { $0.date.timeIntervalSince(first.date) / 86400 }
+        let ys = pts.map(\.e1RM)
+        let n = Double(pts.count)
+        let mx = xs.reduce(0, +) / n, my = ys.reduce(0, +) / n
+        let sxx = zip(xs, xs).map { ($0 - mx) * ($1 - mx) }.reduce(0, +)
+        guard sxx > 0 else { return nil }
+        let slope = zip(xs, ys).map { ($0 - mx) * ($1 - my) }.reduce(0, +) / sxx   // lb per day
+        guard slope > 0.01 else { return nil }
+        let best = ys.max()!
+        guard let target = milestones.first(where: { $0 > best }) else { return nil }
+        let intercept = my - slope * mx
+        let day = (target - intercept) / slope
+        let date = first.date.addingTimeInterval(day * 86400)
+        guard date > now, date < now.addingTimeInterval(183 * 86400) else { return nil }
+        return (target, date)
+    }
+
+    /// Sessions left in the 12 weeks and, at your recent pace, when you'll finish.
+    public static func finishLine(week: ProgramWeek, doneThisWeek: Int, perWeek: Int, recentLogDates: [Date],
+                                  now: Date) -> (left: Int, date: Date?) {
+        let left = max(0, (12 - week.wk) * perWeek + (perWeek - doneThisWeek))
+        let lastMonth = recentLogDates.filter { $0 > now.addingTimeInterval(-28 * 86400) && $0 <= now }.count
+        guard lastMonth >= 2 else { return (left, nil) }
+        let perDay = Double(lastMonth) / 28
+        return (left, now.addingTimeInterval(Double(left) / perDay * 86400))
+    }
+}

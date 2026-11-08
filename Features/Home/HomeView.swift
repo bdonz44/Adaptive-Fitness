@@ -1,3 +1,4 @@
+import Charts
 import SwiftUI
 import Hybrid12Engine
 
@@ -7,6 +8,9 @@ struct HomeView: View {
     @Environment(WhoopService.self) private var whoop
     let go: () -> Void
     @State private var logFood = false
+    @State private var quick: QuickAction?
+
+    enum QuickAction: String, Identifiable { case weight, cardio, time; var id: String { rawValue } }
 
     var body: some View {
         let look = Theme.look
@@ -15,11 +19,15 @@ struct HomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     greeting
+                    brief(session)
+                    quickActions
                     ReadinessRing()
                     missionCard(session)
                     weekStrip
                     scoreboard
                     coachLine
+                    heatmap
+                    liftTrends
                     sinceStart
                 }
                 .padding()
@@ -27,6 +35,13 @@ struct HomeView: View {
             .background(look.background)
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $logFood) { FoodLogSheet() }
+            .sheet(item: $quick) { action in
+                switch action {
+                case .weight: QuickWeightSheet()
+                case .cardio: QuickCardioSheet()
+                case .time: QuickTimeSheet()
+                }
+            }
         }
     }
 
@@ -122,7 +137,11 @@ struct HomeView: View {
             }
             ProgressView(value: Double(store.week.wk - 1) + Double(program.doneCount) / Double(max(1, program.order.count)), total: 12)
                 .tint(look.accent)
-            Text("\(program.program.name) · week \(store.week.wk) of 12").font(.caption).foregroundStyle(look.secondary)
+            let finish = HomeInsights.finishLine(week: store.week, doneThisWeek: program.doneCount, perWeek: program.order.count,
+                                                 recentLogDates: store.logs.filter { $0.slot != .R }.map(\.date), now: Date())
+            Text("\(program.program.name) · week \(store.week.wk) of 12 · \(finish.left) sessions to go"
+                 + (finish.date.map { " · done around \($0.formatted(.dateTime.month(.abbreviated).day()))" } ?? ""))
+                .font(.caption).foregroundStyle(look.secondary)
         }
         .padding(16)
         .lookCard()
@@ -163,8 +182,122 @@ struct HomeView: View {
 
     // MARK: Coach and progress
 
+    @ViewBuilder
     private var coachLine: some View {
-        CoachCallout(text: HomeInsights.lineOfTheDay(store.homeFacts, date: Date()))
+        let since = HomeInsights.daysSince(store.logs.filter { $0.slot != .R }.map(\.date), now: Date())
+        if let since, since >= 2, !store.loggedToday {
+            CoachCallout(text: "\(since) days since you trained. Today. No negotiating.")
+        } else {
+            CoachCallout(text: HomeInsights.lineOfTheDay(store.homeFacts, date: Date()))
+        }
+    }
+
+    // MARK: Brief and quick actions
+
+    private func brief(_ session: Session) -> some View {
+        let main = session.items.first { $0.kind == .main }
+        let w = main.flatMap { store.suggestion(for: $0, in: session).weight }
+        let line = main.map { m in w.map { "\(m.name) \(lb($0)) × \(m.high)" } ?? m.name }
+        let pr = main.flatMap { m in HomeInsights.prChase(item: m, weight: w, record: store.lifts[m.exerciseID ?? ""]) } != nil
+        let t = whoop.today
+        return Text(HomeInsights.brief(recovery: t?.recovery, sleepHours: t?.sleepHours, title: session.title, mainLine: line,
+                                       isPR: pr, minutes: TimeBox.minutes(session), doneToday: store.loggedToday))
+            .font(.headline)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var quickActions: some View {
+        let look = Theme.look
+        return HStack(spacing: 8) {
+            quickButton("Weight", icon: "scalemass.fill") { quick = .weight }
+            if store.adaptive.nutrition { quickButton("Food", icon: "fork.knife") { logFood = true } }
+            quickButton("Cardio", icon: "figure.run") { quick = .cardio }
+            if store.adaptive.timeBox { quickButton("Time", icon: "timer") { quick = .time } }
+        }
+        .foregroundStyle(look.text)
+    }
+
+    private func quickButton(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+        let look = Theme.look
+        return Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: icon).font(.title3).foregroundStyle(look.accent)
+                Text(title).font(.caption.weight(.semibold))
+            }
+            .frame(maxWidth: .infinity, minHeight: 60)
+            .background(look.card, in: RoundedRectangle(cornerRadius: max(look.radius - 6, 2)))
+            .overlay(RoundedRectangle(cornerRadius: max(look.radius - 6, 2)).stroke(look.line))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Log \(title.lowercased())")
+    }
+
+    // MARK: Heatmap and lift trends
+
+    private var heatmap: some View {
+        let look = Theme.look
+        let days = HomeInsights.trainingDays(store.logs.map(\.date), now: Date(), days: 84)
+        let count = days.filter { $0 }.count
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                SectionLabel(text: "Last 12 weeks", color: look.accent)
+                Spacer()
+                Text("\(count) days trained").font(.caption.weight(.semibold)).foregroundStyle(look.secondary)
+            }
+            // 12 columns (weeks) × 7 rows (days), oldest top-left.
+            HStack(alignment: .top, spacing: 3) {
+                ForEach(0..<12, id: \.self) { col in
+                    VStack(spacing: 3) {
+                        ForEach(0..<7, id: \.self) { row in
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(days[col * 7 + row] ? look.accent : look.field)
+                                .aspectRatio(1, contentMode: .fit)
+                        }
+                    }
+                }
+            }
+            .accessibilityElement()
+            .accessibilityLabel("\(count) days trained in the last 12 weeks")
+        }
+        .padding(16)
+        .lookCard()
+    }
+
+    @ViewBuilder
+    private var liftTrends: some View {
+        let ids = ["squat", "bench", "deadlift"].filter { HomeInsights.e1RMSeries(store.lifts[$0]).count >= 2 }
+        if !ids.isEmpty {
+            let look = Theme.look
+            VStack(alignment: .leading, spacing: 12) {
+                SectionLabel(text: "Estimated max", color: look.accent)
+                ForEach(ids, id: \.self) { id in
+                    let series = HomeInsights.e1RMSeries(store.lifts[id])
+                    let name = store.catalog.exercise(id)?.name ?? id
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(name).font(.subheadline.weight(.semibold))
+                            Text("\(lb(Suggestions.round5(series.map(\.e1RM).max() ?? 0))) lb").font(look.number(24)).monospacedDigit()
+                            if let p = HomeInsights.projection(series, now: Date()) {
+                                Text("On pace for \(lb(p.target)) by \(p.date.formatted(.dateTime.month(.abbreviated).day()))")
+                                    .font(.caption.weight(.semibold)).foregroundStyle(look.accent)
+                            }
+                        }
+                        .frame(width: 150, alignment: .leading)
+                        Chart(Array(series.suffix(12).enumerated()), id: \.offset) { _, p in
+                            LineMark(x: .value("Date", p.date), y: .value("Max", p.e1RM))
+                                .foregroundStyle(look.accent)
+                                .interpolationMethod(.catmullRom)
+                        }
+                        .chartXAxis(.hidden)
+                        .chartYAxis(.hidden)
+                        .chartYScale(domain: .automatic(includesZero: false))
+                        .frame(height: 50)
+                    }
+                }
+            }
+            .padding(16)
+            .lookCard()
+        }
     }
 
     @ViewBuilder

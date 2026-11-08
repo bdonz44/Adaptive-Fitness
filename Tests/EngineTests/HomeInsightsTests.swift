@@ -46,3 +46,39 @@ import Testing
         #expect(HomeInsights.lineOfTheDay(done, date: t0).hasPrefix("Work's done today"))
     }
 }
+
+@Suite struct HomeUpgradeTests {
+    let now = Date(timeIntervalSince1970: 1_793_000_000)
+
+    @Test func briefReadsLikeACoach() {
+        let b = HomeInsights.brief(recovery: 78, sleepHours: 7 + 40.0 / 60, title: "Heavy Upper", mainLine: "Bench 195 × 5",
+                                   isPR: true, minutes: 52, doneToday: false)
+        #expect(b == "Green 78%, slept 7:40. Heavy Upper: Bench 195 × 5 is a PR. 52 min. Go.")
+        #expect(HomeInsights.brief(recovery: nil, sleepHours: nil, title: "Conditioning", mainLine: nil, isPR: false,
+                                   minutes: 40, doneToday: false) == "Conditioning. 40 min. Go.")
+    }
+
+    @Test func heatmapAndDaysSince() {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/Chicago")!
+        let days = HomeInsights.trainingDays([now, now.addingTimeInterval(-2 * 86400)], now: now, days: 7, calendar: cal)
+        #expect(days == [false, false, false, false, true, false, true])
+        #expect(HomeInsights.daysSince([now.addingTimeInterval(-2 * 86400)], now: now, calendar: cal) == 2)
+    }
+
+    @Test func projectsTheNextPlateMilestone() throws {
+        let series = (0..<6).map { (date: now.addingTimeInterval(Double($0 - 6) * 7 * 86400), e1RM: 290 + Double($0) * 4) }
+        let p = try #require(HomeInsights.projection(series, now: now))
+        #expect(p.target == 315)
+        #expect(p.date > now && p.date < now.addingTimeInterval(60 * 86400))
+        let flat = (0..<6).map { (date: now.addingTimeInterval(Double($0 - 6) * 86400), e1RM: 300.0) }
+        #expect(HomeInsights.projection(flat, now: now) == nil)
+    }
+
+    @Test func finishLineCountsSessionsAndPace() throws {
+        let logs = (0..<8).map { now.addingTimeInterval(-Double($0) * 3.5 * 86400) }   // 8 in 28 days
+        let f = HomeInsights.finishLine(week: ProgramWeek(6), doneThisWeek: 2, perWeek: 5, recentLogDates: logs, now: now)
+        #expect(f.left == 33)
+        let date = try #require(f.date)
+        #expect(abs(date.timeIntervalSince(now) / 86400 - 115.5) < 0.1)
+    }
+}
