@@ -398,15 +398,62 @@ struct HomeView: View {
     }
 }
 
-/// WHOOP recovery as a big ring, with sleep, HRV, resting heart rate and the call for today.
+/// WHOOP on Home: recovery ring, sleep, HRV, resting heart rate, strain, and the last 7 days.
+/// Not connected: a card to connect.
 struct ReadinessRing: View {
     @Environment(WhoopService.self) private var whoop
+    @Environment(AppStore.self) private var store
+    @State private var connecting = false
+
+    static func color(_ r: Int) -> Color {
+        let zone = WhoopReadiness.zone(r)
+        return zone == .green ? Color(hex: 0x22C55E) : zone == .yellow ? Color(hex: 0xFACC15) : Color(hex: 0xEF4444)
+    }
 
     var body: some View {
         let look = Theme.look
-        if whoop.isConnected, let t = whoop.today, let r = t.recovery {
-            let zone = WhoopReadiness.zone(r)
-            let color: Color = zone == .green ? Color(hex: 0x22C55E) : zone == .yellow ? Color(hex: 0xFACC15) : Color(hex: 0xEF4444)
+        Group {
+            if !whoop.isConnected {
+                Button { connecting = true } label: {
+                    HStack(spacing: 14) {
+                        Image(systemName: "heart.text.square.fill").font(.system(size: 34)).foregroundStyle(look.accent)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Connect WHOOP").font(.headline)
+                            Text(whoop.isConfigured ? "See recovery, sleep, HRV and strain here, and let recovery set how hard you go."
+                                 : "This build doesn't have the WHOOP keys. Install the newest TestFlight build.")
+                                .font(.subheadline).foregroundStyle(look.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right").foregroundStyle(look.secondary)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .lookCard(highlight: true)
+                }
+                .buttonStyle(.plain)
+            } else if let t = whoop.today, let r = t.recovery {
+                connected(t, r)
+            } else {
+                HStack {
+                    ProgressView()
+                    Text(whoop.isSyncing ? "Getting today's WHOOP numbers…" : "No WHOOP recovery yet today. Open WHOOP to sync, then come back.")
+                        .font(.subheadline).foregroundStyle(look.secondary)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .lookCard()
+            }
+        }
+        .sheet(isPresented: $connecting) { NavigationStack { WhoopSettingsView() } }
+    }
+
+    private func connected(_ t: WhoopToday, _ r: Int) -> some View {
+        let look = Theme.look
+        let color = Self.color(r)
+        let zone = WhoopReadiness.zone(r)
+        let week = Array(store.whoopDays.suffix(7))
+        return VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 18) {
                 ZStack {
                     Circle().stroke(look.field, lineWidth: 12)
@@ -422,18 +469,60 @@ struct ReadinessRing: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(zone == .green ? "Green. Go heavy." : zone == .yellow ? "Yellow. Hit your numbers." : "Red. Get it done, no heroics.")
                         .font(.headline).foregroundStyle(color)
-                    if let s = t.sleepHours {
-                        let m = Int((s * 60).rounded())
-                        Label("\(m / 60)h \(m % 60)m sleep", systemImage: "bed.double.fill").font(.subheadline)
+                    if let line = WhoopReadiness.coachLine(t) {
+                        Text(line).font(.caption).foregroundStyle(look.secondary).lineLimit(3)
                     }
-                    if let h = t.hrv { Label("HRV \(Int(h.rounded())) ms", systemImage: "waveform.path.ecg").font(.subheadline) }
-                    if let rhr = t.restingHR { Label("RHR \(rhr)", systemImage: "heart").font(.subheadline) }
                 }
                 Spacer(minLength: 0)
             }
-            .padding(16)
-            .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: look.radius))
-            .overlay(RoundedRectangle(cornerRadius: look.radius).stroke(color.opacity(0.5), lineWidth: 1))
+            HStack(spacing: 8) {
+                stat(t.sleepHours.map { h in let m = Int((h * 60).rounded()); return "\(m / 60):\(String(format: "%02d", m % 60))" } ?? "--",
+                     "Sleep", t.sleepPerformance.map { "\($0)%" })
+                stat(t.hrv.map { "\(Int($0.rounded()))" } ?? "--", "HRV ms", nil)
+                stat(t.restingHR.map(String.init) ?? "--", "RHR", nil)
+                stat(t.strain.map { String(format: "%.1f", $0) } ?? "--", "Strain", nil)
+            }
+            if week.count >= 3 {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Last 7 days").font(.caption.weight(.heavy)).foregroundStyle(look.secondary)
+                    HStack(alignment: .bottom, spacing: 6) {
+                        ForEach(Array(week.enumerated()), id: \.offset) { _, d in
+                            VStack(spacing: 3) {
+                                Text(d.recovery.map { "\($0)" } ?? "").font(.system(size: 10, weight: .bold)).monospacedDigit()
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(d.recovery.map(Self.color) ?? look.field)
+                                    .frame(height: CGFloat(max(6, d.recovery ?? 6)) * 0.6)
+                                Text(d.sleepHours.map { String(format: "%.1fh", $0) } ?? "")
+                                    .font(.system(size: 9)).foregroundStyle(look.secondary).monospacedDigit()
+                                Text(d.date.formatted(.dateTime.weekday(.narrow))).font(.caption2.weight(.semibold))
+                                    .foregroundStyle(look.secondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .frame(height: 100, alignment: .bottom)
+                    Text("Bars: recovery %. Below: hours slept.").font(.caption2).foregroundStyle(look.secondary)
+                }
+            }
+            if !WhoopReadiness.isCurrent(t, now: Date()) {
+                Text("From \(t.fetchedAt.formatted(.relative(presentation: .named))). Open WHOOP to sync, then come back.")
+                    .font(.caption).foregroundStyle(look.secondary)
+            }
         }
+        .padding(16)
+        .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: look.radius))
+        .overlay(RoundedRectangle(cornerRadius: look.radius).stroke(color.opacity(0.5), lineWidth: 1))
+    }
+
+    private func stat(_ value: String, _ label: String, _ sub: String?) -> some View {
+        let look = Theme.look
+        return VStack(spacing: 2) {
+            Text(value).font(look.number(22)).monospacedDigit().minimumScaleFactor(0.6).lineLimit(1)
+            Text(label).font(.caption2).foregroundStyle(look.secondary)
+            if let sub { Text(sub).font(.caption2.weight(.semibold)).foregroundStyle(look.secondary) }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(look.field, in: RoundedRectangle(cornerRadius: 10))
     }
 }
