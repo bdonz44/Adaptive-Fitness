@@ -330,6 +330,8 @@ final class AppStore {
                             sessionsPerWeek: program.order.count)
     }
 
+    var sessionsLoggedTotal: Int { weekLogs.filter { $0.slot != Slot.R.rawValue }.count }
+
     /// A session (not the optional run) was finished today.
     var loggedToday: Bool { logs.contains { $0.slot != .R && Calendar.current.isDateInToday($0.date) } }
 

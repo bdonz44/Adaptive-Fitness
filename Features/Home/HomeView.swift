@@ -113,6 +113,7 @@ struct HomeView: View {
             }
         }
         .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .lookCard(highlight: true)
     }
 
@@ -135,8 +136,11 @@ struct HomeView: View {
                         Capsule()
                             .fill(program.isDone(slot) ? look.accent : slot == store.draft.slot ? look.text : look.field)
                             .frame(height: 10)
-                        Text(String(store.slotName(slot).prefix(10))).font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(look.secondary).lineLimit(1)
+                        let n = (program.order.firstIndex(of: slot) ?? 0) + 1
+                        Text(program.isDone(slot) ? "Day \(n) ✓" : "Day \(n)")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(slot == store.draft.slot && !program.isDone(slot) ? look.text : look.secondary)
+                            .lineLimit(1)
                     }
                 }
             }
@@ -154,20 +158,48 @@ struct HomeView: View {
 
     // MARK: Scoreboard
 
+    private struct Tile: Identifiable {
+        let id: String
+        let value: String
+        let label: String
+        let icon: String
+        var good = false
+        var tap: (() -> Void)? = nil
+    }
+
+    /// Always four tiles (no gaps): the first four that have something to show.
+    private var tiles: [Tile] {
+        var out: [Tile] = [
+            Tile(id: "zone", value: "\(Int(store.hardMinutesThisWeek.rounded()))", label: "Zone 4-5 min this week", icon: "heart.fill"),
+            Tile(id: "cardio", value: "\(store.cardioThisWeek)/\(Program.cardioGoalMinutes)", label: "Cardio min this week",
+                 icon: "figure.run", good: store.cardioThisWeek >= Program.cardioGoalMinutes),
+        ]
+        if let p = store.nutritionAdvice?.proteinGrams {
+            out.append(Tile(id: "protein", value: "\(store.proteinToday)/\(p) g", label: "Protein eaten · tap to log",
+                            icon: "fork.knife", good: store.proteinToday >= p, tap: { logFood = true }))
+        }
+        if let strain = whoop.today?.strain {
+            out.append(Tile(id: "strain", value: String(format: "%.1f", strain), label: "WHOOP strain today", icon: "bolt.fill"))
+        }
+        if let last = store.weighIns.last {
+            let weekAgo = store.weighIns.last { $0.date <= last.date.addingTimeInterval(-6 * 86400) }
+            let change = weekAgo.map { " (\(Tracking.changeText(last.pounds - $0.pounds, unit: "lb")))" } ?? ""
+            out.append(Tile(id: "weight", value: "\(lb(last.pounds))", label: "Bodyweight lb" + change + " · tap to log",
+                            icon: "scalemass.fill", tap: { quick = .weight }))
+        }
+        out.append(Tile(id: "sessions", value: "\(store.sessionsLoggedTotal)", label: "Sessions logged all time", icon: "checkmark.seal.fill"))
+        out.append(Tile(id: "streak", value: "\(store.streak)", label: "Full weeks in a row", icon: "flame.fill"))
+        return Array(out.prefix(4))
+    }
+
     private var scoreboard: some View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-            tile("\(Int(store.hardMinutesThisWeek.rounded()))", "Zone 4-5 min", icon: "heart.fill")
-            tile("\(store.cardioThisWeek)/\(Program.cardioGoalMinutes)", "Cardio min", icon: "figure.run",
-                 good: store.cardioThisWeek >= Program.cardioGoalMinutes)
-            if let p = store.nutritionAdvice?.proteinGrams {
-                Button { logFood = true } label: {
-                    tile("\(store.proteinToday)/\(p) g", "Protein eaten · tap to log", icon: "fork.knife",
-                         good: store.proteinToday >= p)
+            ForEach(tiles) { t in
+                if let tap = t.tap {
+                    Button(action: tap) { tile(t.value, t.label, icon: t.icon, good: t.good) }.buttonStyle(.plain)
+                } else {
+                    tile(t.value, t.label, icon: t.icon, good: t.good)
                 }
-                .buttonStyle(.plain)
-            }
-            if whoop.isConnected {
-                tile(whoop.today?.strain.map { String(format: "%.1f", $0) } ?? "--", "Strain today", icon: "bolt.fill")
             }
         }
     }
@@ -178,7 +210,7 @@ struct HomeView: View {
             Image(systemName: icon).foregroundStyle(look.accent)
             Text(value).font(look.number(30)).monospacedDigit().minimumScaleFactor(0.6).lineLimit(1)
                 .foregroundStyle(good ? look.done : look.text)
-            Text(label).font(.caption).foregroundStyle(look.secondary)
+            Text(label).font(.caption).foregroundStyle(look.secondary).lineLimit(2, reservesSpace: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
@@ -265,30 +297,50 @@ struct HomeView: View {
 
     // MARK: Heatmap and lift trends
 
+    /// Training calendar: one row per week (this week on top), Monday to Sunday.
     private var heatmap: some View {
         let look = Theme.look
-        let days = HomeInsights.trainingDays(store.logs.map(\.date), now: Date(), days: 84)
-        let count = days.filter { $0 }.count
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                SectionLabel(text: "Last 12 weeks", color: look.accent)
-                Spacer()
-                Text("\(count) days trained").font(.caption.weight(.semibold)).foregroundStyle(look.secondary)
-            }
-            // 12 columns (weeks) × 7 rows (days), oldest top-left.
-            HStack(alignment: .top, spacing: 3) {
-                ForEach(0..<12, id: \.self) { col in
-                    VStack(spacing: 3) {
-                        ForEach(0..<7, id: \.self) { row in
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(days[col * 7 + row] ? look.accent : look.field)
-                                .aspectRatio(1, contentMode: .fit)
-                        }
-                    }
+        let weeks = HomeInsights.trainingCalendar(store.logs.map(\.date), now: Date(), weeks: 8)
+        let full = weeks.dropFirst()
+        let avg = full.isEmpty ? 0 : Double(full.map(\.count).reduce(0, +)) / Double(full.count)
+        let best = weeks.map(\.count).max() ?? 0
+        let todayIndex = (Calendar.current.component(.weekday, from: Date()) + 5) % 7   // Monday = 0
+        return VStack(alignment: .leading, spacing: 10) {
+            SectionLabel(text: "Training days", color: look.accent)
+            Text("Each row is a week, Monday to Sunday. Filled = you trained that day.")
+                .font(.caption).foregroundStyle(look.secondary)
+            HStack(spacing: 6) {
+                Text("").frame(width: 70, alignment: .leading)
+                ForEach(Array(["M", "T", "W", "T", "F", "S", "S"].enumerated()), id: \.offset) { _, d in
+                    Text(d).font(.caption2.weight(.bold)).foregroundStyle(look.secondary).frame(maxWidth: .infinity)
                 }
+                Text("").frame(width: 22)
             }
-            .accessibilityElement()
-            .accessibilityLabel("\(count) days trained in the last 12 weeks")
+            ForEach(Array(weeks.enumerated()), id: \.offset) { row, week in
+                HStack(spacing: 6) {
+                    Text(row == 0 ? "This week" : row == 1 ? "Last week" : week.start.formatted(.dateTime.month(.abbreviated).day()))
+                        .font(.caption.weight(row == 0 ? .bold : .regular))
+                        .foregroundStyle(row == 0 ? look.text : look.secondary)
+                        .frame(width: 70, alignment: .leading)
+                    ForEach(0..<7, id: \.self) { d in
+                        let mark = week.days[d]
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(mark == .trained ? look.accent : mark == .future ? Color.clear : look.field)
+                            .overlay(RoundedRectangle(cornerRadius: 5)
+                                .stroke(row == 0 && d == todayIndex ? look.text : (mark == .future ? look.line : .clear),
+                                        lineWidth: row == 0 && d == todayIndex ? 2 : 1))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 22)
+                    }
+                    Text("\(week.count)").font(.caption.weight(.bold)).monospacedDigit()
+                        .foregroundStyle(week.count >= store.program.order.count ? look.done : look.text)
+                        .frame(width: 22, alignment: .trailing)
+                }
+                .accessibilityElement()
+                .accessibilityLabel("\(row == 0 ? "This week" : "Week of \(week.start.formatted(date: .abbreviated, time: .omitted))"): \(week.count) days trained")
+            }
+            Text("Average \(String(format: "%.1f", avg)) days a week · best week \(best)")
+                .font(.caption.weight(.semibold)).foregroundStyle(look.secondary)
         }
         .padding(16)
         .lookCard()

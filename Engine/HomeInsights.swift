@@ -193,3 +193,35 @@ extension HomeInsights {
         return (left, now.addingTimeInterval(Double(left) / perDay * 86400))
     }
 }
+
+// MARK: - Training calendar
+
+extension HomeInsights {
+    public enum DayMark: Equatable, Sendable { case trained, rest, future }
+
+    public struct CalendarWeek: Equatable, Sendable {
+        /// Monday of the week.
+        public var start: Date
+        /// Monday through Sunday.
+        public var days: [DayMark]
+        public var count: Int { days.filter { $0 == .trained }.count }
+    }
+
+    /// The last `weeks` calendar weeks (Monday-Sunday), this week first.
+    public static func trainingCalendar(_ dates: [Date], now: Date, weeks: Int = 12, calendar: Calendar = .current) -> [CalendarWeek] {
+        var cal = calendar
+        cal.firstWeekday = 2   // Monday
+        let trained = Set(dates.map { cal.startOfDay(for: $0) })
+        let today = cal.startOfDay(for: now)
+        guard let thisMonday = cal.dateInterval(of: .weekOfYear, for: today)?.start else { return [] }
+        return (0..<weeks).compactMap { back in
+            guard let monday = cal.date(byAdding: .weekOfYear, value: -back, to: thisMonday) else { return nil }
+            let days: [DayMark] = (0..<7).map { i in
+                let d = cal.date(byAdding: .day, value: i, to: monday)!
+                if d > today { return .future }
+                return trained.contains(d) ? .trained : .rest
+            }
+            return CalendarWeek(start: monday, days: days)
+        }
+    }
+}

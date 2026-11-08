@@ -82,3 +82,20 @@ import Testing
         #expect(abs(date.timeIntervalSince(now) / 86400 - 115.5) < 0.1)
     }
 }
+
+@Suite struct TrainingCalendarTests {
+    @Test func weeksRunMondayToSundayNewestFirst() {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/Chicago")!
+        // Saturday Nov 7, 2026.
+        let now = cal.date(from: DateComponents(year: 2026, month: 11, day: 7, hour: 20))!
+        let trained = [cal.date(from: DateComponents(year: 2026, month: 11, day: 2, hour: 7))!,   // Mon
+                       cal.date(from: DateComponents(year: 2026, month: 11, day: 7, hour: 9))!,   // Sat (today)
+                       cal.date(from: DateComponents(year: 2026, month: 10, day: 28, hour: 9))!]  // Wed last week
+        let weeks = HomeInsights.trainingCalendar(trained, now: now, weeks: 3, calendar: cal)
+        #expect(weeks.count == 3)
+        #expect(cal.component(.day, from: weeks[0].start) == 2)
+        #expect(weeks[0].days == [.trained, .rest, .rest, .rest, .rest, .trained, .future])
+        #expect(weeks[0].count == 2 && weeks[1].count == 1 && weeks[2].count == 0)
+        #expect(weeks[1].days[2] == .trained)
+    }
+}
