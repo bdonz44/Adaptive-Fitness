@@ -36,6 +36,7 @@ struct HomeView: View {
             }
             .background(look.background)
             .toolbar(.hidden, for: .navigationBar)
+            .onAppear { store.refreshWidget(recovery: whoop.today?.recovery) }
             .sheet(isPresented: $logFood) { FoodLogSheet() }
             .sheet(item: $quick) { action in
                 switch action {

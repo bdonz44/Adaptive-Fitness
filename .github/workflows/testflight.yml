@@ -96,7 +96,8 @@ jobs:
           # The widget extension inside is signed first (an app can't be signed
           # around unsigned code).
           app="$RUNNER_TEMP/Hybrid12.xcarchive/Products/Applications/Hybrid12.app"
-          codesign --force --sign - --timestamp=none "$app/PlugIns/Hybrid12Widgets.appex"
+          codesign --force --sign - --timestamp=none \
+            --entitlements Hybrid12Widgets/Hybrid12Widgets.entitlements "$app/PlugIns/Hybrid12Widgets.appex"
           codesign --force --sign - --timestamp=none \
             --entitlements App/Hybrid12.entitlements "$app"
 

@@ -2,6 +2,7 @@ import CoreData
 import Foundation
 import Observation
 import SwiftData
+import WidgetKit
 import Hybrid12Engine
 
 struct FinishSummary: Identifiable {
@@ -307,6 +308,22 @@ final class AppStore {
 
     // MARK: Home
 
+    /// Updates the Home Screen widget (only when something it shows changed).
+    func refreshWidget(recovery: Int? = nil) {
+        let s = session
+        let snap = WidgetSnapshot(
+            title: s.title,
+            subtitle: "Day \((program.order.firstIndex(of: s.slot) ?? 0) + 1) of \(program.order.count) · Week \(week.wk)",
+            done: program.doneCount, total: program.order.count, streak: streak,
+            proteinEaten: nutritionAdvice == nil ? nil : proteinToday, proteinTarget: nutritionAdvice?.proteinGrams,
+            recovery: recovery ?? WidgetSnapshot.read()?.recovery, doneToday: loggedToday, updated: Date())
+        var old = WidgetSnapshot.read()
+        old?.updated = snap.updated
+        guard old != snap else { return }
+        snap.write()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     /// Full weeks in a row, every session logged.
     var streak: Int {
         HomeInsights.streak(logged: weekLogs.map { (slot: $0.slot, week: $0.week) }, currentWeek: program.week,
@@ -395,6 +412,7 @@ final class AppStore {
         food.append(FoodEntry(date: date, protein: max(0, protein), calories: max(0, calories)))
         food.removeAll { $0.date < date.addingTimeInterval(-60 * 86400) }
         saveFood()
+        refreshWidget()
     }
 
     func removeFood(_ entry: FoodEntry) {
@@ -822,6 +840,7 @@ final class AppStore {
         resetDraft()
         Nudges.schedule(CoachCues.nudge(after: now, next: nextSlot, name: slotName(nextSlot)))
 
+        refreshWidget()
         return FinishSummary(title: s.title, changes: result.changes, cardioMinutes: result.cardioMinutes,
                              weekMessage: advance.message, minutes: workout?.minutes, setsDone: stats.setsDone,
                              volume: stats.volume, records: records, weekDone: program.doneCount, undoState: undo,
