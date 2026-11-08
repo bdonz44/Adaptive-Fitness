@@ -13,6 +13,7 @@ struct SetRow: View {
     var body: some View {
         let entry = store.entry(item.key)
         let set = index < entry.sets.count ? entry.sets[index] : LoggedSet()
+        VStack(alignment: .leading, spacing: 2) {
         HStack(spacing: 10) {
             Text("\(index + 1)")
                 .font(.subheadline.monospacedDigit())
@@ -54,6 +55,8 @@ struct SetRow: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(set.ticked ? "Set \(index + 1) done" : "Mark set \(index + 1) done")
+        }
+            GhostLine(item: item, set: set, index: index).padding(.leading, 28)
         }
     }
 
@@ -129,5 +132,34 @@ struct NumberField: View {
 
     private static func format(_ value: Double?) -> String {
         value.map { lb($0) } ?? ""
+    }
+}
+
+/// "Last time 185 × 6", and once the set is done: beat it, matched, or short.
+struct GhostLine: View {
+    @Environment(AppStore.self) private var store
+    let item: SessionItem
+    let set: LoggedSet
+    let index: Int
+    var big = false
+
+    var body: some View {
+        if item.isLift, let id = item.exerciseID, let last = Ghost.last(store.lifts[id], set: index) {
+            let look = Theme.look
+            HStack(spacing: 6) {
+                Text("Last time \(Ghost.text(last, unit: item.unit))")
+                    .font(big ? .subheadline.weight(.semibold) : .caption)
+                    .foregroundStyle(look.secondary)
+                if set.isDone, let reps = set.reps {
+                    let v = Ghost.verdict(weight: item.equipment == .bw ? nil : set.weight, reps: reps, against: last)
+                    Label(v == .beat ? "Beat it" : v == .matched ? "Matched" : "Short",
+                          systemImage: v == .beat ? "arrow.up.circle.fill" : v == .matched ? "equal.circle.fill" : "arrow.down.circle")
+                        .font((big ? Font.subheadline : .caption).weight(.bold))
+                        .foregroundStyle(v == .beat ? look.done : v == .matched ? look.text : look.secondary)
+                } else if !set.isDone {
+                    Text("Beat it.").font((big ? Font.subheadline : .caption).weight(.bold)).foregroundStyle(look.accent)
+                }
+            }
+        }
     }
 }

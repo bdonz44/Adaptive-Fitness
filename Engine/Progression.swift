@@ -83,7 +83,7 @@ public struct ProgressResult: Equatable, Sendable {
 }
 
 public enum Progression {
-    public static let historyLimit = 12
+    public static let historyLimit = 100
 
     public static let maxDumbbellNote = "At your heaviest dumbbells. Add 2 reps per set or take 3 seconds on the way down."
     public static let droppedTenNote = "Dropped 10% after two tough sessions."
@@ -174,6 +174,9 @@ public enum Progression {
             let used = reading.usedWeight
 
             rec.history.append(HistoryEntry(date: date, weight: used, reps: reading.topReps, targetHi: item.high, rir: log.rir))
+            // Every finished set, for "beat last time" next session.
+            rec.lastSets = log.sets.prefix(log.activeSets(planned: item.sets)).filter(\.isDone)
+                .map { LoggedSet(weight: $0.weight ?? used, reps: $0.reps ?? $0.plannedReps ?? item.high, ticked: true) }
             rec.lastSkip = nil
             if rec.history.count > historyLimit { rec.history.removeFirst(rec.history.count - historyLimit) }
             if rec.firstWeight == nil, let used, eq != .bw { rec.firstWeight = used }

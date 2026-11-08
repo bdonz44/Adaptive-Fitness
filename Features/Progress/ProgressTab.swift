@@ -21,6 +21,8 @@ struct ProgressTab: View {
                     WaistCard()
                     MeasurementsCard()
                     WorkingWeightsCard()
+                    StandardsCard()
+                    TrophiesCard()
                     RecentSessionsCard()
                 }
                 .padding()
@@ -359,6 +361,7 @@ struct WorkingWeightsCard: View {
                     .foregroundStyle(Theme.secondary)
             }
             ForEach(rows) { row in
+                NavigationLink { LiftHistoryView(exerciseID: row.id) } label: {
                 HStack(spacing: 10) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(row.name)
@@ -376,7 +379,11 @@ struct WorkingWeightsCard: View {
                     Text("\(lb(row.weight)) lb")
                         .monospacedDigit()
                         .frame(minWidth: 60, alignment: .trailing)
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.secondary)
                 }
+                .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
         }
     }

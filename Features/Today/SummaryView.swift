@@ -52,6 +52,22 @@ struct SummaryView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 24)
 
+                ForEach(summary.milestones) { m in
+                    HStack(spacing: 14) {
+                        Image(systemName: "trophy.fill").font(.system(size: 34)).foregroundStyle(look.onAccent)
+                            .frame(width: 60, height: 60).background(look.accent, in: Circle())
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("MILESTONE").font(.caption.weight(.heavy)).foregroundStyle(look.accent)
+                            Text(m.title).font(.title3.weight(.heavy))
+                            Text(m.detail).font(.subheadline).foregroundStyle(look.secondary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(16)
+                    .background(look.accent.opacity(0.15), in: RoundedRectangle(cornerRadius: look.radius))
+                    .overlay(RoundedRectangle(cornerRadius: look.radius).stroke(look.accent, lineWidth: 2))
+                }
+
                 ForEach(summary.records) { pr in
                     VStack(alignment: .leading, spacing: 6) {
                         SectionLabel(text: "New personal record", color: look.accent)

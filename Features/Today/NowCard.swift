@@ -36,6 +36,7 @@ struct NowCard: View {
                 if item.equipment == .bb, let weight {
                     Text("Per side: \(Plates.text(weight))").font(.subheadline).foregroundStyle(look.secondary)
                 }
+                GhostLine(item: item, set: store.entry(item.key).sets[safe: open.set] ?? LoggedSet(), index: open.set, big: true)
                 if let line = coachLine(item, set: open.set) {
                     CoachCallout(text: line)
                 }

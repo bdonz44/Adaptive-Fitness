@@ -32,6 +32,7 @@ struct FinishSummary: Identifiable {
     var startedAt: Date? = nil
     var finishedAt: Date = Date()
     var heart: HeartRate.Summary? = nil
+    var milestones: [Milestone] = []
 }
 
 /// One row in "Recent sessions".
@@ -165,6 +166,7 @@ final class AppStore {
         }
         try? context.save()
         restartWeekAfterBreak()
+        if UserDefaults.standard.object(forKey: "milestones.known") == nil, !lifts.isEmpty { _ = takeNewMilestones() }
     }
 
     // MARK: Merging duplicates
@@ -305,6 +307,53 @@ final class AppStore {
 
     /// Logged cardio this program week plus WHOOP activities (runs, walks, rides...) since it started.
     var cardioThisWeek: Int { (cardioByWeek[program.week] ?? 0) + whoopCardioThisWeek }
+
+    // MARK: Milestones and standards
+
+    /// Longest run of full weeks ever.
+    var bestStreak: Int {
+        let perWeek = program.order.count
+        var byWeek: [Int: Set<String>] = [:]
+        for l in weekLogs where l.slot != Slot.R.rawValue { byWeek[l.week, default: []].insert(l.slot) }
+        var best = 0, run = 0
+        let hi = max(program.week, byWeek.keys.max() ?? 1, 1)
+        for w in min(byWeek.keys.min() ?? 1, hi)...hi {
+            if (byWeek[w]?.count ?? 0) >= perWeek { run += 1; best = max(best, run) } else if w != program.week { run = 0 }
+        }
+        return best
+    }
+
+    var milestoneFacts: Milestones.Facts {
+        Milestones.Facts(sessions: sessionsLoggedTotal, bestStreak: bestStreak, lifts: lifts, weighIns: weighIns,
+                         blocksFinished: (program.programWeek.week - 1) / 12)
+    }
+
+    var milestones: [Milestone] { Milestones.all(milestoneFacts) }
+
+    /// Milestones already celebrated (on this phone). The first look marks everything already
+    /// achieved as known, so only new ones are celebrated.
+    private var knownMilestones: Set<String> {
+        get { Set(UserDefaults.standard.stringArray(forKey: "milestones.known") ?? []) }
+        set { UserDefaults.standard.set(Array(newValue), forKey: "milestones.known") }
+    }
+
+    func takeNewMilestones() -> [Milestone] {
+        let achieved = milestones.filter(\.achieved)
+        guard UserDefaults.standard.object(forKey: "milestones.known") != nil else {
+            knownMilestones = Set(achieved.map(\.id))
+            return []
+        }
+        let new = achieved.filter { !knownMilestones.contains($0.id) }
+        knownMilestones.formUnion(new.map(\.id))
+        return new
+    }
+
+    var birthDate: Date? {
+        get { access(keyPath: \.birthDate); return UserDefaults.standard.object(forKey: "profile.birthDate") as? Date }
+        set { withMutation(keyPath: \.birthDate) { UserDefaults.standard.set(newValue, forKey: "profile.birthDate") } }
+    }
+
+    var age: Int? { birthDate.map { StrengthStandards.age(born: $0, now: Date()) } }
 
     // MARK: Home
 
@@ -850,10 +899,11 @@ final class AppStore {
         Nudges.schedule(CoachCues.nudge(after: now, next: nextSlot, name: slotName(nextSlot)))
 
         refreshWidget()
+        let newMilestones = takeNewMilestones()
         return FinishSummary(title: s.title, changes: result.changes, cardioMinutes: result.cardioMinutes,
                              weekMessage: advance.message, minutes: workout?.minutes, setsDone: stats.setsDone,
                              volume: stats.volume, records: records, weekDone: program.doneCount, undoState: undo,
-                             startedAt: started, finishedAt: now, heart: heartSummary)
+                             startedAt: started, finishedAt: now, heart: heartSummary, milestones: newMilestones)
     }
 
     /// Skip marks a slot done with no log.

@@ -76,6 +76,7 @@ struct FocusView: View {
                     Spacer(minLength: 4)
                     if let id = item.exerciseID { HowToButton(exerciseID: id) }
                 }
+                GhostLine(item: item, set: store.entry(item.key).sets[safe: open.set] ?? LoggedSet(), index: open.set, big: true)
                 if let line = coachLine(item, set: open.set, session: session) {
                     CoachCallout(text: line)
                 }

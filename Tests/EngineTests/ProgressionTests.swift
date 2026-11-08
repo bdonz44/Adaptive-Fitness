@@ -119,12 +119,12 @@ import Testing
         #expect(fresh.lifts["bench"]?.workingWeight == 165)
     }
 
-    @Test func historyAppendsAndKeepsTwelve() throws {
-        let old = (0..<12).map { entry(100, 5, daysAgo: Double(20 - $0)) }
+    @Test func historyAppendsAndKeepsTheLimit() throws {
+        let old = (0..<Progression.historyLimit).map { entry(100, 5, daysAgo: Double(200 - $0)) }
         let r = finish(foundationMain("bench"), sets(135, [5, 5, 5, 5]),
                        record: LiftRecord(exerciseID: "bench", workingWeight: 135, history: old), rir: 2)
         let rec = try #require(r.lifts["bench"])
-        #expect(rec.history.count == 12)
+        #expect(rec.history.count == Progression.historyLimit)
         #expect(rec.history.last == HistoryEntry(date: t0, weight: 135, reps: 5, targetHi: 5, rir: 2))
     }
 

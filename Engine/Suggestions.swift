@@ -31,6 +31,8 @@ public struct LiftRecord: Codable, Equatable, Sendable {
     public var lastSkip: String?
     /// Plateau breaker sessions left (heavy triples), when a main lift got stuck.
     public var breaker: Int?
+    /// The finished sets from the last session (for "beat last time").
+    public var lastSets: [LoggedSet]?
 
     public init(exerciseID: String, workingWeight: Double? = nil, fails: Int = 0, holds: Int = 0,
                 note: String? = nil, history: [HistoryEntry] = [], firstWeight: Double? = nil, breaker: Int? = nil) {
