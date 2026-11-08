@@ -62,12 +62,26 @@ extension AppStore {
 
     // MARK: Actions the coach can take (each returns what happened, for the coach to say)
 
+    /// "Session now: Back Squat 2×6-8, Romanian Deadlift 3×10-15, ..." after a change.
+    private var sessionNow: String {
+        " Session now: " + session.items.map { i in
+            i.isLift ? "\(i.name) \(i.sets)×\(i.low == i.high ? "\(i.high)" : "\(i.low)-\(i.high)")"
+                     : "\(i.name) \(i.rounds ?? 0) \(i.unit == .min ? "min" : "rounds")"
+        }.joined(separator: ", ") + "."
+    }
+
     func coachSwap(_ name: String, to replacement: String) -> String {
         let s = session
         guard let item = CoachActions.item(name, in: s), item.isLift else { return "No exercise called \(name) in today's session." }
         let used = Set(s.items.compactMap(\.exerciseID))
+        let original = item.exerciseID.flatMap(catalog.exercise)
+        let options = original.map { CoachActions.alternatives(for: $0, catalog: catalog, gear: gear, excluding: used) } ?? []
+        let optionText = options.isEmpty ? "" : " Same-muscle options: " + options.map(\.name).joined(separator: ", ") + "."
         guard let ex = CoachActions.exercise(replacement, catalog: catalog, gear: gear, excluding: used) else {
-            return "Couldn't find \(replacement) among exercises the gear allows."
+            return "Couldn't find \(replacement) among exercises the gear allows." + optionText
+        }
+        if let original, !CoachActions.sameMuscles(original, ex) {
+            return "Not swapped: \(ex.name) trains different muscles than \(item.name)." + optionText
         }
         if item.isExtra {
             removeExtra(item)
@@ -75,7 +89,7 @@ extension AppStore {
         } else {
             draftSwap(item.key, to: ex.id)
         }
-        return "Swapped \(item.name) for \(ex.name) in today's session."
+        return "Swapped \(item.name) for \(ex.name) in today's session." + sessionNow
     }
 
     func coachAdd(_ name: String) -> String {
@@ -84,19 +98,19 @@ extension AppStore {
             return "Couldn't find \(name) among exercises the gear allows, or it's already in today's session."
         }
         addExtras([ex.id])
-        return "Added \(ex.name) to today's session."
+        return "Added \(ex.name) to today's session." + sessionNow
     }
 
     func coachSkip(_ name: String, reason: String) -> String {
         guard let item = CoachActions.item(name, in: session) else { return "No exercise called \(name) in today's session." }
         let r = ["Pain", "No time", "No equipment", "Other"].first { reason.lowercased().contains($0.lowercased()) } ?? "Other"
         skip(item, reason: r)
-        return "Skipped \(item.name) today (\(r))."
+        return "Skipped \(item.name) today (\(r))." + sessionNow
     }
 
     func coachTime(_ minutes: Int) -> String {
         let pick = TimeBox.choices.min { abs($0 - minutes) < abs($1 - minutes) } ?? 45
         setTimeBudget(minutes >= 60 + 15 ? nil : pick)
-        return "Time today set to \(minutes >= 75 ? "full" : "\(pick) min"). " + (TimeBox.summary(session) ?? "")
+        return "Time today set to \(minutes >= 75 ? "full" : "\(pick) min"). " + (TimeBox.summary(session) ?? "") + sessionNow
     }
 }

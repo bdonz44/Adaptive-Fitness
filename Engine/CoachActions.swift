@@ -27,6 +27,24 @@ public enum CoachActions {
         return scored.max { $0.1 < $1.1 }?.0
     }
 
+    /// The muscles an exercise mainly trains (full credit in the muscle map).
+    public static func primary(_ ex: Exercise) -> Set<Muscle> {
+        Set(MuscleMap.work(ex).filter { $0.value >= 1 }.keys)
+    }
+
+    /// A swap has to train at least one of the same main muscles.
+    public static func sameMuscles(_ a: Exercise, _ b: Exercise) -> Bool {
+        !primary(a).isDisjoint(with: primary(b))
+    }
+
+    /// Same-muscle alternatives you have the gear for, not already in the session.
+    public static func alternatives(for ex: Exercise, catalog: Catalog = .bundled, gear: GearProfile = .standard,
+                                    excluding: Set<String> = [], limit: Int = 4) -> [Exercise] {
+        (catalog.mainLifts + catalog.accessories)
+            .filter { $0.id != ex.id && gear.has($0) && !excluding.contains($0.id) && sameMuscles(ex, $0) }
+            .prefix(limit).map { $0 }
+    }
+
     /// The library exercise that best matches a name, among those you have the gear for.
     public static func exercise(_ name: String, catalog: Catalog = .bundled, gear: GearProfile = .standard,
                                 excluding: Set<String> = []) -> Exercise? {

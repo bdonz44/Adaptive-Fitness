@@ -23,3 +23,15 @@ import Testing
         #expect(SessionBuilder.build(slot: .D, context: ctx).item("main")?.exerciseID == "floorpress")
     }
 }
+
+@Suite struct CoachSwapGuardTests {
+    let c = Catalog.bundled
+    @Test func swapsMustTrainTheSameMuscles() throws {
+        let bench = try #require(c.exercise("bench")), floor = try #require(c.exercise("floorpress"))
+        let ohp = try #require(c.exercise("ohp")), squat = try #require(c.exercise("squat"))
+        #expect(CoachActions.sameMuscles(bench, floor))
+        #expect(!CoachActions.sameMuscles(squat, ohp))
+        let alts = CoachActions.alternatives(for: bench)
+        #expect(!alts.isEmpty && alts.allSatisfy { CoachActions.primary($0).contains(.chest) })
+    }
+}

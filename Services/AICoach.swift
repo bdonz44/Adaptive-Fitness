@@ -3,8 +3,9 @@ import FoundationModels
 import Observation
 import Hybrid12Engine
 
-/// "Ask the coach": Apple Intelligence, free. Uses Apple's Private Cloud Compute model when it's
-/// available (bigger, still private), otherwise the model on the phone. It can change today's session.
+/// "Ask the coach": Apple Intelligence on the iPhone, free and private. It can change today's session.
+/// Not Private Cloud Compute: it reports available but refuses this app (needs Apple's approval), and on
+/// iOS that refusal crashed inside FoundationModels (Nov 7, build 20261107.2002).
 @available(iOS 26.0, *)
 @MainActor
 @Observable
@@ -19,8 +20,6 @@ final class AICoach {
     private(set) var messages: [Message] = []
     private(set) var isResponding = false
     @ObservationIgnored private var session: LanguageModelSession?
-    /// Set when the cloud model failed once: stay on the phone's model.
-    @ObservationIgnored private var onDeviceOnly = false
     @ObservationIgnored private let store: AppStore
     @ObservationIgnored private let whoop: WhoopService
 
@@ -40,11 +39,7 @@ final class AICoach {
         }
     }
 
-    var usesCloud: Bool {
-        if onDeviceOnly { return false }
-        if #available(iOS 27.0, *) { return PrivateCloudComputeLanguageModel().isAvailable }
-        return false
-    }
+    var usesCloud: Bool { false }
 
     func reset() {
         session = nil
@@ -64,15 +59,7 @@ final class AICoach {
             session = nil
             do { try await answer(prompt) } catch { fail(error) }
         } catch {
-            if usesCloud, !onDeviceOnly {
-                // The cloud model refused or failed: fall back to the model on the phone.
-                onDeviceOnly = true
-                session = nil
-                if let last = messages.last, last.role == .coach { messages.removeLast() }
-                do { try await answer(prompt) } catch { fail(error) }
-            } else {
-                fail(error)
-            }
+            fail(error)
         }
     }
 
@@ -103,21 +90,17 @@ final class AICoach {
         You are Brandon's strength coach inside his Hybrid 12 app. Be direct, demanding and encouraging, \
         like a coach who wants him to grind. Keep answers short: 2-5 sentences or a few bullets. Use the facts \
         below; never invent weights or history. Give specific numbers (sets, reps, weights, minutes, grams). \
-        When he asks to change today's workout, use the tools: swapExercise, addExercise, skipExercise, setTimeToday, \
-        then say what changed. Only swap to exercises his gear allows. For pain: no heroics, swap to something \
-        pain-free, and tell him to see a doctor if it's sharp, keeps coming back, or he hurt something. You are not a doctor.
+        When he asks to change today's workout, use the tools: swapExercise, addExercise, skipExercise, setTimeToday. \
+        After a tool, say only what changed in one or two sentences; don't recite the whole session. \
+        Only swap to exercises his gear allows. For pain: only change exercises that load the sore area; \
+        if nothing today does, say so and tell him to train as planned. Tell him to see a doctor if pain is sharp, \
+        keeps coming back, or he hurt something. You are not a doctor.
 
         FACTS
         \(store.coachContext(whoop: whoop.today))
         """
         let tools: [any Tool] = [SwapTool(coach: CoachLink(store)), AddTool(coach: CoachLink(store)),
                                  SkipTool(coach: CoachLink(store)), TimeTool(coach: CoachLink(store))]
-        if #available(iOS 27.0, *), !onDeviceOnly {
-            let cloud = PrivateCloudComputeLanguageModel()
-            if cloud.isAvailable {
-                return LanguageModelSession(model: cloud, tools: tools, instructions: instructions)
-            }
-        }
         return LanguageModelSession(tools: tools, instructions: instructions)
     }
 }
@@ -134,7 +117,7 @@ struct CoachLink: @unchecked Sendable {
 @available(iOS 26.0, *)
 struct SwapTool: Tool {
     let name = "swapExercise"
-    let description = "Replace an exercise in today's session with another exercise."
+    let description = "Replace a lift in today's session with another that trains the same muscles."
     let coach: CoachLink
     @Generable struct Arguments {
         @Guide(description: "The exercise in today's session to replace, e.g. Bench Press")
