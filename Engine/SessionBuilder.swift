@@ -183,7 +183,8 @@ public enum SessionBuilder {
         var hasMain = false
 
         // 1. Get strong
-        if let liftID = plan.mainLift(for: week.phase), let lift = catalog.exercise(liftID) {
+        if let planned = plan.mainLift(for: week.phase),
+           let lift = context.swaps["main"].flatMap(catalog.exercise) ?? catalog.exercise(planned) {
             hasMain = true
             used.insert(lift.id)
             let item = SessionItem(

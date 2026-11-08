@@ -16,6 +16,7 @@ struct TodayView: View {
     @State private var showFocus = false
     @State private var showRest = false
     @State private var showAddExercise = false
+    @State private var askCoach = false
 
     var body: some View {
         let session = store.session
@@ -68,6 +69,11 @@ struct TodayView: View {
                 }
             }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { askCoach = true } label: {
+                        Label("Ask the coach", systemImage: "bubble.left.and.text.bubble.right")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showFocus = true
@@ -81,6 +87,7 @@ struct TodayView: View {
                 }
             }
             .toolbarBackground(look.background, for: .navigationBar)
+            .sheet(isPresented: $askCoach) { CoachChatView() }
             .sheet(isPresented: $showAddExercise) {
                 AddExerciseSheet(session: session)
             }

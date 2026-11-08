@@ -697,6 +697,13 @@ final class AppStore {
     /// Why this lift was skipped last time, if it was.
     func lastSkip(_ item: SessionItem) -> String? { item.exerciseID.flatMap { lifts[$0]?.lastSkip } }
 
+    /// Swaps one item to a chosen exercise (the AI coach).
+    func draftSwap(_ key: String, to exerciseID: String) {
+        draft.swaps[key] = exerciseID
+        draft.entries[key] = nil
+        saveDraft()
+    }
+
     func swap(_ item: SessionItem) {
         draft.swap(item.key, in: session, catalog: catalog, gear: gear)
         saveDraft()

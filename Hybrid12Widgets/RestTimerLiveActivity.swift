@@ -7,8 +7,7 @@ import WidgetKit
 struct Hybrid12Widgets: WidgetBundle {
     var body: some Widget {
         RestTimerLiveActivity()
-        // TodayWidget() is switched on once the App Group "group.com.bdonz44.hybrid12" exists on the
-        // developer account and is enabled for both App IDs (export fails without it).
+        TodayWidget()
     }
 }
 

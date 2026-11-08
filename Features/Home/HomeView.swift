@@ -9,6 +9,7 @@ struct HomeView: View {
     let go: () -> Void
     @State private var logFood = false
     @State private var quick: QuickAction?
+    @State private var askCoach = false
 
     enum QuickAction: String, Identifiable { case weight, cardio, time; var id: String { rawValue } }
 
@@ -37,6 +38,7 @@ struct HomeView: View {
             .background(look.background)
             .toolbar(.hidden, for: .navigationBar)
             .onAppear { store.refreshWidget(recovery: whoop.today?.recovery) }
+            .sheet(isPresented: $askCoach) { CoachChatView() }
             .sheet(isPresented: $logFood) { FoodLogSheet() }
             .sheet(item: $quick) { action in
                 switch action {
@@ -188,10 +190,17 @@ struct HomeView: View {
     @ViewBuilder
     private var coachLine: some View {
         let since = HomeInsights.daysSince(store.logs.filter { $0.slot != .R }.map(\.date), now: Date())
-        if let since, since >= 2, !store.loggedToday {
-            CoachCallout(text: "\(since) days since you trained. Today. No negotiating.")
-        } else {
-            CoachCallout(text: HomeInsights.lineOfTheDay(store.homeFacts, date: Date()))
+        VStack(spacing: 8) {
+            if let since, since >= 2, !store.loggedToday {
+                CoachCallout(text: "\(since) days since you trained. Today. No negotiating.")
+            } else {
+                CoachCallout(text: HomeInsights.lineOfTheDay(store.homeFacts, date: Date()))
+            }
+            Button { askCoach = true } label: {
+                Label("Ask the coach", systemImage: "bubble.left.and.text.bubble.right.fill")
+                    .font(.headline).frame(maxWidth: .infinity, minHeight: 48)
+            }
+            .buttonStyle(.bordered).tint(Theme.accent)
         }
     }
 
