@@ -32,6 +32,15 @@ struct SmartCoachingView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
+                Card(title: "Plateau breaker") {
+                    Toggle(isOn: $store.adaptive.plateauBreaker) {
+                        Text("Break stalls with heavy triples").font(.headline)
+                    }
+                    Text("When a main lift sits in the range three sessions running, the next 3 sessions are 5 × 3 off your estimated max with 3 minutes rest, then it goes back to normal reps at a weight from your new max. Off: the old 5% reset.")
+                        .font(.subheadline).foregroundStyle(look.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 Card(title: "Coming back") {
                     Toggle(isOn: $store.adaptive.reEntry) {
                         Text("Ramp back after missed days").font(.headline)

@@ -185,7 +185,8 @@ public enum Progression {
                 case .bb, .db:
                     if let used {
                         let effort = adaptive.effortProgression ? EffortRules.step(reading: reading, rir: log.rir) : .normal
-                        note = barbellOrDumbbell(&rec, item: item, eq: eq, used: used, gear: gear, reading: reading,
+                        note = barbellOrDumbbell(&rec, item: item, eq: eq, used: used, gear: gear,
+                                                 breakers: adaptive.plateauBreaker, reading: reading,
                                                  catalog: catalog, effort: effort)
                     }
                 case .kb:
@@ -197,6 +198,10 @@ public enum Progression {
                     }
                 }
                 rec.note = note
+                if item.kind == .main, let left = rec.breaker, left > 0, note != PlateauBreaker.startNote {
+                    rec.breaker = left > 1 ? left - 1 : nil
+                    if rec.breaker == nil { rec.note = PlateauBreaker.endNote }
+                }
             }
             lifts[id] = rec
 
@@ -213,7 +218,7 @@ public enum Progression {
     }
 
     static func barbellOrDumbbell(_ rec: inout LiftRecord, item: SessionItem, eq: Equipment, used: Double,
-                                  gear: GearProfile = .standard,
+                                  gear: GearProfile = .standard, breakers: Bool = false,
                                   reading: SetReading, catalog: Catalog, effort: EffortRules.Step = .normal) -> String? {
         let inc = eq == .bb ? (catalog.exercise(item.exerciseID ?? "")?.inc ?? 5) : 5
         if reading.hitAll {
@@ -252,10 +257,16 @@ public enum Progression {
             rec.workingWeight = Suggestions.clamp(used + inc, equipment: eq, gear: gear)
             return EffortRules.bumpNote
         }
-        if item.kind == .main {
+        if item.kind == .main && (rec.breaker ?? 0) == 0 {
             rec.holds += 1
             if rec.holds >= 3 {
                 rec.holds = 0
+                if breakers {
+                    // Change the stimulus instead of backing off.
+                    rec.breaker = PlateauBreaker.sessions
+                    rec.workingWeight = used
+                    return PlateauBreaker.startNote
+                }
                 rec.workingWeight = Suggestions.clamp(used * 0.95, equipment: eq, gear: gear)
                 return stuckNote
             }
@@ -298,6 +309,35 @@ public enum Progression {
         case .sec: return "Harder: add 10 to 15 seconds."
         case .yd: return "Harder: go a little farther or faster."
         default: return "Harder: slow the lowering to 3 seconds or add reps."
+        }
+    }
+}
+
+/// A stuck main lift (in range 3 sessions running) gets 3 sessions of heavy triples:
+/// 5 × 3 off your estimated max, longer rest. Then it goes back to its normal reps.
+public enum PlateauBreaker {
+    public static let sessions = 3
+    public static let sets = 5
+    public static let reps = 3
+    public static let rest = 180
+    public static let startNote = "Stuck three sessions. Plateau breaker: next 3 sessions are heavy triples to blow through it."
+    public static let endNote = "Breaker done. Back to your normal reps, and the weight comes from your new max."
+
+    /// Makes the session's main lift heavy triples when its breaker is running (not on back-off weeks).
+    public static func apply(_ session: inout Session, breakers: [String: Int]) {
+        guard !session.week.isDeload else { return }
+        for bi in session.blocks.indices {
+            for ii in session.blocks[bi].items.indices {
+                let item = session.blocks[bi].items[ii]
+                guard item.kind == .main, let id = item.exerciseID, let left = breakers[id], left > 0 else { continue }
+                var new = item
+                new.sets = max(item.sets, sets)
+                new.low = reps
+                new.high = reps
+                new.restSeconds = max(item.restSeconds, rest)
+                new.detail = "Plateau breaker, \(sessions - left + 1) of \(sessions): heavy triples. " + item.detail
+                session.blocks[bi].items[ii] = new
+            }
         }
     }
 }

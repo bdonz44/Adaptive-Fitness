@@ -109,6 +109,8 @@ public struct SessionContext: Equatable, Sendable {
     public var reEntry: ReEntry.Plan? = nil
     /// The equipment you own (set by the app); planned exercises you can't do are swapped.
     public var gear: GearProfile = .standard
+    /// Plateau breakers running (exercise id -> sessions left), set by the app from the lifts.
+    public var breakers: [String: Int] = [:]
     /// The program, days a week, and the absolute week it started on (week 1 of the program).
     public var program: ProgramID
     public var days: Int
@@ -164,6 +166,7 @@ public enum SessionBuilder {
             : ProgramLibrary.build(slot: slot, context: context, week: week, catalog: catalog)
         session.reEntry = context.reEntry
         fitGear(&session, gear: context.gear, catalog: catalog)
+        PlateauBreaker.apply(&session, breakers: context.breakers)
         if let extras = extrasBlock(context: context, week: week, catalog: catalog) {
             let at = session.blocks.firstIndex { $0.kind == .burnIt } ?? session.blocks.count
             session.blocks.insert(extras, at: at)

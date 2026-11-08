@@ -14,10 +14,13 @@ public struct AdaptiveSettings: Codable, Equatable, Sendable {
     public var weeklyReview: Bool
     /// 6. Nutrition numbers: protein target and calorie calls from the weight trend.
     public var nutrition: Bool
+    /// Plateau breaker: a stuck main lift gets 3 sessions of heavy triples instead of a 5% drop.
+    public var plateauBreaker: Bool
 
     public init(effortProgression: Bool = false, timeBox: Bool = false, reEntry: Bool = false, weeklyReview: Bool = false,
-                nutrition: Bool = false) {
+                nutrition: Bool = false, plateauBreaker: Bool = false) {
         self.nutrition = nutrition
+        self.plateauBreaker = plateauBreaker
         self.effortProgression = effortProgression
         self.timeBox = timeBox
         self.reEntry = reEntry
@@ -33,13 +36,14 @@ public struct AdaptiveSettings: Codable, Equatable, Sendable {
         reEntry = try c.decodeIfPresent(Bool.self, forKey: .reEntry) ?? d.reEntry
         weeklyReview = try c.decodeIfPresent(Bool.self, forKey: .weeklyReview) ?? d.weeklyReview
         nutrition = try c.decodeIfPresent(Bool.self, forKey: .nutrition) ?? d.nutrition
+        plateauBreaker = try c.decodeIfPresent(Bool.self, forKey: .plateauBreaker) ?? d.plateauBreaker
     }
 
     /// Everything off: the web app's rules exactly.
     public static let off = AdaptiveSettings()
     /// What a new install starts with.
     public static let starting = AdaptiveSettings(effortProgression: true, timeBox: true, reEntry: true, weeklyReview: true,
-                                                     nutrition: true)
+                                                     nutrition: true, plateauBreaker: true)
 }
 
 /// Effort-based progression (RIR) rules.

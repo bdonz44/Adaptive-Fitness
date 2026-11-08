@@ -29,9 +29,12 @@ public struct LiftRecord: Codable, Equatable, Sendable {
     public var firstWeight: Double?
     /// Why this lift was skipped last time it came up ("Pain"...), cleared once it's logged again.
     public var lastSkip: String?
+    /// Plateau breaker sessions left (heavy triples), when a main lift got stuck.
+    public var breaker: Int?
 
     public init(exerciseID: String, workingWeight: Double? = nil, fails: Int = 0, holds: Int = 0,
-                note: String? = nil, history: [HistoryEntry] = [], firstWeight: Double? = nil) {
+                note: String? = nil, history: [HistoryEntry] = [], firstWeight: Double? = nil, breaker: Int? = nil) {
+        self.breaker = breaker
         self.exerciseID = exerciseID
         self.workingWeight = workingWeight
         self.fails = fails

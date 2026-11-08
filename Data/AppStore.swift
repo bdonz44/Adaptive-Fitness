@@ -259,6 +259,9 @@ final class AppStore {
         var context = draft.context(for: program)
         context.reEntry = reEntry
         context.gear = gear
+        if adaptive.plateauBreaker {
+            context.breakers = lifts.compactMapValues { $0.breaker }
+        }
         let built = SessionBuilder.build(slot: draft.slot, context: context, catalog: catalog)
         guard adaptive.timeBox, let budget = draft.timeBudget else { return built }
         let logged = Set(draft.entries.filter { $0.value.hasCompletedWork }.keys)
