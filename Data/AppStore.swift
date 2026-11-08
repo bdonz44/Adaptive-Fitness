@@ -327,6 +327,27 @@ final class AppStore {
                            hardMinutes: hardMinutesThisWeek, isDeload: week.isDeload, doneToday: loggedToday)
     }
 
+    // MARK: What works for you
+
+    /// WHOOP recovery and sleep by day (last 90 days), saved on the phone.
+    private(set) var whoopDays: [Insights.Day] = {
+        UserDefaults.standard.data(forKey: "whoop.days").flatMap { try? JSONDecoder().decode([Insights.Day].self, from: $0) } ?? []
+    }()
+
+    var insights: [Insights.Insight] {
+        Insights.compute(sessions: Insights.sessions(lifts), days: whoopDays)
+    }
+
+    /// Refreshes the WHOOP history at most once a day.
+    func refreshWhoopHistory(_ fetch: () async -> [Insights.Day]?, now: Date = Date()) async {
+        let key = "whoop.daysFetched"
+        if let last = UserDefaults.standard.object(forKey: key) as? Date, now.timeIntervalSince(last) < 20 * 3600 { return }
+        guard let days = await fetch() else { return }
+        whoopDays = days
+        UserDefaults.standard.set(now, forKey: key)
+        if let d = try? JSONEncoder().encode(days) { UserDefaults.standard.set(d, forKey: "whoop.days") }
+    }
+
     // MARK: Sets per muscle
 
     /// Hard sets per muscle in the last 7 days, including today's session so far.

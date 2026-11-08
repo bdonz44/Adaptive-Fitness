@@ -150,6 +150,59 @@ final class WhoopService {
         }
     }
 
+    /// Recovery and sleep per day for the last `days` days (for "What works for you").
+    @MainActor
+    func history(days: Int = 90, now: Date = Date()) async -> [Insights.Day]? {
+        guard isConnected else { return nil }
+        let start = now.addingTimeInterval(-Double(days) * 86400)
+        do {
+            let recoveries = try await pages("/developer/v2/recovery", start: start, end: now)
+            let sleeps = try await pages("/developer/v2/activity/sleep", start: start, end: now)
+            let cal = Calendar.current
+            var byDay: [Date: Insights.Day] = [:]
+            for r in recoveries {
+                guard r["score_state"] as? String == "SCORED", let s = r["score"] as? [String: Any],
+                      let made = (r["created_at"] as? String).flatMap(WhoopDate.parse) else { continue }
+                let d = cal.startOfDay(for: made)
+                var day = byDay[d] ?? Insights.Day(date: d, recovery: nil, sleepHours: nil)
+                day.recovery = (s["recovery_score"] as? NSNumber)?.intValue
+                byDay[d] = day
+            }
+            for sl in sleeps where (sl["nap"] as? Bool) != true {
+                guard sl["score_state"] as? String == "SCORED", let s = sl["score"] as? [String: Any],
+                      let stages = s["stage_summary"] as? [String: Any],
+                      let end = (sl["end"] as? String).flatMap(WhoopDate.parse) else { continue }
+                let asleep = ["total_light_sleep_time_milli", "total_slow_wave_sleep_time_milli", "total_rem_sleep_time_milli"]
+                    .compactMap { (stages[$0] as? NSNumber)?.doubleValue }.reduce(0, +) / 3_600_000
+                let d = cal.startOfDay(for: end)
+                var day = byDay[d] ?? Insights.Day(date: d, recovery: nil, sleepHours: nil)
+                day.sleepHours = asleep
+                byDay[d] = day
+            }
+            return byDay.values.sorted { $0.date < $1.date }
+        } catch {
+            return nil
+        }
+    }
+
+    /// Every record between two times, following WHOOP's pages (25 per page).
+    private func pages(_ path: String, start: Date, end: Date) async throws -> [[String: Any]] {
+        var all: [[String: Any]] = []
+        var next: String? = nil
+        for _ in 0..<12 {
+            var c = URLComponents()
+            c.queryItems = [.init(name: "start", value: WhoopDate.string(start)), .init(name: "end", value: WhoopDate.string(end)),
+                            .init(name: "limit", value: "25")]
+            if let next { c.queryItems?.append(.init(name: "nextToken", value: next)) }
+            let query = c.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B") ?? ""
+            let page = try await get(path + "?" + query)
+            all += (page["records"] as? [[String: Any]]) ?? []
+            next = page["next_token"] as? String
+            if next == nil || next == "" { break }
+        }
+        return all
+    }
+
     // MARK: HTTP
 
     enum WhoopError: Error { case signedOut, http(Int) }

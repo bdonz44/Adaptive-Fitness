@@ -61,6 +61,7 @@ struct Hybrid12App: App {
         store.applyWhoop(whoop.today)
         await store.backfillWhoop { [whoop] start, end in await whoop.workouts(from: start, to: end) }
         await store.refreshWhoopCardio { [whoop] start, end in await whoop.workouts(from: start, to: end) }
+        await store.refreshWhoopHistory { [whoop] in await whoop.history() }
     }
 
     var body: some Scene {

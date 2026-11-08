@@ -12,6 +12,7 @@ struct ProgressTab: View {
                 VStack(alignment: .leading, spacing: 20) {
                     WeeklyReviewButton()
                     CoachCard()
+                    InsightsCard()
                     CardioCard()
                     NutritionCard()
                     HardMinutesCard()

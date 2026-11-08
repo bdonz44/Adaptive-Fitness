@@ -27,6 +27,7 @@ struct HomeView: View {
                     scoreboard
                     coachLine
                     muscleLine
+                    InsightsCard(limit: 2)
                     heatmap
                     liftTrends
                     sinceStart
