@@ -12,7 +12,7 @@ A 12-week home-gym program app for iPhone. It picks each session, suggests every
 | 4 | Import web app data, iCloud sync | **Built** (two-device sync test still to do) |
 | 5 | Live Activity rest timer, notifications, HealthKit | **Built** (check on the phone still to do) |
 | 6 | Adaptive layer (RIR, time-boxed sessions, re-entry, readiness, back-off timing, weekly review, nutrition, equipment) | |
-| 7 | TestFlight | Upload works: every push to `main` sends a build (`.github/workflows/testflight.yml`) |
+| 7 | TestFlight | Xcode Cloud on every change to `main`, or `scripts/upload-testflight.sh` from the Mac ([how](docs/BUILD_AND_RELEASE.md)) |
 
 ## Layout
 
@@ -73,7 +73,11 @@ On the Mac, in this folder:
 swift test
 ```
 
-Or open `Package.swift` in Xcode and press Cmd-U. GitHub also runs them on every push (`.github/workflows/engine-tests.yml`).
+Or open `Package.swift` in Xcode and press Cmd-U. (GitHub no longer runs them automatically: its free Mac minutes ran out. Claude runs them in cloud sessions, and `scripts/upload-testflight.sh` runs them before every upload.)
+
+## Getting builds to TestFlight
+
+Xcode Cloud builds and uploads every change to `main` (free with the developer membership); `scripts/upload-testflight.sh` does the same from the Mac, keeping its files on the Crucial drive. Step by step: [`docs/BUILD_AND_RELEASE.md`](docs/BUILD_AND_RELEASE.md).
 
 ## Choices the spec left open
 
