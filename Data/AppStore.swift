@@ -1,6 +1,7 @@
 import CoreData
 import Foundation
 import Observation
+import os
 import SwiftData
 import WidgetKit
 import Hybrid12Engine
@@ -501,9 +502,10 @@ final class AppStore {
     }
 
     func removeCardio(_ entry: ManualCardio) {
+        guard manualCardio.contains(where: { $0.id == entry.id }) else { return }
         manualCardio.removeAll { $0.id == entry.id }
         saveManualCardio()
-        addCardio(-entry.minutes, week: entry.week)
+        addCardio(-min(entry.minutes, cardioByWeek[entry.week] ?? 0), week: entry.week)
         save()
     }
 
@@ -637,6 +639,7 @@ final class AppStore {
     }
 
     func setWeight(_ weight: Double?, item: SessionItem, set index: Int, applyToLater: Bool = false) {
+        guard weight?.isUsableAmount ?? true else { return }
         draft.setWeight(weight, key: item.key, set: index, setCount: item.sets, applyToLaterUnfinished: applyToLater)
         saveDraft()
     }
@@ -780,6 +783,7 @@ final class AppStore {
     }
 
     func setWarmWeight(_ weight: Double?, step index: Int) {
+        guard weight?.isUsableAmount ?? true else { return }
         draft.setWarmWeight(weight, step: index)
         saveDraft()
     }
@@ -805,7 +809,8 @@ final class AppStore {
         var heart = SessionHeart.read(entries) ?? SessionHeart(whoop: workout)
         heart.apply(workout)
         SessionHeart.write(heart, into: &entries)
-        log.entries = Self.encode(entries)
+        guard let data = Self.encode(entries) else { return }
+        log.entries = data
         save()
         if let i = recentLogs.firstIndex(where: { abs($0.date.timeIntervalSince(date)) < 1 }) { recentLogs[i].heart = heart }
         heartLogs = all.compactMap { l in Self.heart(in: l).map { (week: l.week, heart: $0) } }
@@ -881,7 +886,7 @@ final class AppStore {
 
         context.insert(StoredLog(date: now, week: program.week, phase: s.week.phase.rawValue, slot: s.slot.rawValue,
                                  title: s.title, readiness: s.readiness.rawValue,
-                                 cardioMinutes: result.cardioMinutes, entries: Self.encode(savedEntries)))
+                                 cardioMinutes: result.cardioMinutes, entries: Self.encode(savedEntries) ?? Data()))
         let savedHeart = SessionHeart.read(savedEntries)
         if let h = savedHeart { heartLogs.insert((week: program.week, heart: h), at: 0) }
         logs.insert(LogStamp(slot: s.slot, date: now), at: 0)
@@ -926,6 +931,7 @@ final class AppStore {
     // MARK: Progress tab
 
     func addWeighIn(_ pounds: Double, date: Date = Date()) {
+        guard pounds.isFinite, pounds > 0 else { return }
         weighIns = Tracking.adding(WeighIn(date: date, pounds: pounds), to: weighIns)
         syncWeighIns()
     }
@@ -936,6 +942,7 @@ final class AppStore {
     }
 
     func addWaist(_ inches: Double, date: Date = Date()) {
+        guard inches.isFinite, inches > 0 else { return }
         waist = Tracking.adding(WaistEntry(date: date, inches: inches), to: waist)
         syncWaist()
     }
@@ -956,18 +963,26 @@ final class AppStore {
 
     /// Erases the program state and every log: lifts, sessions, cardio, weigh-ins and waist.
     func startOver() {
-        try? context.delete(model: StoredLift.self)
-        try? context.delete(model: StoredLog.self)
-        try? context.delete(model: StoredDraft.self)
-        try? context.delete(model: StoredCardioWeek.self)
-        try? context.delete(model: StoredWeighIn.self)
-        try? context.delete(model: StoredWaist.self)
+        // One by one (not a batch delete) so iCloud is told about each deletion;
+        // otherwise erased records come back from iCloud on the next sync.
+        deleteAll(StoredLift.self)
+        deleteAll(StoredLog.self)
+        deleteAll(StoredDraft.self)
+        deleteAll(StoredCardioWeek.self)
+        deleteAll(StoredWeighIn.self)
+        deleteAll(StoredWaist.self)
         lifts = [:]
         logs = []
+        weekLogs = []
+        heartLogs = []
         recentLogs = []
         cardioByWeek = [:]
         weighIns = []
         waist = []
+        coachCue = nil
+        // Hand-typed cardio was counted in the erased weekly totals.
+        manualCardio = []
+        saveManualCardio()
         setProgram(ProgramState(program: program.program, days: program.days))
         resetDraft()
     }
@@ -990,10 +1005,11 @@ final class AppStore {
         for log in r.logs {
             context.insert(StoredLog(date: log.date, week: log.week, phase: log.phase, slot: log.slot.rawValue,
                                      title: log.title, readiness: log.readiness, cardioMinutes: 0,
-                                     entries: Self.encode(log.entries)))
+                                     entries: Self.encode(log.entries) ?? Data()))
         }
-        let newestFirst = r.logs.reversed()
+        let newestFirst = r.logs.sorted { $0.date > $1.date }
         logs = newestFirst.map { LogStamp(slot: $0.slot, date: $0.date) }
+        weekLogs = newestFirst.map { (slot: $0.slot.rawValue, week: $0.week, date: $0.date) }
         recentLogs = newestFirst.prefix(Tracking.recentSessionLimit).map { RecentLog(date: $0.date, title: $0.title, week: $0.week) }
         setProgram(r.program)
         resetDraft()
@@ -1028,6 +1044,10 @@ final class AppStore {
         save()
     }
 
+    private func deleteAll<T: PersistentModel>(_ type: T.Type) {
+        for row in (try? context.fetch(FetchDescriptor<T>())) ?? [] { context.delete(row) }
+    }
+
     private func resetDraft() {
         draft = SessionDraft(slot: nextSlot, state: program)
         saveDraft()
@@ -1044,7 +1064,7 @@ final class AppStore {
 
     private func saveDraft() {
         draft.noteStart(at: Date())
-        let data = Self.encode(draft)
+        guard let data = Self.encode(draft) else { return }
         if let stored = (try? context.fetch(FetchDescriptor<StoredDraft>()))?.first {
             stored.json = data
             stored.updated = Date()
@@ -1055,7 +1075,7 @@ final class AppStore {
     }
 
     private func saveLift(_ id: String, _ rec: LiftRecord) {
-        let data = Self.encode(rec)
+        guard let data = Self.encode(rec) else { return }
         let descriptor = FetchDescriptor<StoredLift>(predicate: #Predicate { $0.exerciseID == id })
         if let stored = (try? context.fetch(descriptor))?.first {
             stored.json = data
@@ -1074,16 +1094,25 @@ final class AppStore {
         cardioByWeek[week, default: 0] += minutes
     }
 
+    private static let logger = Logger(subsystem: "com.bdonz44.hybrid12", category: "store")
+
     private func save() {
-        try? context.save()
+        do {
+            try context.save()
+        } catch {
+            Self.logger.error("Save failed: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
-    private static func encode<T: Encodable>(_ value: T) -> Data {
-        (try? JSONEncoder().encode(value)) ?? Data()
+    /// Nil when the value can't be encoded: callers keep what was stored rather than blanking it.
+    private static func encode<T: Encodable>(_ value: T) -> Data? {
+        let data = SafeJSON.encode(value)
+        if data == nil { logger.error("Could not encode \(String(describing: T.self), privacy: .public)") }
+        return data
     }
 
     private static func decode<T: Decodable>(_ type: T.Type, _ data: Data) -> T? {
-        try? JSONDecoder().decode(type, from: data)
+        SafeJSON.decode(type, data)
     }
 
     #if DEBUG

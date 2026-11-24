@@ -8,7 +8,7 @@ extension AppStore {
         let s = session
         var lines: [String] = []
         lines.append("Today: \(now.formatted(date: .complete, time: .shortened)).")
-        lines.append("Athlete: Brandon, 45, home gym. Goal: stronger, leaner, higher VO2 max.")
+        lines.append("Athlete: Brandon\(age.map { ", \($0)" } ?? ""), home gym. Goal: stronger, leaner, higher VO2 max.")
         lines.append("Program: \(program.program.name), \(program.days) days a week, week \(week.wk) of 12, \(program.program.phaseName(week.phase))\(week.isDeload ? " (back-off week)" : ""). \(program.doneCount) of \(program.order.count) sessions done this week.")
         var today = "Today's session (\(s.title)\(draft.startedAt != nil ? ", in progress" : "")):"
         for item in s.items {
@@ -79,6 +79,9 @@ extension AppStore {
         let optionText = options.isEmpty ? "" : " Same-muscle options: " + options.map(\.name).joined(separator: ", ") + "."
         guard let ex = CoachActions.exercise(replacement, catalog: catalog, gear: gear, excluding: used) else {
             return "Couldn't find \(replacement) among exercises the gear allows." + optionText
+        }
+        if entry(item.key).hasCompletedWork {
+            return "Not swapped: \(item.name) already has sets logged today. Skip it or add \(ex.name) instead."
         }
         if let original, !CoachActions.sameMuscles(original, ex) {
             return "Not swapped: \(ex.name) trains different muscles than \(item.name)." + optionText
