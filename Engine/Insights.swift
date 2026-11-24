@@ -83,8 +83,13 @@ public enum Insights {
         }
 
         // Time of day.
-        let morning = sessions.filter { calendar.component(.hour, from: $0.date) < 12 }.map(\.score)
-        let evening = sessions.filter { calendar.component(.hour, from: $0.date) >= 17 }.map(\.score)
+        // Imported sessions only have a day (stamped at midnight): no time of day to judge by.
+        let timed = sessions.filter { s in
+            let c = calendar.dateComponents([.hour, .minute, .second], from: s.date)
+            return !(c.hour == 0 && c.minute == 0 && c.second == 0)
+        }
+        let morning = timed.filter { calendar.component(.hour, from: $0.date) < 12 }.map(\.score)
+        let evening = timed.filter { calendar.component(.hour, from: $0.date) >= 17 }.map(\.score)
         if morning.count >= minGroup, evening.count >= minGroup, let m = avg(morning), let e = avg(evening), abs(m / e - 1) >= minGap {
             let better = m > e ? "morning" : "evening"
             out.append(Insight(id: "time", headline: "You're stronger in the \(better)",
@@ -95,8 +100,8 @@ public enum Insights {
         let next: (Session) -> Int? = { s in
             calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: s.date)).flatMap { dayFor[$0]?.recovery }
         }
-        let late = sessions.filter { calendar.component(.hour, from: $0.date) >= 19 }.compactMap(next).map(Double.init)
-        let early = sessions.filter { calendar.component(.hour, from: $0.date) < 19 }.compactMap(next).map(Double.init)
+        let late = timed.filter { calendar.component(.hour, from: $0.date) >= 19 }.compactMap(next).map(Double.init)
+        let early = timed.filter { calendar.component(.hour, from: $0.date) < 19 }.compactMap(next).map(Double.init)
         if late.count >= minGroup, early.count >= minGroup, let lt = avg(late), let er = avg(early), er - lt >= 5 {
             out.append(Insight(id: "late", headline: "Late workouts cost you \(Int((er - lt).rounded())) recovery points",
                                detail: "Finishing after 7 pm, your next-morning WHOOP recovery averages \(Int(lt.rounded()))% vs \(Int(er.rounded()))% after earlier sessions."))

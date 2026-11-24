@@ -55,7 +55,8 @@ public struct GearProfile: Codable, Equatable, Sendable {
     public func dumbbell(_ w: Double) -> Double { Self.nearest(w, in: dumbbells) ?? (w / 5).rounded() * 5 }
     public var dumbbellMax: Double { dumbbells.last ?? 0 }
 
-    public func bell(_ w: Double) -> Double { Self.nearest(w, in: kettlebells) ?? (w / 5).rounded() * 5 }
+    /// Halfway between two bells goes to the lighter one (spec: 43 and up = 50, so 42.5 is 35).
+    public func bell(_ w: Double) -> Double { Self.nearest(w, in: kettlebells, tiesLighter: true) ?? (w / 5).rounded() * 5 }
     public var heaviestBell: Double { kettlebells.last ?? 0 }
 
     /// The kettlebell button: next bell up, wrapping to the lightest.
@@ -68,8 +69,8 @@ public struct GearProfile: Codable, Equatable, Sendable {
     public func heavierBell(than w: Double) -> Double? { kettlebells.first { $0 > bell(w) } }
     public func lighterBell(than w: Double) -> Double? { kettlebells.last { $0 < bell(w) } }
 
-    static func nearest(_ w: Double, in list: [Double]) -> Double? {
-        list.min { abs($0 - w) == abs($1 - w) ? $0 > $1 : abs($0 - w) < abs($1 - w) }
+    static func nearest(_ w: Double, in list: [Double], tiesLighter: Bool = false) -> Double? {
+        list.min { abs($0 - w) == abs($1 - w) ? (tiesLighter ? $0 < $1 : $0 > $1) : abs($0 - w) < abs($1 - w) }
     }
 
     // MARK: Which exercises you can do

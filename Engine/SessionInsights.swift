@@ -8,6 +8,8 @@ public enum Plates {
     /// Largest plates first: 235 -> [45, 45, 5]. Empty for the bar alone or less.
     /// Any remainder smaller than the smallest plate is dropped.
     public static func perSide(_ total: Double, plates: [Double] = standard) -> [Double] {
+        // A typo like 225225 would mean millions of plates: nothing sensible to draw.
+        guard total.isFinite, total <= 2000 else { return [] }
         var left = (total - bar) / 2
         guard left > 0 else { return [] }
         var out: [Double] = []

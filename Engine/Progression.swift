@@ -165,7 +165,8 @@ public enum Progression {
                 continue
             }
 
-            guard item.isLift, let id = item.exerciseID, let eq = item.equipment, let log = entry,
+            // A skipped lift keeps its done sets in the log, but doesn't move the weights.
+            guard item.isLift, let id = item.exerciseID, let eq = item.equipment, let log = entry, log.skipped == nil,
                   let reading = read(sets: log.sets, low: item.low, high: item.high, prescribedSets: item.sets)
             else { continue }
 
@@ -219,7 +220,7 @@ public enum Progression {
             changes.append(LiftChange(exerciseID: id, name: item.name, from: from, to: to, direction: direction, note: note))
         }
 
-        return ProgressResult(lifts: lifts, changes: changes, cardioMinutes: Int(cardio.rounded()), runMinutes: nextRun)
+        return ProgressResult(lifts: lifts, changes: changes, cardioMinutes: cardio.isFinite ? Int(min(cardio, 10_000).rounded()) : 0, runMinutes: nextRun)
     }
 
     static func barbellOrDumbbell(_ rec: inout LiftRecord, item: SessionItem, eq: Equipment, used: Double,
@@ -229,7 +230,7 @@ public enum Progression {
         if reading.hitAll {
             rec.fails = 0
             rec.holds = 0
-            if eq == .db && used >= gear.dumbbellMax {
+            if eq == .db && !gear.dumbbells.isEmpty && used >= gear.dumbbellMax {
                 rec.workingWeight = gear.dumbbellMax
                 return maxDumbbellNote
             }
@@ -330,7 +331,8 @@ public enum PlateauBreaker {
 
     /// Makes the session's main lift heavy triples when its breaker is running (not on back-off weeks).
     public static func apply(_ session: inout Session, breakers: [String: Int]) {
-        guard !session.week.isDeload else { return }
+        // Not on back-off weeks or light days (Beat up, coming back): those stay light.
+        guard !session.week.isDeload, !session.isLightDay else { return }
         for bi in session.blocks.indices {
             for ii in session.blocks[bi].items.indices {
                 let item = session.blocks[bi].items[ii]
@@ -344,5 +346,26 @@ public enum PlateauBreaker {
                 session.blocks[bi].items[ii] = new
             }
         }
+    }
+}
+
+// Tolerant reading (see Draft.swift): one unreadable field never loses the logged sets.
+extension LoggedItem {
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(sets: c.lenient([LoggedSet].self, .sets) ?? [], rounds: c.lenient(Int.self, .rounds),
+                  ticked: c.lenient(Bool.self, .ticked) ?? false, rir: c.lenient(Int.self, .rir),
+                  runRating: c.lenient(RunRating.self, .runRating), miles: c.lenient(Double.self, .miles),
+                  removedSets: c.lenient(Int.self, .removedSets), skipped: c.lenient(String.self, .skipped))
+        heart = c.lenient(SessionHeart.self, .heart)
+        exerciseID = c.lenient(String.self, .exerciseID)
+    }
+}
+
+extension LoggedSet {
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(weight: c.lenient(Double.self, .weight), reps: c.lenient(Int.self, .reps),
+                  ticked: c.lenient(Bool.self, .ticked) ?? false, plannedReps: c.lenient(Int.self, .plannedReps))
     }
 }

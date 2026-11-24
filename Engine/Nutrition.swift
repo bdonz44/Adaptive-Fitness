@@ -36,7 +36,7 @@ public enum Nutrition {
             .sorted { $0.date < $1.date }
         let latest = weighIns.filter { $0.date <= now }.max { $0.date < $1.date }?.pounds
         let goal = settings.goalWeight
-        let protein = (goal ?? latest).map { Int($0.rounded()) }
+        let protein = (goal ?? latest).flatMap { $0.isFinite && $0 > 0 && $0 < 2000 ? Int($0.rounded()) : nil }
         func make(_ change: Int, _ rate: Double?, _ call: Call, _ headline: String, _ detail: String) -> Advice {
             Advice(proteinGrams: protein, calorieChange: change,
                    calorieTarget: settings.currentCalories.map { $0 + change }, ratePerWeek: rate,

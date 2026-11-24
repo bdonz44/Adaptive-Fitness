@@ -76,12 +76,16 @@ public struct SessionDraft: Codable, Equatable, Sendable {
 
     public var hasWork: Bool { entries.values.contains { $0.hasCompletedWork } }
 
-    /// Changing readiness clears any items with no completed sets so weights recalculate.
+    /// Changing readiness clears untouched items so their suggested weights recalculate.
+    /// Anything done or typed by hand stays.
     public mutating func setReadiness(_ newValue: Readiness) {
         guard newValue != readiness else { return }
         readiness = newValue
-        entries = entries.filter { $0.value.hasCompletedWork }
+        entries = entries.filter { $0.value.hasCompletedWork || $0.value.hasTypedInput }
     }
+
+    /// Anything at all typed or ticked today (stricter than `hasWork`, which needs a finished set).
+    public var hasAnyInput: Bool { entries.values.contains { $0.hasCompletedWork || $0.hasTypedInput } }
 
     /// Adds an exercise to the end of today's session (once).
     public mutating func addExtra(_ exerciseID: String) {
@@ -104,10 +108,12 @@ public struct SessionDraft: Codable, Equatable, Sendable {
     public mutating func swap(_ key: String, in session: Session, catalog: Catalog = .bundled,
                               gear: GearProfile = .standard) -> Bool {
         guard let item = session.item(key) else { return false }
-        let w = ProgramWeek(week)
+        // The session's own week: the week within the running program, as the builder counts it.
+        let w = session.week
         switch item.kind {
         case .accessory:
             guard let next = SessionBuilder.swapOption(for: key, in: session, catalog: catalog, gear: gear) else { return false }
+            pinAccessories(of: session)
             swaps[key] = next
         case .engine:
             condSwap = (condSwap ?? (w.wk - 1 + w.cycle - 1)) + 1
@@ -118,6 +124,14 @@ public struct SessionDraft: Codable, Equatable, Sendable {
         }
         entries[key] = nil
         return true
+    }
+
+    /// Freezes every planned accessory as it is now. Picks skip exercises used earlier in the
+    /// session, so changing one would otherwise reshuffle later ones under their logged sets.
+    public mutating func pinAccessories(of session: Session) {
+        for item in session.items where item.kind == .accessory && !item.isExtra && swaps[item.key] == nil {
+            if let id = item.exerciseID { swaps[item.key] = id }
+        }
     }
 
     /// Sets one set's weight. The kettlebell button also applies it to later unfinished sets.
@@ -184,10 +198,13 @@ public struct SessionDraft: Codable, Equatable, Sendable {
         entries[key]?.removedSets = nil
     }
 
-    /// Skips the whole exercise today (clears anything logged) or, with nil, brings it back.
+    /// Skips the rest of the exercise today or, with nil, brings it back.
+    /// Sets already done are kept (and come back with it); blank ones are dropped.
     public mutating func skip(key: String, reason: String?) {
         if let reason {
-            entries[key] = LoggedItem(skipped: reason)
+            var e = LoggedItem(skipped: reason)
+            e.sets = entries[key]?.sets.filter(\.isDone) ?? []
+            entries[key] = e
         } else {
             entries[key]?.skipped = nil
         }
@@ -234,9 +251,60 @@ extension LoggedItem {
         return max(1, planned - (removedSets ?? 0))
     }
 
-    public var hasCompletedWork: Bool { ticked || rounds != nil || sets.contains { $0.isDone } }
+    /// Zero rounds (a timer stopped before anything happened) is not work.
+    public var hasCompletedWork: Bool { ticked || (rounds ?? 0) > 0 || sets.contains { $0.isDone } }
+
+    /// A weight or reps typed in, even on a set not yet ticked.
+    public var hasTypedInput: Bool { sets.contains { $0.weight != nil || $0.reps != nil } || rounds != nil || miles != nil }
 
     public mutating func ensureSets(_ count: Int) {
         while sets.count < count { sets.append(LoggedSet()) }
+    }
+}
+
+// MARK: - Tolerant reading
+// A saved workout must never be lost because one field can't be read (written by a newer
+// build on another device, or a value renamed later). Only the slot and week are required.
+
+/// A string-keyed container: decodes a dictionary entry by entry, dropping only unreadable ones.
+struct AnyKey: CodingKey {
+    var stringValue: String
+    var intValue: Int? { nil }
+    init(stringValue: String) { self.stringValue = stringValue }
+    init?(intValue: Int) { nil }
+}
+
+extension KeyedDecodingContainer {
+    /// The value, or nil when it's missing or can't be read.
+    func lenient<T: Decodable>(_ type: T.Type, _ key: Key) -> T? {
+        (try? decodeIfPresent(type, forKey: key)) ?? nil
+    }
+
+    /// A dictionary that keeps every readable entry.
+    func lenientMap<T: Decodable>(_ type: T.Type, _ key: Key) -> [String: T]? {
+        guard let inner = try? nestedContainer(keyedBy: AnyKey.self, forKey: key) else { return nil }
+        var out: [String: T] = [:]
+        for k in inner.allKeys { if let v = try? inner.decode(T.self, forKey: k) { out[k.stringValue] = v } }
+        return out
+    }
+}
+
+extension SessionDraft {
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(slot: try c.decode(Slot.self, forKey: .slot), week: try c.decode(Int.self, forKey: .week),
+                  readiness: c.lenient(Readiness.self, .readiness) ?? .normal)
+        swaps = c.lenientMap(String.self, .swaps) ?? [:]
+        condSwap = c.lenient(Int.self, .condSwap)
+        finSwap = c.lenient(Int.self, .finSwap)
+        entries = c.lenientMap(LoggedItem.self, .entries) ?? [:]
+        warmTicks = c.lenient([Int].self, .warmTicks) ?? []
+        timeBudget = c.lenient(Int.self, .timeBudget)
+        startedAt = c.lenient(Date.self, .startedAt)
+        warmWeights = c.lenientMap(Double.self, .warmWeights)
+        extras = c.lenient([String].self, .extras)
+        lastDone = c.lenient(String.self, .lastDone)
+        program = c.lenient(ProgramID.self, .program)
+        days = c.lenient(Int.self, .days)
     }
 }

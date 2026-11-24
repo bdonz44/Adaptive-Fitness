@@ -19,6 +19,10 @@ public enum Ghost {
 
     /// Today's set against last time's: more weight or more reps (by estimated max) beats it.
     public static func verdict(weight: Double?, reps: Int, against last: (weight: Double?, reps: Int)) -> Verdict {
+        // Same weight (or both bodyweight): reps decide. The estimate caps reps at 12, so 15 would tie 13.
+        if (weight ?? 0) == (last.weight ?? 0) {
+            return reps > last.reps ? .beat : reps == last.reps ? .matched : .short
+        }
         let now = weight.map { Suggestions.e1RM(weight: $0, reps: reps) } ?? Double(reps)
         let then = last.weight.map { Suggestions.e1RM(weight: $0, reps: last.reps) } ?? Double(last.reps)
         if now > then + 0.01 { return .beat }

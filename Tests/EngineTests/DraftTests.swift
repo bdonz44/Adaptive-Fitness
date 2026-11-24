@@ -17,15 +17,18 @@ import Testing
         #expect(!d.isCurrent(for: ProgramState(week: 3)))
     }
 
-    @Test func changingReadinessClearsItemsWithNoCompletedSets() {
+    @Test func changingReadinessClearsOnlyUntouchedItems() {
         var d = SessionDraft(slot: .A, week: 1)
         d.entries["main"] = LoggedItem(sets: [LoggedSet(weight: 185, reps: 5, ticked: true), LoggedSet(weight: 185)])
         d.entries["p0c0"] = LoggedItem(sets: [LoggedSet(weight: 95), LoggedSet(weight: 95)])
+        d.entries["p0c1"] = LoggedItem(sets: [LoggedSet(plannedReps: 10), LoggedSet()])
         d.entries["finisher"] = LoggedItem(rounds: 6)
         d.setReadiness(.beat)
         #expect(d.readiness == .beat)
         #expect(d.entries["main"] != nil)
-        #expect(d.entries["p0c0"] == nil)
+        // Weights typed by hand (e.g. before a WHOOP sync changes readiness) are kept.
+        #expect(d.entries["p0c0"]?.sets.first?.weight == 95)
+        #expect(d.entries["p0c1"] == nil)
         #expect(d.entries["finisher"] != nil)
     }
 

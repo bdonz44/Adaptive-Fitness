@@ -23,7 +23,7 @@ public enum HomeInsights {
 
     /// For today's main lift: the planned weight × top reps, when that beats your best estimated max.
     public static func prChase(item: SessionItem, weight: Double?, record: LiftRecord?) -> String? {
-        guard item.isLift, item.unit == .reps, let w = weight, w > 0, let best = Suggestions.best1RM(record) else { return nil }
+        guard item.isLift, item.unit == .reps, let w = weight, w > 0, let best = Suggestions.allTimeBest1RM(record) else { return nil }
         let target = Suggestions.e1RM(weight: w, reps: item.high)
         guard target > best + 0.5 else { return nil }
         return "\(item.name) \(Fmt.lb(w)) × \(item.high) would be a new best."

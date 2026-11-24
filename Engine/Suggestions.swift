@@ -112,6 +112,14 @@ public enum Suggestions {
         }.max()
     }
 
+    /// Highest e1RM in the whole history (for "new best" checks; `best1RM` only looks at recent form).
+    public static func allTimeBest1RM(_ record: LiftRecord?) -> Double? {
+        record?.history.compactMap { e -> Double? in
+            guard let w = e.weight, w > 0, let r = e.reps, r > 0 else { return nil }
+            return e1RM(weight: w, reps: r)
+        }.max()
+    }
+
     /// Weight for a rep target, leaving `reserve` reps in the tank (2 by default).
     public static func weight(forReps reps: Int, e1RM: Double, reserve: Int = 2) -> Double {
         e1RM / (1 + Double(reps + reserve) / 30)

@@ -67,10 +67,11 @@ public enum Importer {
         var lifts: [String: LiftRecord] = [:]
         for (id, web) in s.lifts ?? [:] {
             let bodyweight = catalog.exercise(id)?.eq == .bw
-            let history = (web.hist ?? []).compactMap { h -> HistoryEntry? in
-                guard let date = day.date(h.d) else { return nil }
-                return HistoryEntry(date: date, weight: positive(h.w?.value), reps: h.r.map(Int.init), targetHi: h.hi.map(Int.init))
-            }.sorted { $0.date < $1.date }.suffix(12)
+            let allHistory = (web.hist?.items ?? []).compactMap { h -> HistoryEntry? in
+                guard let date = h.d.flatMap(day.date) else { return nil }
+                return HistoryEntry(date: date, weight: positive(h.w?.value), reps: reps(h.r?.value), targetHi: reps(h.hi?.value))
+            }.sorted { $0.date < $1.date }
+            let history = allHistory.suffix(Progression.historyLimit)
             let note = web.note?.trimmingCharacters(in: .whitespaces)
             lifts[id] = LiftRecord(
                 exerciseID: id,
@@ -79,35 +80,35 @@ public enum Importer {
                 holds: web.holds ?? 0,
                 note: (note?.isEmpty ?? true) ? nil : note,
                 history: Array(history),
-                firstWeight: bodyweight ? nil : history.lazy.compactMap(\.weight).first)
+                firstWeight: bodyweight ? nil : allHistory.lazy.compactMap(\.weight).first)
         }
 
-        let weighIns = (s.weighIns ?? []).compactMap { w -> WeighIn? in
-            guard let date = day.date(w.d), w.lb > 0 else { return nil }
-            return WeighIn(date: date, pounds: w.lb)
+        let weighIns = (s.weighIns?.items ?? []).compactMap { w -> WeighIn? in
+            guard let date = w.d.flatMap(day.date), let lb = positive(w.lb?.value) else { return nil }
+            return WeighIn(date: date, pounds: lb)
         }.sorted { $0.date < $1.date }.suffix(Coach.weighInLimit)
 
-        let waist = (s.waist ?? []).compactMap { w -> WaistEntry? in
-            guard let date = day.date(w.d), w.inches > 0 else { return nil }
-            return WaistEntry(date: date, inches: w.inches)
+        let waist = (s.waist?.items ?? []).compactMap { w -> WaistEntry? in
+            guard let date = w.d.flatMap(day.date), let inches = positive(w.inches?.value) else { return nil }
+            return WaistEntry(date: date, inches: inches)
         }.sorted { $0.date < $1.date }.suffix(Coach.waistLimit)
 
         var cardio: [Int: Int] = [:]
         for (week, minutes) in s.cardio ?? [:] {
-            if let w = Int(week), minutes > 0 { cardio[w] = Int(minutes.rounded()) }
+            if let w = Int(week), w > 0, let m = count(minutes.value), m > 0 { cardio[w] = m }
         }
 
-        let logs = (file.sessions ?? []).compactMap { session -> ImportedLog? in
+        let logs = (file.sessions?.items ?? []).compactMap { session -> ImportedLog? in
             guard let slot = Slot(rawValue: session.slot ?? "") else { return nil }
-            let date = session.ts.map { Date(timeIntervalSince1970: $0 / 1000) }
+            let date = session.ts.flatMap { $0.isFinite ? Date(timeIntervalSince1970: $0 / 1000) : nil }
                 ?? session.date.flatMap(day.date).map { $0.addingTimeInterval(12 * 3600) }
             guard let date else { return nil }
-            let week = session.week ?? 1
+            let week = max(1, session.week ?? 1)
             let phase = Phase.allCases.first { $0.name == session.phase }?.rawValue ?? ProgramWeek(week).phase.rawValue
             return ImportedLog(date: date, week: week, phase: phase, slot: slot,
                                title: session.title ?? Program.plan(slot).name,
                                readiness: Readiness(rawValue: session.readiness ?? "")?.rawValue ?? Readiness.normal.rawValue,
-                               entries: entries(session.entries ?? [], isRun: slot == .R))
+                               entries: entries(session.entries?.items ?? [], isRun: slot == .R))
         }.sorted { $0.date < $1.date }
 
         return Result(program: program, lifts: lifts, weighIns: Array(weighIns), waist: Array(waist),
@@ -135,9 +136,9 @@ public enum Importer {
             }
             var item = LoggedItem()
             if let sets = e.sets {
-                item.sets = sets.map { LoggedSet(weight: positive($0.w?.value), reps: $0.r.map(Int.init), ticked: true) }
+                item.sets = sets.items.map { LoggedSet(weight: positive($0.w?.value), reps: reps($0.r?.value), ticked: true) }
             } else {
-                item.rounds = e.rounds.map(Int.init)
+                item.rounds = count(e.rounds?.value)
                 item.ticked = true
                 if isRun {
                     item.miles = positive(e.w?.value)
@@ -151,9 +152,21 @@ public enum Importer {
         return out
     }
 
+    /// A real weight, distance or measurement: finite, above zero and below anything a person could lift.
     private static func positive(_ v: Double?) -> Double? {
-        guard let v, v > 0 else { return nil }
+        guard let v, v.isFinite, v > 0, v < 5000 else { return nil }
         return v
+    }
+
+    /// A whole number that fits (no crash on 1e20, inf or nan); nil when it doesn't.
+    static func count(_ v: Double?) -> Int? {
+        guard let v, v.isFinite, abs(v) < 1_000_000 else { return nil }
+        return Int(v.rounded())
+    }
+
+    /// Reps: a count above zero.
+    private static func reps(_ v: Double?) -> Int? {
+        count(v).flatMap { $0 > 0 ? $0 : nil }
     }
 
     private static func describe(_ error: DecodingError) -> String {
@@ -193,10 +206,24 @@ public enum Importer {
         }
     }
 
+    /// An array where an element that can't be read is skipped instead of failing the whole file.
+    struct Lossy<Element: Decodable>: Decodable {
+        let items: [Element]
+        private struct Skip: Decodable {}
+        init(from decoder: Decoder) throws {
+            var c = try decoder.unkeyedContainer()
+            var out: [Element] = []
+            while !c.isAtEnd {
+                if let e = try? c.decode(Element.self) { out.append(e) } else { _ = try? c.decode(Skip.self) }
+            }
+            items = out
+        }
+    }
+
     struct ExportFile: Decodable {
         let app: String?
         let state: ExportState
-        let sessions: [ExportSession]?
+        let sessions: Lossy<ExportSession>?
     }
 
     struct ExportState: Decodable {
@@ -205,18 +232,18 @@ public enum Importer {
             let fails: Int?
             let holds: Int?
             let note: String?
-            let hist: [Hist]?
+            let hist: Lossy<Hist>?
         }
         struct Hist: Decodable {
-            let d: String
+            let d: String?
             let w: Flex?
-            let r: Double?
-            let hi: Double?
+            let r: Flex?
+            let hi: Flex?
         }
-        struct Weigh: Decodable { let d: String; let lb: Double }
+        struct Weigh: Decodable { let d: String?; let lb: Flex? }
         struct Waist: Decodable {
-            let d: String
-            let inches: Double
+            let d: String?
+            let inches: Flex?
             enum CodingKeys: String, CodingKey { case d, inches = "in" }
         }
         struct Run: Decodable { let min: Int? }
@@ -226,9 +253,9 @@ public enum Importer {
         let started: String?
         let run: Run?
         let lifts: [String: Lift]?
-        let weighIns: [Weigh]?
-        let waist: [Waist]?
-        let cardio: [String: Double]?
+        let weighIns: Lossy<Weigh>?
+        let waist: Lossy<Waist>?
+        let cardio: [String: Flex]?
     }
 
     struct ExportSession: Decodable {
@@ -239,15 +266,15 @@ public enum Importer {
         let slot: String?
         let title: String?
         let readiness: String?
-        let entries: [ExportEntry]?
+        let entries: Lossy<ExportEntry>?
     }
 
     struct ExportEntry: Decodable {
-        struct Set: Decodable { let w: Flex?; let r: Double? }
+        struct Set: Decodable { let w: Flex?; let r: Flex? }
         let id: String?
         let name: String?
-        let sets: [Set]?
-        let rounds: Double?
+        let sets: Lossy<Set>?
+        let rounds: Flex?
         let rpe: String?
         let w: Flex?
     }

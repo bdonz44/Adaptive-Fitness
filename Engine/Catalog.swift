@@ -151,6 +151,7 @@ public struct Catalog: Sendable {
 enum Fmt {
     /// 135 -> "135", 2.5 -> "2.5"
     static func lb(_ w: Double) -> String {
+        guard w.isFinite, abs(w) < 1e9 else { return "–" }
         if w == w.rounded() { return String(Int(w)) }
         return String(format: "%.1f", w)
     }

@@ -107,7 +107,10 @@ import Testing
         var d = SessionDraft(slot: .A, week: 1)
         d.entries[main.key] = LoggedItem(sets: sets(200, [5]))
         d.skip(key: main.key, reason: "Pain")
-        #expect(d.entries[main.key]!.sets.isEmpty)
+        // The set already done is kept (and comes back with "Bring it back"), but doesn't progress.
+        #expect(d.entries[main.key]!.sets.count == 1)
+        #expect(Progression.progress(session: s, entries: d.entries, lifts: [:], date: t0, runMinutes: 25)
+            .lifts[main.exerciseID!] == nil)
         #expect(SessionInsights.nextOpenSet(session: s, entries: d.entries)?.key != main.key)
         let lifts = Progression.applySkips(session: s, entries: d.entries, lifts: [:])
         #expect(lifts[main.exerciseID!]?.lastSkip == "Pain")

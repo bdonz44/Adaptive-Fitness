@@ -250,8 +250,15 @@ extension Program {
     public static func jump(toWeekInCycle n: Int, state: ProgramState) -> ProgramState {
         var s = state
         let target = min(12, max(1, n))
-        s.week = s.startWeek - 1 + (state.programWeek.cycle - 1) * 12 + target
+        let programWeek = (state.programWeek.cycle - 1) * 12 + target
+        s.week = s.startWeek - 1 + programWeek
         s.doneSlots = []
+        // After any program switch, earlier absolute weeks may hold another program's logs.
+        // Going back then moves to a fresh week counted as the target, like a switch does.
+        if !state.resumeWeeks.isEmpty, s.week < state.week {
+            s.week = state.week + 1
+            s.startWeek = s.week - (programWeek - 1)
+        }
         return s
     }
 
