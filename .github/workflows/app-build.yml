@@ -2,8 +2,10 @@
 # errors show up without needing the Mac.
 name: App build
 
+# Manual only (Actions tab -> Run workflow). Automatic runs were turned off on Nov 24:
+# GitHub's free Mac minutes run out after a few pushes a month. Builds now come from
+# Xcode Cloud (free with the Apple Developer membership) or scripts/upload-testflight.sh.
 on:
-  push:
   workflow_dispatch:
 
 jobs:

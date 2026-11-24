@@ -12,7 +12,7 @@ A 12-week home-gym program app for iPhone. It picks each session, suggests every
 | 4 | Import web app data, iCloud sync | **Built** (two-device sync test still to do) |
 | 5 | Live Activity rest timer, notifications, HealthKit | **Built** (check on the phone still to do) |
 | 6 | Adaptive layer (RIR, time-boxed sessions, re-entry, readiness, back-off timing, weekly review, nutrition, equipment) | |
-| 7 | TestFlight | Upload works: every push to `main` sends a build (`.github/workflows/testflight.yml`) |
+| 7 | TestFlight | Xcode Cloud on every change to `main`, or `scripts/upload-testflight.sh` from the Mac ([how](docs/BUILD_AND_RELEASE.md)) |
 
 ## Layout
 
@@ -73,7 +73,11 @@ On the Mac, in this folder:
 swift test
 ```
 
-Or open `Package.swift` in Xcode and press Cmd-U. GitHub also runs them on every push (`.github/workflows/engine-tests.yml`).
+Or open `Package.swift` in Xcode and press Cmd-U. (GitHub no longer runs them automatically: its free Mac minutes ran out. Claude runs them in cloud sessions, and `scripts/upload-testflight.sh` runs them before every upload.)
+
+## Getting builds to TestFlight
+
+Xcode Cloud builds and uploads every change to `main` (free with the developer membership); `scripts/upload-testflight.sh` does the same from the Mac, keeping its files on the Crucial drive. Step by step: [`docs/BUILD_AND_RELEASE.md`](docs/BUILD_AND_RELEASE.md).
 
 ## Choices the spec left open
 
@@ -110,7 +114,7 @@ Or open `Package.swift` in Xcode and press Cmd-U. GitHub also runs them on every
 - **Hold timer** (plank, hollow hold, side plank): Start counts in 3 sec, counts the hold down (beeps and buzzes on the last 3 seconds), then logs the seconds, ticks the set and starts the rest. Each-side moves add a 5 sec switch and the second side. Stop logs what was held. The screen stays awake while it runs. The target is the seconds typed in the set (or carried from the last set), else the top of the range.
 - **Round timer** (heavy bag, intervals, EMOM, sprints): on every conditioning and finisher card. Work and rest seconds come from `work`/`rest` in engine.json and finishers.json (else the whole round is work); rounds, round length and rest can be changed before starting, and work/rest are remembered per workout name. 10 sec get ready, a bell to start and end each round, a clack at 10 sec left, pause, skip rest, end round. Finishing or stopping logs the rounds (minutes for EMOM) and ticks the item. Backup notifications ring the bell if the app is closed or the phone is locked. Bell sounds are generated (App/Sounds).
 - **WHOOP** (Plan > WHOOP): OAuth sign-in once (redirect `hybrid12://whoop`); on launch and on every return to the app (at most every 20 min) it fetches the newest recovery, sleep and cycle from WHOOP API v2. Recovery 67+ sets readiness to Great, 34-66 Normal, under 34 Beat up, unless readiness was picked by hand that day or the session has started. Tokens are in the Keychain. The client ID and secret come from `Config/Secrets.xcconfig` (not committed; made from `~/Downloads/whoop.txt`). Without that file the app builds with WHOOP off. Fine for a personal app; an App Store version would need a server to hold the secret.
-- **Exercise menu (…):** All sets done (ticks every set; blank weights take the suggestion, blank reps count as the top of the range), Remove a set (takes the last unfinished set off today's list, never below one; Put removed sets back), Skip exercise with a reason (Pain, No time, No equipment, Other; clears what was logged). A skipped lift is remembered on its record (`lastSkip`) and flagged next time until it's logged again. Removed or skipped sets don't count, so the weight holds.
+- **Exercise menu (…):** All sets done (ticks every set; blank weights take the suggestion, blank reps count as the top of the range), Remove a set (takes the last unfinished set off today's list, never below one; Put removed sets back), Skip exercise with a reason (Pain, No time, No equipment, Other; sets already done are kept, and come back with "Bring it back", but a skipped lift doesn't change its weight). A skipped lift is remembered on its record (`lastSkip`) and flagged next time until it's logged again. Removed or skipped sets don't count, so the weight holds.
 - **Finish check:** if any planned sets on exercises that weren't skipped are unticked, Finish asks to log them as done at the planned weight and reps, or only what was ticked.
 
 ## Programs
