@@ -102,9 +102,11 @@ struct NumberField: View {
     let onChange: (Double?) -> Void
 
     @State private var text = ""
+    @FocusState private var focused: Bool
 
     var body: some View {
         TextField(placeholder, text: $text)
+            .focused($focused)
             .keyboardType(decimal ? .decimalPad : .numberPad)
             .multilineTextAlignment(.center)
             .monospacedDigit()
@@ -113,7 +115,13 @@ struct NumberField: View {
             .background(Theme.field, in: RoundedRectangle(cornerRadius: max(Theme.look.radius / 2, 2)))
             .onAppear { text = Self.format(value) }
             .onChange(of: value) { _, newValue in
+                // Not while typing: clearing a box whose value falls back to a suggestion
+                // would refill it mid-edit ("95" + "100" -> "95100").
+                guard !focused else { return }
                 if Self.parse(text) != newValue { text = Self.format(newValue) }
+            }
+            .onChange(of: focused) { _, isFocused in
+                if !isFocused, Self.parse(text) != value { text = Self.format(value) }
             }
             .onChange(of: text) { _, newText in
                 let trimmed = newText.trimmingCharacters(in: .whitespaces)
@@ -126,9 +134,7 @@ struct NumberField: View {
             }
     }
 
-    private static func parse(_ text: String) -> Double? {
-        Double(text.replacingOccurrences(of: ",", with: "."))
-    }
+    private static func parse(_ text: String) -> Double? { typedNumber(text) }
 
     private static func format(_ value: Double?) -> String {
         value.map { lb($0) } ?? ""

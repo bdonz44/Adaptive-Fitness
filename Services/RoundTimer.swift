@@ -89,7 +89,8 @@ final class RoundTimer {
         guard let i = position(at: now).phase, i + 1 < starts.count else { return }
         banked = TimeInterval(starts[i + 1])
         resumedAt = now
-        scheduleBackups()
+        // While paused nothing is scheduled; resume() schedules from the new position.
+        if !isPaused { scheduleBackups() }
     }
 
     func stop() {
@@ -134,10 +135,12 @@ final class RoundTimer {
                                  sound: phase.kind == .work ? "bell-start.wav" : "bell-end.wav"))
         }
         let end = TimeInterval(settings.totalSeconds) - now
-        if end > 1 { requests.append(note(999, at: end, title: "Done", body: "\(name) finished. Log it.", sound: "bell-end.wav")) }
+        // The "Done" note goes first so a long plan never pushes it past iOS's 64-alert limit
+        // (shared with the rest timer, nudges and the weekly review).
+        if end > 1 { requests.insert(note(999, at: end, title: "Done", body: "\(name) finished. Log it.", sound: "bell-end.wav"), at: 0) }
         center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
             guard granted else { return }
-            for r in requests.prefix(60) { center.add(r) }
+            for r in requests.prefix(55) { center.add(r) }
         }
     }
 
@@ -150,8 +153,11 @@ final class RoundTimer {
                                      trigger: UNTimeIntervalNotificationTrigger(timeInterval: at, repeats: false))
     }
 
-    private func cancelBackups() {
-        let ids = (0...1000).map { Self.notePrefix + "\($0)" }
+    private func cancelBackups() { Self.cancelLeftovers() }
+
+    /// The timer lives only in memory: after the app was closed or crashed, its bells must stop too.
+    static func cancelLeftovers() {
+        let ids = (0...1000).map { notePrefix + "\($0)" }
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
     }
 }

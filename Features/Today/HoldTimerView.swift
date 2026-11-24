@@ -116,9 +116,10 @@ struct HoldTimerView: View {
 
 /// Starts the hold timer for a timed set.
 enum HoldStart {
-    static func start(_ item: SessionItem, set index: Int, store: AppStore, hold: HoldTimer) {
+    /// `seconds`: a target picked on screen (Focus). Nothing is logged until the hold finishes.
+    static func start(_ item: SessionItem, set index: Int, store: AppStore, hold: HoldTimer, seconds: Int? = nil) {
         let set = store.entry(item.key).sets[safe: index]
-        hold.start(.init(key: item.key, set: index, seconds: set?.reps ?? set?.plannedReps ?? item.high, name: item.name),
+        hold.start(.init(key: item.key, set: index, seconds: seconds ?? set?.reps ?? set?.plannedReps ?? item.high, name: item.name),
                    eachSide: item.side)
     }
 }

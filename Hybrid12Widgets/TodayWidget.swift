@@ -9,12 +9,21 @@ struct TodayEntry: TimelineEntry {
 struct TodayProvider: TimelineProvider {
     func placeholder(in context: Context) -> TodayEntry { TodayEntry(date: Date(), snap: .placeholder) }
     func getSnapshot(in context: Context, completion: @escaping (TodayEntry) -> Void) {
-        completion(TodayEntry(date: Date(), snap: WidgetSnapshot.read() ?? .placeholder))
+        // The widget gallery shows the sample; on the Home Screen only real data (or "Open Hybrid 12").
+        let snap = WidgetSnapshot.read()?.asOf(Date()) ?? (context.isPreview ? .placeholder : .empty)
+        completion(TodayEntry(date: Date(), snap: snap))
     }
     func getTimeline(in context: Context, completion: @escaping (Timeline<TodayEntry>) -> Void) {
-        let entry = TodayEntry(date: Date(), snap: WidgetSnapshot.read() ?? .placeholder)
+        let now = Date()
+        let saved = WidgetSnapshot.read()
+        var entries = [TodayEntry(date: now, snap: saved?.asOf(now) ?? .empty)]
+        // At midnight "Done today" and today's protein reset, even if the app isn't opened.
+        if let saved, let midnight = Calendar.current.nextDate(after: now, matching: DateComponents(hour: 0, minute: 0),
+                                                               matchingPolicy: .nextTime) {
+            entries.append(TodayEntry(date: midnight, snap: saved.asOf(midnight)))
+        }
         // The app reloads it on every change; this is a fallback.
-        completion(Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(3600))))
+        completion(Timeline(entries: entries, policy: .after(now.addingTimeInterval(3600))))
     }
 }
 

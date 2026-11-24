@@ -18,10 +18,16 @@ final class RestAlerts {
             next: context.next, sessionTitle: context.sessionTitle,
             setsDone: context.setsDone, setsTotal: context.setsTotal)
         let content = ActivityContent(state: state, staleDate: end)
-        if let activity, activity.activityState == .active {
+        // A rest that ran past zero goes stale; it can still be updated, and must never be
+        // left behind on the Lock Screen while a second one is started.
+        if let activity, activity.activityState == .active || activity.activityState == .stale {
             Task { await activity.update(content) }
             return
         }
+        if let old = activity {
+            Task { await old.end(nil, dismissalPolicy: .immediate) }
+        }
+        activity = nil
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
         activity = try? Activity.request(attributes: RestTimerAttributes(), content: content, pushType: nil)
     }
@@ -44,7 +50,11 @@ final class RestAlerts {
 
     private func scheduleNotification(label: String, end: Date) {
         let seconds = end.timeIntervalSinceNow
-        guard seconds > 0.5 else { return }
+        guard seconds > 0.5 else {
+            // Moved to zero (−15 s): the alert for the old end time must not still go off.
+            center.removePendingNotificationRequests(withIdentifiers: [Self.notificationID])
+            return
+        }
         let content = UNMutableNotificationContent()
         content.title = "Go"
         let transition = "Transition to "

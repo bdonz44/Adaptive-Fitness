@@ -186,6 +186,7 @@ final class WhoopService {
     }
 
     /// Every record between two times, following WHOOP's pages (25 per page).
+    @MainActor
     private func pages(_ path: String, start: Date, end: Date) async throws -> [[String: Any]] {
         var all: [[String: Any]] = []
         var next: String? = nil
@@ -207,6 +208,11 @@ final class WhoopService {
 
     enum WhoopError: Error { case signedOut, http(Int) }
 
+    /// The refresh in progress. WHOOP replaces the refresh token on every refresh, so two at once
+    /// would make the second fail and sign you out: everyone waits for the same one.
+    @ObservationIgnored private var refreshing: Task<Void, Error>?
+
+    @MainActor
     private func get(_ path: String, retry: Bool = true) async throws -> [String: Any] {
         guard let access = Keychain.get("whoop.access") else {
             try await refresh()
@@ -220,15 +226,30 @@ final class WhoopService {
             try await refresh()
             return try await get(path, retry: false)
         }
-        guard code == 200 else { throw code == 401 ? WhoopError.signedOut : WhoopError.http(code) }
+        // Still 401 with a fresh token (e.g. a scope not granted): that request fails, the
+        // sign-in stays. Only a refused refresh signs you out.
+        guard code == 200 else { throw WhoopError.http(code) }
         return (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
     }
 
+    @MainActor
     private func refresh() async throws {
+        if let refreshing { return try await refreshing.value }
         guard let refresh = Keychain.get("whoop.refresh") else { throw WhoopError.signedOut }
-        try await token(["grant_type": "refresh_token", "refresh_token": refresh, "scope": "offline"])
+        let task = Task { @MainActor in
+            try await self.token(["grant_type": "refresh_token", "refresh_token": refresh, "scope": "offline"])
+        }
+        refreshing = task
+        defer { refreshing = nil }
+        do {
+            try await task.value
+        } catch WhoopError.signedOut where Keychain.get("whoop.refresh") != refresh {
+            // Another refresh already swapped the token in: still signed in.
+            return
+        }
     }
 
+    @MainActor
     private func token(_ fields: [String: String]) async throws {
         var req = URLRequest(url: URL(string: Self.base + "/oauth/oauth2/token")!)
         req.httpMethod = "POST"

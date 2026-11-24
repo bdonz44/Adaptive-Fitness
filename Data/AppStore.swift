@@ -367,9 +367,11 @@ final class AppStore {
             done: program.doneCount, total: program.order.count, streak: streak,
             proteinEaten: nutritionAdvice == nil ? nil : proteinToday, proteinTarget: nutritionAdvice?.proteinGrams,
             recovery: recovery ?? WidgetSnapshot.read()?.recovery, doneToday: loggedToday, updated: Date())
-        var old = WidgetSnapshot.read()
+        let saved = WidgetSnapshot.read()
+        var old = saved
         old?.updated = snap.updated
-        guard old != snap else { return }
+        // Rewrite at least once a day: the widget resets "done today" for snapshots from an earlier day.
+        guard old != snap || !Calendar.current.isDateInToday(saved?.updated ?? .distantPast) else { return }
         snap.write()
         WidgetCenter.shared.reloadAllTimelines()
     }
@@ -460,7 +462,7 @@ final class AppStore {
     var caloriesToday: Int { Nutrition.totals(food, on: Date()).calories }
 
     func logFood(protein: Int, calories: Int = 0, date: Date = Date()) {
-        guard protein > 0 || calories > 0 else { return }
+        guard protein > 0 || calories > 0, protein <= 1_000, calories <= 20_000 else { return }
         food.append(FoodEntry(date: date, protein: max(0, protein), calories: max(0, calories)))
         food.removeAll { $0.date < date.addingTimeInterval(-60 * 86400) }
         saveFood()
@@ -493,7 +495,7 @@ final class AppStore {
     var manualCardioThisWeek: [ManualCardio] { manualCardio.filter { $0.week == program.week }.sorted { $0.date > $1.date } }
 
     func logCardio(_ kind: ManualCardio.Kind, minutes: Int, date: Date = Date()) {
-        guard minutes > 0 else { return }
+        guard minutes > 0, minutes <= 24 * 60 else { return }
         let entry = ManualCardio(date: date, kind: kind, minutes: minutes, week: program.week)
         manualCardio.append(entry)
         saveManualCardio()
@@ -615,7 +617,8 @@ final class AppStore {
     func applyWhoop(_ t: WhoopToday?) {
         guard let t, WhoopReadiness.isCurrent(t, now: Date()), let r = WhoopReadiness.readiness(t) else { return }
         guard UserDefaults.standard.string(forKey: "readinessChosenDay") != Self.dayKey(Date()) else { return }
-        guard !draft.hasWork, draft.readiness != r else { return }
+        // Not once anything is typed or the workout has started.
+        guard !draft.hasAnyInput, draft.startedAt == nil, draft.readiness != r else { return }
         draft.setReadiness(r)
         saveDraft()
     }
@@ -753,6 +756,7 @@ final class AppStore {
 
     /// Swaps one item to a chosen exercise (the AI coach).
     func draftSwap(_ key: String, to exerciseID: String) {
+        draft.pinAccessories(of: session)
         draft.swaps[key] = exerciseID
         draft.entries[key] = nil
         saveDraft()

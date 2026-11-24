@@ -126,11 +126,11 @@ struct SummaryView: View {
                     HStack {
                         VStack(alignment: .leading) {
                             Text("This week").font(.subheadline).foregroundStyle(look.secondary)
-                            Text("\(summary.weekDone) of 5 sessions").font(.headline)
+                            Text("\(summary.weekDone) of \(store.program.order.count) sessions").font(.headline)
                         }
                         Spacer()
                         HStack(spacing: 6) {
-                            ForEach(0..<5, id: \.self) { i in
+                            ForEach(0..<store.program.order.count, id: \.self) { i in
                                 Circle().fill(i < summary.weekDone ? look.accent : look.field).frame(width: 14, height: 14)
                             }
                         }

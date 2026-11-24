@@ -5,6 +5,7 @@ struct ItemCard: View {
     @Environment(AppStore.self) private var store
     let item: SessionItem
     let session: Session
+    @State private var confirmSwap = false
 
     var body: some View {
         let suggestion = store.suggestion(for: item, in: session)
@@ -34,11 +35,15 @@ struct ItemCard: View {
                 Spacer()
                 if (item.kind == .accessory || item.kind == .engine || item.kind == .finisher) && skipped == nil && !item.isExtra && item.canSwap {
                     Button {
-                        store.swap(item)
+                        if store.entry(item.key).hasCompletedWork { confirmSwap = true } else { store.swap(item) }
                     } label: {
                         Label("Swap", systemImage: "arrow.triangle.2.circlepath").font(.caption)
                     }
                     .buttonStyle(.bordered)
+                    .confirmationDialog("Swap \(item.name)? What you've logged for it today is cleared.",
+                                        isPresented: $confirmSwap, titleVisibility: .visible) {
+                        Button("Swap and clear", role: .destructive) { store.swap(item) }
+                    }
                 }
                 if item.isLift { ExerciseMenu(item: item) }
             }
@@ -122,7 +127,16 @@ func unitWord(_ unit: ExerciseUnit) -> String {
 
 /// 135 -> "135", 27.5 -> "27.5"
 func lb(_ w: Double) -> String {
-    w == w.rounded() ? String(Int(w)) : String(format: "%.1f", w)
+    guard w.isFinite, abs(w) < 1e9 else { return "–" }
+    return w == w.rounded() ? String(Int(w)) : String(format: "%.1f", w)
+}
+
+/// A number typed or pasted into any box: finite, not negative, and below anything a person could
+/// lift, rep, run or weigh (stops "1e20" or "inf" from being saved and crashing every screen).
+func typedNumber(_ text: String) -> Double? {
+    guard let d = Double(text.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")),
+          d.isFinite, d >= 0, d < 10_000 else { return nil }
+    return d
 }
 
 /// All sets done, Remove a set, Skip exercise.
@@ -130,12 +144,15 @@ struct ExerciseMenu: View {
     @Environment(AppStore.self) private var store
     let item: SessionItem
     static let reasons = ["Pain", "No time", "No equipment", "Other"]
+    @State private var confirmRemove = false
 
     var body: some View {
         let e = store.entry(item.key)
         Menu {
             if item.isExtra {
-                Button(role: .destructive) { store.removeExtra(item) } label: {
+                Button(role: .destructive) {
+                    if e.hasCompletedWork { confirmRemove = true } else { store.removeExtra(item) }
+                } label: {
                     Label("Remove from today", systemImage: "trash")
                 }
             }
@@ -161,5 +178,9 @@ struct ExerciseMenu: View {
                 .frame(width: 44, height: 44)
         }
         .accessibilityLabel("More for \(item.name)")
+        .confirmationDialog("Remove \(item.name)? Its logged sets are cleared.",
+                            isPresented: $confirmRemove, titleVisibility: .visible) {
+            Button("Remove", role: .destructive) { store.removeExtra(item) }
+        }
     }
 }

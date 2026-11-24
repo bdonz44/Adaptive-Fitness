@@ -10,6 +10,7 @@ struct TodayView: View {
     @State private var summary: FinishSummary?
     @State private var confirmSkip = false
     @State private var confirmRestart = false
+    @State private var confirmNextWeek = false
     @State private var confirmOpenSets = false
     @State private var banner: String?
 
@@ -110,6 +111,8 @@ struct TodayView: View {
     }
 
     private func finishNow() {
+        // A fast double tap must not log the session twice (the summary sheet is still opening).
+        guard summary == nil else { return }
         timer.done()
         summary = store.finish(heart: { [heart] start, end in heart.summary(from: start, to: end) })
         banner = nil
@@ -167,11 +170,17 @@ struct TodayView: View {
             .font(.subheadline)
 
             if store.program.canStartNextWeek {
-                Button("Start next week") {
-                    timer.done()
-                    banner = store.startNextWeek()
-                }
-                .font(.subheadline.weight(.semibold))
+                Button("Start next week") { confirmNextWeek = true }
+                    .font(.subheadline.weight(.semibold))
+                    .confirmationDialog(store.draft.hasAnyInput
+                                        ? "Start next week? What's logged in today's session is cleared, and this can't be undone."
+                                        : "Start next week? This week's open sessions are left undone.",
+                                        isPresented: $confirmNextWeek, titleVisibility: .visible) {
+                        Button("Start next week", role: .destructive) {
+                            timer.done()
+                            banner = store.startNextWeek()
+                        }
+                    }
             }
         }
         .padding(.top, 8)
@@ -234,6 +243,8 @@ struct WeekHeader: View {
 struct SlotChips: View {
     @Environment(AppStore.self) private var store
     @Environment(RestTimer.self) private var timer
+    /// A day picked while today's session has logged work: asks first.
+    @State private var pendingSlot: Slot?
 
     var body: some View {
         let next = store.nextSlot
@@ -242,6 +253,17 @@ struct SlotChips: View {
                 ForEach(slots, id: \.self) { slot in
                     chip(slot, isNext: slot == next)
                 }
+            }
+        }
+        .confirmationDialog("Switch sessions? Everything logged in \(store.session.title) is cleared.",
+                            isPresented: Binding(get: { pendingSlot != nil }, set: { if !$0 { pendingSlot = nil } }),
+                            titleVisibility: .visible) {
+            Button("Switch and clear", role: .destructive) {
+                if let slot = pendingSlot {
+                    timer.done()
+                    store.select(slot)
+                }
+                pendingSlot = nil
             }
         }
     }
@@ -256,8 +278,13 @@ struct SlotChips: View {
         let done = store.program.isDone(slot)
         let day = store.program.order.firstIndex(of: slot).map { $0 + 1 }
         return Button {
-            if !selected { timer.done() }
-            store.select(slot)
+            guard !selected else { return }
+            if store.draft.hasAnyInput {
+                pendingSlot = slot
+            } else {
+                timer.done()
+                store.select(slot)
+            }
         } label: {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {

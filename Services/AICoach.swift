@@ -42,6 +42,8 @@ final class AICoach {
     var usesCloud: Bool { false }
 
     func reset() {
+        // Mid-answer the stream is still writing into `messages`.
+        guard !isResponding else { return }
         session = nil
         messages = []
     }
@@ -57,6 +59,7 @@ final class AICoach {
         } catch LanguageModelSession.GenerationError.exceededContextWindowSize {
             // Long chat: start fresh with today's context and ask again.
             session = nil
+            if let last = messages.last, last.role == .coach { messages.removeLast() }
             do { try await answer(prompt) } catch { fail(error) }
         } catch {
             fail(error)
@@ -69,6 +72,7 @@ final class AICoach {
         messages.append(Message(role: .coach, text: ""))
         let index = messages.count - 1
         for try await snap in s.streamResponse(to: prompt) {
+            guard messages.indices.contains(index) else { break }
             messages[index].text = snap.content
         }
         store.saveCoachChanges()

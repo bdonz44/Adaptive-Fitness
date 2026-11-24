@@ -23,6 +23,7 @@ final class ProgressStore {
     }
 
     func addMeasurement(_ inches: Double, part: BodyPart, date: Date = Date()) {
+        guard inches.isFinite, inches > 0, inches < 200 else { return }
         measurements.append(BodyMeasurement(date: date, part: part, inches: inches))
         save(measurements, "measurements.json")
     }
@@ -34,14 +35,20 @@ final class ProgressStore {
 
     // MARK: Files
 
+    /// A file that exists but can't be read is moved aside (never overwritten by the next save).
     private func load<T: Decodable>(_ type: T.Type, _ name: String) -> T? {
-        guard let data = try? Data(contentsOf: folder.appendingPathComponent(name)) else { return nil }
-        return try? JSONDecoder().decode(type, from: data)
+        let url = folder.appendingPathComponent(name)
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        if let value = SafeJSON.decode(type, data) { return value }
+        guard !data.isEmpty else { return nil }
+        let stamp = Int(Date().timeIntervalSince1970)
+        try? FileManager.default.moveItem(at: url, to: folder.appendingPathComponent("\(name).unreadable-\(stamp)"))
+        return nil
     }
 
     private func save<T: Encodable>(_ value: T, _ name: String) {
-        if let data = try? JSONEncoder().encode(value) {
-            try? data.write(to: folder.appendingPathComponent(name), options: .atomic)
+        if let data = SafeJSON.encode(value) {
+            try? data.write(to: folder.appendingPathComponent(name), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         }
     }
 }

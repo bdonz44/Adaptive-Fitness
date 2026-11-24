@@ -60,6 +60,9 @@ targets:
         com.apple.developer.icloud-services: [CloudKit]
         aps-environment: development
         com.apple.developer.healthkit: true
+        # Shared with the widget extension (Shared/WidgetSnapshot.swift). Without it the
+        # Home Screen widget can't read the app's data.
+        com.apple.security.application-groups: [group.com.bdonz44.hybrid12]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)

@@ -64,9 +64,7 @@ struct LogField: View {
     let onLog: (Double) -> Void
     @State private var text = ""
 
-    private var value: Double? {
-        Double(text.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: "."))
-    }
+    private var value: Double? { typedNumber(text).flatMap { $0 > 0 ? $0 : nil } }
 
     var body: some View {
         HStack(spacing: 8) {

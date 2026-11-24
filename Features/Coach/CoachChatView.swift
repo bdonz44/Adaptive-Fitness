@@ -73,7 +73,7 @@ private struct CoachChat: View {
         .background(look.background)
         .toolbar {
             if !coach.messages.isEmpty {
-                ToolbarItem(placement: .cancellationAction) { Button("New chat") { coach.reset() } }
+                ToolbarItem(placement: .cancellationAction) { Button("New chat") { coach.reset() }.disabled(coach.isResponding) }
             }
         }
     }

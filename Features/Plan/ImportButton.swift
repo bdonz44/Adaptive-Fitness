@@ -44,7 +44,7 @@ struct ImportButton: View {
             }
         } message: {
             if let r = pending {
-                Text("This file has \(r.summary), and puts you on week \(ProgramWeek(r.program.week).wk) with \(r.program.doneCount) of 5 sessions done."
+                Text("This file has \(r.summary), and puts you on week \(ProgramWeek(r.program.week).wk) with \(r.program.doneCount) of \(r.program.order.count) sessions done."
                      + (store.isEmpty ? "" : " It replaces everything in the app now."))
             }
         }

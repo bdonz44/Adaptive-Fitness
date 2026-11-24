@@ -126,8 +126,8 @@ struct FocusView: View {
             }
             Button {
                 if item.unit == .sec {
-                    store.update(item.key, sets: item.sets) { $0.sets[open.set].reps = shownReps }
-                    HoldStart.start(item, set: open.set, store: store, hold: hold)
+                    // Logging the seconds now would count the set as done even if the hold is cancelled.
+                    HoldStart.start(item, set: open.set, store: store, hold: hold, seconds: shownReps)
                     return
                 }
                 SetTick.toggle(item, set: open.set, in: session, store: store, timer: timer,

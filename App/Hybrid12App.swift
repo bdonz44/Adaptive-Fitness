@@ -15,9 +15,12 @@ struct Hybrid12App: App {
     @State private var heart = HeartRateMonitor()
     @State private var progress = ProgressStore()
     @Environment(\.scenePhase) private var scenePhase
+    /// Launch and coming back to the app both sync; never two at once.
+    @State private var whoopSyncRunning = false
 
     init() {
         RestAlerts.endLeftovers()
+        RoundTimer.cancelLeftovers()
         UNUserNotificationCenter.current().delegate = NotificationRouter.shared
         let schema = Schema(Schema12.models)
         #if DEBUG
@@ -57,6 +60,9 @@ struct Hybrid12App: App {
     /// Fetches today's WHOOP numbers (at most every 20 min) and sets readiness from them.
     @MainActor
     private func syncWhoop() async {
+        guard !whoopSyncRunning else { return }
+        whoopSyncRunning = true
+        defer { whoopSyncRunning = false }
         await whoop.sync()
         store.applyWhoop(whoop.today)
         await store.backfillWhoop { [whoop] start, end in await whoop.workouts(from: start, to: end) }
