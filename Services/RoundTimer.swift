@@ -93,6 +93,17 @@ final class RoundTimer {
         if !isPaused { scheduleBackups() }
     }
 
+    /// Heart-rate rest: freezes the clock for `seconds` (while heart rate is still high).
+    /// Alerts are moved once the rest ends (`refreshBackups`), not every second.
+    func hold(seconds: TimeInterval) {
+        guard isRunning, !isPaused, seconds > 0 else { return }
+        resumedAt = resumedAt.addingTimeInterval(seconds)
+    }
+
+    func refreshBackups() {
+        if isRunning && !isPaused { scheduleBackups() }
+    }
+
     func stop() {
         isRunning = false
         isPaused = false

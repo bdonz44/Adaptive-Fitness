@@ -13,6 +13,18 @@ struct RoundTimerView: View {
     @State private var settings: RoundPlan.Settings
     @State private var lastPhase = -1
     @State private var warned = -1
+    // Heart-rate mode
+    @State private var heldThisRest = 0.0
+    @State private var held = false
+    @State private var peak = 0
+    @State private var peaks: [Int] = []
+    @State private var fading = false
+    @State private var fadingShown = false
+
+    /// Rest follows heart rate: switch on, a heart-rate target, and rests of a minute or more.
+    private var heartMode: Bool {
+        store.adaptive.heartIntervals && HeartRate.target(for: item) != nil && timer.settings.rest >= HeartIntervals.minRest
+    }
 
     init(item: SessionItem) {
         self.item = item
@@ -59,10 +71,19 @@ struct RoundTimerView: View {
                 RoundTimer.save(settings, for: item)
                 timer.start(settings, item: item)
                 lastPhase = -1
+                peaks = []
+                peak = 0
+                fading = false
+                fadingShown = false
             } label: { Text("Start").accentButton(height: 64) }
                 .buttonStyle(.plain)
             Text("Your round and rest times are remembered for \(item.name).")
                 .font(.caption).foregroundStyle(look.secondary)
+            if store.adaptive.heartIntervals && HeartRate.target(for: item) != nil && settings.rest >= HeartIntervals.minRest {
+                Text("Heart-rate rest is on: with your strap connected, rest ends early once you've recovered and waits up to a minute if you haven't.")
+                    .font(.caption).foregroundStyle(look.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(20)
     }
@@ -122,6 +143,26 @@ struct RoundTimerView: View {
                     }
                 }
                 LiveHeartBar(target: phase?.kind == .work ? HeartRate.target(for: item) : nil)
+                if heartMode, phase?.kind == .rest, let t = HeartRate.target(for: item) {
+                    Text(held ? "Holding the rest: heart rate still high"
+                              : "Next round when you're under \(HeartRate.bpm(percent: t.lowerBound - HeartIntervals.recoveredGap, max: heart.maxHR)) bpm")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(look.secondary)
+                }
+                if fading && !pos.finished {
+                    VStack(spacing: 8) {
+                        Text("Your heart rate isn't getting up anymore. That's the engine telling you it's done for today.")
+                            .font(.subheadline.weight(.semibold))
+                            .multilineTextAlignment(.center)
+                        HStack {
+                            Button("Keep going") { fading = false }
+                            Spacer()
+                            Button("Stop and log \(pos.roundsDone)") { finish(pos.roundsDone) }.bold()
+                        }
+                    }
+                    .padding(12)
+                    .background(look.card, in: RoundedRectangle(cornerRadius: max(look.radius - 4, 2)))
+                }
                 Spacer()
                 if pos.finished {
                     Button { finish(pos.roundsDone) } label: { Text("Log \(pos.roundsDone) rounds").accentButton(height: 64) }
@@ -148,13 +189,52 @@ struct RoundTimerView: View {
             .onChange(of: heart.lastReading) { _, _ in
                 push.update(bpm: heart.freshBPM(), max: heart.maxHR, target: HeartRate.target(for: item),
                             working: phase?.kind == .work && !timer.isPaused)
+                followHeart()
             }
+        }
+    }
+
+    /// Heart-rate mode: end the rest once recovered, hold it while still high; track each round's peak.
+    private func followHeart() {
+        guard timer.isRunning, !timer.isPaused else { return }
+        let now = Date()
+        let pos = timer.position(at: now)
+        guard let i = pos.phase else { return }
+        let ph = timer.phases[i]
+        let bpm = heart.freshBPM()
+        if ph.kind == .work, let b = bpm { peak = max(peak, b) }
+        guard heartMode, ph.kind == .rest, let target = HeartRate.target(for: item) else { return }
+        let into = timer.elapsed(at: now) - TimeInterval(RoundPlan.phaseStarts(timer.phases)[i])
+        switch HeartIntervals.restCall(bpm: bpm, max: heart.maxHR, target: target, secondsIntoRest: into,
+                                       restLength: ph.seconds, heldSoFar: heldThisRest) {
+        case .endRest:
+            timer.skip()
+        case .holdRest:
+            timer.hold(seconds: 1)
+            heldThisRest += 1
+            held = true
+        case .none:
+            break
         }
     }
 
     private func react(_ p: RoundPlan.Position) {
         let index = p.phase ?? timer.phases.count
         if index != lastPhase {
+            if lastPhase >= 0, lastPhase < timer.phases.count, timer.phases[lastPhase].kind == .work {
+                // A work round just ended: for heart-rate recovery and the fading check.
+                store.noteWorkEnd()
+                if peak > 0 { peaks.append(peak) }
+                peak = 0
+                if heartMode, !fadingShown, let t = HeartRate.target(for: item),
+                   HeartIntervals.fading(peaks: peaks, max: heart.maxHR, target: t) {
+                    fading = true
+                    fadingShown = true
+                }
+            }
+            if held { timer.refreshBackups() }
+            heldThisRest = 0
+            held = false
             if lastPhase >= 0 {
                 let kind = p.phase.map { timer.phases[$0].kind }
                 timer.play(kind == .work ? "bell-start" : "bell-end")

@@ -33,6 +33,7 @@ struct TodayView: View {
                     SlotChips()
                     if !look.readinessFirst { ReadinessPicker() }
                     if store.adaptive.timeBox { TimeTodayPicker(session: session) }
+                    AdaptiveNotes()
                     if let banner {
                         Text(banner)
                             .font(.subheadline.weight(.semibold))
@@ -114,7 +115,8 @@ struct TodayView: View {
         // A fast double tap must not log the session twice (the summary sheet is still opening).
         guard summary == nil else { return }
         timer.done()
-        summary = store.finish(heart: { [heart] start, end in heart.summary(from: start, to: end) })
+        summary = store.finish(heart: { [heart] start, end in heart.summary(from: start, to: end) },
+                               recovery: { [heart] ends in Fitness.recovery(heart.samples, workEnds: ends) })
         banner = nil
     }
 

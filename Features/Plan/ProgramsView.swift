@@ -15,6 +15,7 @@ struct ProgramsView: View {
                 Text("Your lifts and history carry over to every program. Each program remembers its own week, so you can switch back.")
                     .font(.subheadline).foregroundStyle(look.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                NextBlockCard()
                 ForEach(ProgramID.allCases, id: \.self) { id in
                     card(id)
                 }

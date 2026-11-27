@@ -27,6 +27,7 @@ struct CoachChatView: View {
 private struct CoachChat: View {
     @State private var coach: AICoach
     @State private var text = ""
+    @State private var showNotes = false
     @FocusState private var typing: Bool
 
     init(store: AppStore, whoop: WhoopService) {
@@ -71,7 +72,11 @@ private struct CoachChat: View {
             }
         }
         .background(look.background)
+        .sheet(isPresented: $showNotes) { CoachNotesView() }
         .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showNotes = true } label: { Label("What the coach remembers", systemImage: "note.text") }
+            }
             if !coach.messages.isEmpty {
                 ToolbarItem(placement: .cancellationAction) { Button("New chat") { coach.reset() }.disabled(coach.isResponding) }
             }
@@ -134,5 +139,31 @@ private struct CoachChat: View {
         }
         .padding(.horizontal).padding(.vertical, 8)
         .background(look.background)
+    }
+}
+
+/// What the coach remembers between chats. Swipe to delete.
+struct CoachNotesView: View {
+    @Environment(AppStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if store.coachNotes.isEmpty {
+                    Text("Nothing yet. Tell the coach about a sore spot, what you like or your schedule, and it remembers.")
+                        .font(.subheadline).foregroundStyle(Theme.secondary)
+                }
+                ForEach(store.coachNotes.reversed()) { note in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(note.text)
+                        Text(note.date.formatted(.dateTime.month(.abbreviated).day())).font(.caption).foregroundStyle(Theme.secondary)
+                    }
+                    .swipeActions { Button("Forget", role: .destructive) { store.forget(note) } }
+                }
+            }
+            .navigationTitle("Coach remembers")
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        }
     }
 }

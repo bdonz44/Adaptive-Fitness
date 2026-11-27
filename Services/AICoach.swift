@@ -95,6 +95,8 @@ final class AICoach {
         like a coach who wants him to grind. Keep answers short: 2-5 sentences or a few bullets. Use the facts \
         below; never invent weights or history. Give specific numbers (sets, reps, weights, minutes, grams). \
         When he asks to change today's workout, use the tools: swapExercise, addExercise, skipExercise, setTimeToday. \
+        When he tells you something worth remembering for later chats (an injury or sore spot, a preference, \
+        equipment, a schedule), save it in a few words with rememberNote. \
         After a tool, say only what changed in one or two sentences; don't recite the whole session. \
         Only swap to exercises his gear allows. For pain: only change exercises that load the sore area; \
         if nothing today does, say so and tell him to train as planned. Tell him to see a doctor if pain is sharp, \
@@ -104,7 +106,8 @@ final class AICoach {
         \(store.coachContext(whoop: whoop.today))
         """
         let tools: [any Tool] = [SwapTool(coach: CoachLink(store)), AddTool(coach: CoachLink(store)),
-                                 SkipTool(coach: CoachLink(store)), TimeTool(coach: CoachLink(store))]
+                                 SkipTool(coach: CoachLink(store)), TimeTool(coach: CoachLink(store)),
+                                 RememberTool(coach: CoachLink(store))]
         return LanguageModelSession(tools: tools, instructions: instructions)
     }
 }
@@ -175,5 +178,19 @@ struct TimeTool: Tool {
     }
     func call(arguments: Arguments) async throws -> String {
         await coach.run { $0.coachTime(arguments.minutes) }
+    }
+}
+
+@available(iOS 26.0, *)
+struct RememberTool: Tool {
+    let name = "rememberNote"
+    let description = "Save a short note to remember in later chats: an injury or sore spot, a preference, equipment, a schedule."
+    let coach: CoachLink
+    @Generable struct Arguments {
+        @Guide(description: "The note, a few words, e.g. Left shoulder sore on overhead press")
+        var note: String
+    }
+    func call(arguments: Arguments) async throws -> String {
+        await coach.run { $0.remember(arguments.note) }
     }
 }

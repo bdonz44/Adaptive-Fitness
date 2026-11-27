@@ -13,6 +13,7 @@ struct ProgressTab: View {
                     WeeklyReviewButton()
                     CoachCard()
                     InsightsCard()
+                    FitnessCard()
                     CardioCard()
                     NutritionCard()
                     HardMinutesCard()

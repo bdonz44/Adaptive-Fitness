@@ -68,6 +68,25 @@ struct SummaryView: View {
                     .overlay(RoundedRectangle(cornerRadius: look.radius).stroke(look.accent, lineWidth: 2))
                 }
 
+                if !summary.paceNotes.isEmpty || summary.recovery != nil {
+                    VStack(alignment: .leading, spacing: 8) {
+                        SectionLabel(text: "Engine", color: look.accent)
+                        ForEach(summary.paceNotes, id: \.self) { note in
+                            Label(note, systemImage: "speedometer").font(.subheadline)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        if let r = summary.recovery {
+                            Label("Heart-rate recovery: −\(r) bpm in a minute. \(Fitness.recoveryVerdict(r)).",
+                                  systemImage: "heart.circle.fill")
+                                .font(.subheadline)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .lookCard()
+                }
+
                 ForEach(summary.records) { pr in
                     VStack(alignment: .leading, spacing: 6) {
                         SectionLabel(text: "New personal record", color: look.accent)

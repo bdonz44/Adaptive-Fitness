@@ -41,8 +41,13 @@ struct PlanTab: View {
                         NavigationLink { ProgramsView() } label: {
                             linkRow("Programs", detail: programDetail, icon: "square.stack.3d.up.fill")
                         }
+                        NavigationLink { GoalView() } label: {
+                            linkRow("Goal", detail: store.goalStatus?.text ?? (store.goal == nil ? "Set a target and a date" : "Set"),
+                                    icon: "flag.checkered")
+                        }
                     }
                     .buttonStyle(.plain)
+                    NextBlockCard()
                     thisWeekCard(week)
                     weeksCard(week)
                     Card(title: "\(id.phaseName(week.phase)) sessions") {

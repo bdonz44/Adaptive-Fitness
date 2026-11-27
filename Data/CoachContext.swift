@@ -41,6 +41,9 @@ extension AppStore {
         if !short.isEmpty { lines.append("Under 10 sets this week: " + short.joined(separator: ", ") + ".") }
         if let i = insights.first { lines.append("Pattern: \(i.headline).") }
         lines.append("Gear: " + gearSummary + ".")
+        if let memory = coachMemoryLine { lines.append(memory) }
+        if let g = goal { lines.append("Goal: \(g.title(liftName: g.liftID.flatMap { catalog.exercise($0)?.name }))." + (goalStatus.map { " " + $0.text } ?? "")) }
+        if let day = dayNote { lines.append(day) }
         return lines.joined(separator: "\n")
     }
 

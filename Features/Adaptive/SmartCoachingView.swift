@@ -32,6 +32,49 @@ struct SmartCoachingView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
+                Card(title: "Recovery picks the day") {
+                    Toggle(isOn: $store.adaptive.recoveryPicksDay) {
+                        Text("Move hard days on red recovery").font(.headline)
+                    }
+                    Text("When WHOOP recovery is red (under 34%) and the next session is a hard one (intervals or heavy legs), an easier open session goes first. The hard day stays open for your next good day. Nothing changes once you've started.")
+                        .font(.subheadline).foregroundStyle(look.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Card(title: "Interval paces") {
+                    Toggle(isOn: $store.adaptive.intervalPace) {
+                        Text("Progress treadmill speed and incline").font(.headline)
+                    }
+                    Text("On 4×4s, 30/30s and hill sprints, type your speed and incline and tap how it felt. Next time:")
+                        .font(.subheadline).foregroundStyle(look.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 6) {
+                        rule("All rounds, solid", "+0.2 mph")
+                        rule("All rounds, easy", "+0.4 mph")
+                        rule("At 10 mph", "+1% incline instead")
+                        rule("Missed rounds or too hard", "same pace")
+                        rule("Twice in a row", "−0.2 mph")
+                    }
+                }
+
+                Card(title: "Heart-rate intervals") {
+                    Toggle(isOn: $store.adaptive.heartIntervals) {
+                        Text("Rest follows your heart rate").font(.headline)
+                    }
+                    Text("With your strap connected, on intervals with rests of a minute or more: the rest ends early once your heart rate is 15% of max under the work zone (never before half the rest), and waits up to a minute if it isn't. If two late rounds can't reach the zone, the timer suggests calling it. Every interval session also measures your heart-rate recovery (Progress > Fitness).")
+                        .font(.subheadline).foregroundStyle(look.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Card(title: "Muscle balancing") {
+                    Toggle(isOn: $store.adaptive.muscleBalance) {
+                        Text("Top up muscles under 10 sets").font(.headline)
+                    }
+                    Text("Any muscle with fewer than 10 hard sets in the last 7 days gets one extra set on today's accessory for it (up to 3, never on light days). Today's note says which.")
+                        .font(.subheadline).foregroundStyle(look.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 Card(title: "Plateau breaker") {
                     Toggle(isOn: $store.adaptive.plateauBreaker) {
                         Text("Break stalls with heavy triples").font(.headline)
@@ -61,7 +104,7 @@ struct SmartCoachingView: View {
                     Toggle(isOn: $store.adaptive.nutrition) {
                         Text("Protein and calorie numbers").font(.headline)
                     }
-                    Text("Protein: 1 g per lb of your goal weight, every day. Calories, from your weigh-in trend: flat for 2 weeks above goal, cut 300 a day; losing more than 1% a week, add 200; otherwise hold. Log food and set your goal weight from the protein tile on Home or Progress > Nutrition > Log food. Off hides every nutrition number.")
+                    Text("Protein: 1 g per lb of your goal weight, every day. Calories adjust themselves: after 2 weeks of logging food and weighing in, the app works out what you really burn and sets a target to lose 0.75% of your weight a week (never under 10 calories per lb), updated as you log. Before that, from the weigh-in trend: flat for 2 weeks, cut 300 a day; losing over 1% a week, add 200. Log food from the protein tile on Home or Progress > Nutrition > Log food. Off hides every nutrition number.")
                         .font(.subheadline).foregroundStyle(look.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
