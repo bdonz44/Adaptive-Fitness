@@ -13,7 +13,7 @@ import Testing
     @Test func findsLibraryExercisesYouCanDo() {
         #expect(CoachActions.exercise("TRX chest fly")?.id == "trxchestfly")
         #expect(CoachActions.exercise("hammer curls")?.id == "hammer")
-        #expect(CoachActions.exercise("pull ups") == nil)                         // no bar in the standard gym
+        #expect(CoachActions.exercise("pull ups", gear: GearProfile(pullupBar: false)) == nil)
         #expect(CoachActions.exercise("pull ups", gear: GearProfile(pullupBar: true))?.id == "pullup")
     }
 

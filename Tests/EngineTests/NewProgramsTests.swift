@@ -114,6 +114,28 @@ import Testing
         #expect(acc3.restSeconds < acc1.restSeconds)
     }
 
+    @Test func ropesAndPullUpsAreUsedAndHaveStandIns() throws {
+        let st = state(.ripped, days: 4)
+        let ctx = SessionDraft(slot: .B, state: st).context(for: st)
+        #expect(SessionBuilder.build(slot: .B, context: ctx).item("finisher")?.name == "Battle Ropes 30:30")
+        #expect(SessionBuilder.build(slot: .C, context: SessionDraft(slot: .C, state: st).context(for: st)).item("s1")?.exerciseID == "pullup")
+
+        var noGear = ctx
+        noGear.gear = GearProfile(pullupBar: false, ropes: false)
+        #expect(SessionBuilder.build(slot: .B, context: noGear).item("finisher")?.name == "Bag Finisher")
+        var upper = SessionDraft(slot: .C, state: st).context(for: st)
+        upper.gear = noGear.gear
+        let swapped = try #require(SessionBuilder.build(slot: .C, context: upper).item("s1")?.exerciseID)
+        #expect(swapped != "pullup" && swapped != "chinup")
+    }
+
+    @Test func olderSavedGearGetsRopesAndPullUpBarOn() throws {
+        let old = #"{"barbell":true,"smallestPlate":2.5,"dumbbells":[5,10],"kettlebells":[35],"bench":true,"trx":true,"bag":true,"treadmill":true}"#
+        let g = try JSONDecoder().decode(GearProfile.self, from: Data(old.utf8))
+        #expect(g.ropes && g.pullupBar)
+        #expect(g.dumbbells == [5, 10])
+    }
+
     @Test func newProgramsSaveAndLoad() {
         for id in [ProgramID.vo2Max, .ripped] {
             let s = Program.switchTo(id, days: 4, state: ProgramState(week: 3))

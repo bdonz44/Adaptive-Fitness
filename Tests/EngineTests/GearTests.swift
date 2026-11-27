@@ -62,7 +62,8 @@ import Testing
 
     @Test func pullUpsOnlyWithABar() throws {
         let pull = try #require(Catalog.bundled.exercise("pullup"))
-        #expect(!GearProfile.standard.has(pull))
+        #expect(!GearProfile(pullupBar: false).has(pull))
+        #expect(GearProfile.standard.has(pull))   // Brandon's gym has one (Nov 27)
         #expect(GearProfile(pullupBar: true).has(pull))
     }
 

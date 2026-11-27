@@ -70,7 +70,17 @@ final class AppStore {
     }
 
     static func loadGear() -> GearProfile {
-        UserDefaults.standard.data(forKey: "gearProfile").flatMap { try? JSONDecoder().decode(GearProfile.self, from: $0) } ?? .standard
+        var gear = UserDefaults.standard.data(forKey: "gearProfile")
+            .flatMap { try? JSONDecoder().decode(GearProfile.self, from: $0) } ?? .standard
+        // Nov 27: Brandon has a pull-up bar and battle ropes. Switched on once; Plan > Equipment can turn them off.
+        let migrated = "gear.pullupRopes.added"
+        if !UserDefaults.standard.bool(forKey: migrated) {
+            gear.pullupBar = true
+            gear.ropes = true
+            if let d = try? JSONEncoder().encode(gear) { UserDefaults.standard.set(d, forKey: "gearProfile") }
+            UserDefaults.standard.set(true, forKey: migrated)
+        }
+        return gear
     }
 
     /// Adaptive-layer switches (Plan > Smart coaching). Saved on this phone.

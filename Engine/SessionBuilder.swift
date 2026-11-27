@@ -312,6 +312,7 @@ public enum SessionBuilder {
         "bulgarian": ["splitsq", "trxlunge", "revlunge"], "stepup": ["lunge", "revlunge", "trxlunge"],
         "powerclean": ["dbhangclean", "kbclean"], "hangclean": ["dbhangclean", "kbclean"],
         "powersnatch": ["dbsnatch", "kbsnatch"], "hangsnatch": ["dbsnatch", "kbsnatch"], "copenhagen": ["sideplank", "hipdip"],
+        "pullup": ["trxrow", "dbrow"], "chinup": ["trxrow", "dbrow"],
     ]
 
     /// Replaces planned lifts that need gear you don't own (stand-ins first, then the same category).

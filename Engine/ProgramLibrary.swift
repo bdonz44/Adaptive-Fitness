@@ -37,6 +37,8 @@ public enum ProgramLibrary {
         let details: [String]
         /// Heart-rate target during the work, % of max.
         var target: ClosedRange<Int>? = nil
+        /// Battle ropes: without them (Plan > Equipment) the day uses `ropeFallback` instead.
+        var needsRopes = false
         func detail(_ phase: Phase) -> String { details.count == 3 ? details[phase.rawValue] : details[0] }
     }
 
@@ -365,7 +367,7 @@ public enum ProgramLibrary {
 
     static let thirtyThirty = Cardio(
         name: "30/30 Intervals", rounds: [16, 20, 24], work: 30, rest: 30, minPerRound: 1, unit: .rounds,
-        details: ["Warm up 10 min first. 30 sec fast, 30 sec easy jog or walk. Fast is a pace you could hold for about 6 minutes, a bit quicker than your 4×4 pace. Heart rate climbs for the first few rounds, then stays near 90% of max. Easiest outdoors, on a bike or rower, or on the heavy bag; on the treadmill, step to the side rails for the easy 30. Stop the set when you can't hold the pace."],
+        details: ["Warm up 10 min first. 30 sec fast, 30 sec easy jog or walk. Fast is a pace you could hold for about 6 minutes, a bit quicker than your 4×4 pace. Heart rate climbs for the first few rounds, then stays near 90% of max. Easiest outdoors, on a bike or rower, with battle ropes or on the heavy bag; on the treadmill, step to the side rails for the easy 30. Stop the set when you can't hold the pace."],
         target: 85...95)
     static let zone2 = Cardio(
         name: "Zone 2", rounds: [35, 40, 45], work: nil, rest: nil, minPerRound: 1, unit: .min,
@@ -375,6 +377,15 @@ public enum ProgramLibrary {
         name: "Long Zone 2", rounds: [45, 60, 70], work: nil, rest: nil, minPerRound: 1, unit: .min,
         details: ["The long easy one. Same rules as Zone 2: full sentences, about 105-125 bpm. Outside if you can: trails, a long walk with hills, an easy ride."],
         target: 60...70)
+
+    static let ropeIntervals = Cardio(
+        name: "Battle Ropes 30:30", rounds: [8, 10, 12], work: 30, rest: 30, minPerRound: 1, unit: .rounds,
+        details: ["30 sec hard, 30 sec rest. Rotate each round: alternating waves, double slams, outside circles, jumping jacks with waves. Soft knees, hips back, brace your abs; the waves come from the shoulders and hips, not just the arms."],
+        target: 85...95, needsRopes: true)
+    /// Without ropes: the same work on the heavy bag.
+    static let ropeFallback = Cardio(
+        name: "Bag Finisher", rounds: [8, 10, 12], work: 30, rest: 30, minPerRound: 1, unit: .rounds,
+        details: ["30 sec all-out punching, 30 sec rest. Straight punches and hooks, keep the hands up."], target: 85...95)
 
     static let vo2Max = Spec(
         doses: [
@@ -386,7 +397,7 @@ public enum ProgramLibrary {
         days: [
             3: [
                 Day("Norwegian 4×4", lower: true, lifts: [], engine: norwegian),
-                Day("Strength + Long Zone 2", lifts: [m("squat"), s("s1", "bench"), s("s2", "bbrow")],
+                Day("Strength + Long Zone 2", lifts: [m("squat"), s("s1", "bench"), s("s2", "pullup")],
                     pairs: [pair("deadbug", "sideplank")], engine: longZone2),
                 Day("30/30 Intervals", lower: true, lifts: [], engine: thirtyThirty),
             ],
@@ -395,7 +406,7 @@ public enum ProgramLibrary {
                 Day("Lower Strength + Zone 2", lifts: [m("squat"), s("s1", "rdl")],
                     pairs: [pair("dbrow", "sideplank")], engine: zone2),
                 Day("30/30 Intervals", lower: true, lifts: [], engine: thirtyThirty),
-                Day("Upper Strength + Long Zone 2", lifts: [m("bench"), s("s1", "bbrow")],
+                Day("Upper Strength + Long Zone 2", lifts: [m("bench"), s("s1", "pullup")],
                     pairs: [pair("dbpress", "deadbug")], engine: longZone2),
             ],
             5: [
@@ -403,7 +414,7 @@ public enum ProgramLibrary {
                 Day("Lower Strength + Zone 2", lifts: [m("squat"), s("s1", "rdl")],
                     pairs: [pair("dbrow", "sideplank")], engine: zone2),
                 Day("30/30 Intervals", lower: true, lifts: [], engine: thirtyThirty),
-                Day("Upper Strength + Zone 2", lifts: [m("bench"), s("s1", "bbrow")],
+                Day("Upper Strength + Zone 2", lifts: [m("bench"), s("s1", "pullup")],
                     pairs: [pair("dbpress", "deadbug")], engine: zone2),
                 Day("Long Zone 2", lifts: [], pairs: [pair("trxbodysaw", "suitcase")], engine: longZone2),
             ],
@@ -430,16 +441,16 @@ public enum ProgramLibrary {
                 Day("Full Body B", lower: true, lifts: [m("deadlift"), s("s1", "ohp")],
                     pairs: [pair("trxrow", "dbincline"), pair("bulgarian", "reardelt"), pair("trxbodysaw", "russiantwist")],
                     finisher: swingEMOM),
-                Day("Full Body C", lifts: [m("incline"), s("s1", "pendlay")],
-                    pairs: [pair("hipthrust", "arnold"), pair("hammer", "skull"), pair("vup", "trxoblique")], finisher: dbBurner),
+                Day("Full Body C", lifts: [m("incline"), s("s1", "pullup")],
+                    pairs: [pair("hipthrust", "arnold"), pair("hammer", "skull"), pair("vup", "trxoblique")], finisher: ropeIntervals),
             ],
             4: [
                 Day("Upper A", lifts: [m("bench"), s("s1", "pendlay")],
                     pairs: [pair("dbincline", "trxrow"), pair("lateral", "trxfacepull"), pair("curl", "ohtri")],
                     finisher: absBurner),
                 Day("Lower A", lower: true, lifts: [m("squat"), s("s1", "rdl")],
-                    pairs: [pair("bulgarian", "trxhamcurl"), pair("hipthrust", "legraise")], finisher: hills),
-                Day("Upper B", lifts: [m("ohp"), s("s1", "dbrow")],
+                    pairs: [pair("bulgarian", "trxhamcurl"), pair("hipthrust", "legraise")], finisher: ropeIntervals),
+                Day("Upper B", lifts: [m("ohp"), s("s1", "pullup")],
                     pairs: [pair("dbfly", "trxhighrow"), pair("arnold", "reardelt"), pair("hammer", "skull")],
                     finisher: absBurner),
                 Day("Lower B", lower: true, lifts: [m("deadlift"), s("s1", "fsquat")],
@@ -450,8 +461,8 @@ public enum ProgramLibrary {
                     pairs: [pair("dbincline", "trxrow"), pair("lateral", "trxfacepull"), pair("curl", "ohtri")],
                     finisher: absBurner),
                 Day("Lower A", lower: true, lifts: [m("squat"), s("s1", "rdl")],
-                    pairs: [pair("bulgarian", "trxhamcurl"), pair("hipthrust", "legraise")], finisher: hills),
-                Day("Upper B", lifts: [m("ohp"), s("s1", "dbrow")],
+                    pairs: [pair("bulgarian", "trxhamcurl"), pair("hipthrust", "legraise")], finisher: ropeIntervals),
+                Day("Upper B", lifts: [m("ohp"), s("s1", "pullup")],
                     pairs: [pair("dbfly", "trxhighrow"), pair("arnold", "reardelt"), pair("hammer", "skull")],
                     finisher: absBurner),
                 Day("Lower B", lower: true, lifts: [m("deadlift"), s("s1", "fsquat")],
@@ -591,10 +602,11 @@ public enum ProgramLibrary {
             if let t = c.target { item.hrLow = t.lowerBound; item.hrHigh = t.upperBound }
             return item
         }
-        if let e = day.engine {
+        func fit(_ c: Cardio) -> Cardio { c.needsRopes && !context.gear.ropes ? ropeFallback : c }
+        if let e = day.engine.map(fit) {
             blocks.append(SessionBlock(kind: day.engineBlock, items: [cardioItem(e, key: "engine", kind: .engine)]))
         }
-        if let f = day.finisher, !beat {
+        if let f = day.finisher.map(fit), !beat {
             blocks.append(SessionBlock(kind: .burnIt, items: [cardioItem(f, key: "finisher", kind: .finisher)]))
         }
 

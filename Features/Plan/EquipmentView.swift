@@ -63,8 +63,13 @@ struct EquipmentView: View {
                     Toggle("Flat or incline bench", isOn: $store.gear.bench)
                     Toggle("TRX straps", isOn: $store.gear.trx)
                     Toggle("Pull-up bar", isOn: $store.gear.pullupBar)
+                    Toggle("Battle ropes", isOn: $store.gear.ropes)
                     Toggle("Heavy bag", isOn: $store.gear.bag)
                     Toggle("Treadmill", isOn: $store.gear.treadmill)
+                    if !store.gear.ropes {
+                        Text("Battle rope finishers switch to the heavy bag.")
+                            .font(.caption).foregroundStyle(look.secondary)
+                    }
                     if !store.gear.bag || !store.gear.treadmill {
                         Text("Bag and treadmill conditioning stays in the plan: shadowbox instead of the bag, run or hike hills instead of the treadmill.")
                             .font(.caption).foregroundStyle(look.secondary)

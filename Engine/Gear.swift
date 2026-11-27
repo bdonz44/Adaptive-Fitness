@@ -16,13 +16,16 @@ public struct GearProfile: Codable, Equatable, Sendable {
     public var bag: Bool
     public var treadmill: Bool
     public var pullupBar: Bool
+    public var ropes: Bool
 
     public init(barbell: Bool = true, barbellMax: Double? = nil, smallestPlate: Double = 2.5,
                 dumbbells: [Double] = [5, 10, 15, 20, 25, 30, 35], kettlebells: [Double] = [20, 35, 50],
-                bench: Bool = true, trx: Bool = true, bag: Bool = true, treadmill: Bool = true, pullupBar: Bool = false) {
+                bench: Bool = true, trx: Bool = true, bag: Bool = true, treadmill: Bool = true, pullupBar: Bool = true,
+                ropes: Bool = true) {
         self.barbell = barbell; self.barbellMax = barbellMax; self.smallestPlate = smallestPlate
         self.dumbbells = dumbbells.sorted(); self.kettlebells = kettlebells.sorted()
         self.bench = bench; self.trx = trx; self.bag = bag; self.treadmill = treadmill; self.pullupBar = pullupBar
+        self.ropes = ropes
     }
 
     public init(from decoder: Decoder) throws {
@@ -38,6 +41,7 @@ public struct GearProfile: Codable, Equatable, Sendable {
         bag = try c.decodeIfPresent(Bool.self, forKey: .bag) ?? d.bag
         treadmill = try c.decodeIfPresent(Bool.self, forKey: .treadmill) ?? d.treadmill
         pullupBar = try c.decodeIfPresent(Bool.self, forKey: .pullupBar) ?? d.pullupBar
+        ropes = try c.decodeIfPresent(Bool.self, forKey: .ropes) ?? d.ropes
     }
 
     public static let standard = GearProfile()
