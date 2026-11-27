@@ -660,6 +660,8 @@ final class AppStore {
 
     func select(_ slot: Slot) {
         guard slot != draft.slot else { return }
+        // Picked by hand: recovery won't move it again today.
+        UserDefaults.standard.set(Self.dayKey(Date()), forKey: "slotChosenDay")
         draft = SessionDraft(slot: slot, state: program)
         saveDraft()
     }
@@ -1295,7 +1297,8 @@ extension AppStore {
 
     /// Red recovery and today's session not started: put the easier day first.
     func pickDayForRecovery() {
-        guard adaptive.recoveryPicksDay, !draft.hasAnyInput, draft.startedAt == nil else { return }
+        guard adaptive.recoveryPicksDay, !draft.hasAnyInput, draft.startedAt == nil,
+              UserDefaults.standard.string(forKey: "slotChosenDay") != Self.dayKey(Date()) else { return }
         let plain = Program.nextSlot(state: program, logs: logs, now: Date())
         let pick = nextPick
         // Only when today shows the plain next session (not one picked by hand).
