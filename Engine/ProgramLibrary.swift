@@ -360,6 +360,108 @@ public enum ProgramLibrary {
             ],
         ])
 
+    // MARK: VO2 Max (cardio first)
+    // Hard days are marked `lower` so the app keeps 48 hours between them (Program.nextSlot).
+
+    static let thirtyThirty = Cardio(
+        name: "30/30 Intervals", rounds: [16, 20, 24], work: 30, rest: 30, minPerRound: 1, unit: .rounds,
+        details: ["Warm up 10 min first. 30 sec fast, 30 sec easy jog or walk. Fast is a pace you could hold for about 6 minutes, a bit quicker than your 4×4 pace. Heart rate climbs for the first few rounds, then stays near 90% of max. Easiest outdoors, on a bike or rower, or on the heavy bag; on the treadmill, step to the side rails for the easy 30. Stop the set when you can't hold the pace."],
+        target: 85...95)
+    static let zone2 = Cardio(
+        name: "Zone 2", rounds: [35, 40, 45], work: nil, rest: nil, minPerRound: 1, unit: .min,
+        details: ["Steady and easy: you can talk in full sentences (about 105-125 bpm at a max of 176). Incline walk, easy jog, bike or rower. This is the aerobic base the intervals stand on. If heart rate drifts up, slow down."],
+        target: 60...70)
+    static let longZone2 = Cardio(
+        name: "Long Zone 2", rounds: [45, 60, 70], work: nil, rest: nil, minPerRound: 1, unit: .min,
+        details: ["The long easy one. Same rules as Zone 2: full sentences, about 105-125 bpm. Outside if you can: trails, a long walk with hills, an easy ride."],
+        target: 60...70)
+
+    static let vo2Max = Spec(
+        doses: [
+            .power: [Dose(3, 3, 3, 120), Dose(3, 3, 3, 120), Dose(3, 3, 3, 120)],
+            .main: [Dose(3, 5, 5, 150), Dose(3, 4, 6, 150), Dose(2, 3, 5, 150)],
+            .strength: [Dose(3, 6, 8, 90), Dose(2, 6, 8, 90), Dose(2, 5, 6, 90)],
+            .accessory: [Dose(2, 10, 12, 45), Dose(2, 10, 12, 45), Dose(2, 8, 10, 45)],
+        ],
+        days: [
+            3: [
+                Day("Norwegian 4×4", lower: true, lifts: [], engine: norwegian),
+                Day("Strength + Long Zone 2", lifts: [m("squat"), s("s1", "bench"), s("s2", "bbrow")],
+                    pairs: [pair("deadbug", "sideplank")], engine: longZone2),
+                Day("30/30 Intervals", lower: true, lifts: [], engine: thirtyThirty),
+            ],
+            4: [
+                Day("Norwegian 4×4", lower: true, lifts: [], engine: norwegian),
+                Day("Lower Strength + Zone 2", lifts: [m("squat"), s("s1", "rdl")],
+                    pairs: [pair("dbrow", "sideplank")], engine: zone2),
+                Day("30/30 Intervals", lower: true, lifts: [], engine: thirtyThirty),
+                Day("Upper Strength + Long Zone 2", lifts: [m("bench"), s("s1", "bbrow")],
+                    pairs: [pair("dbpress", "deadbug")], engine: longZone2),
+            ],
+            5: [
+                Day("Norwegian 4×4", lower: true, lifts: [], engine: norwegian),
+                Day("Lower Strength + Zone 2", lifts: [m("squat"), s("s1", "rdl")],
+                    pairs: [pair("dbrow", "sideplank")], engine: zone2),
+                Day("30/30 Intervals", lower: true, lifts: [], engine: thirtyThirty),
+                Day("Upper Strength + Zone 2", lifts: [m("bench"), s("s1", "bbrow")],
+                    pairs: [pair("dbpress", "deadbug")], engine: zone2),
+                Day("Long Zone 2", lifts: [], pairs: [pair("trxbodysaw", "suitcase")], engine: longZone2),
+            ],
+        ])
+
+    // MARK: Ripped (lean and defined)
+
+    static let dbBurner = Cardio(
+        name: "Dumbbell Burner", rounds: [6, 8, 10], work: 40, rest: 20, minPerRound: 1, unit: .rounds,
+        details: ["40 sec on, 20 sec off, alternating: DB thrusters, then renegade rows. Light enough to keep moving the whole 40."],
+        target: 80...90)
+
+    static let ripped = Spec(
+        doses: [
+            .power: [Dose(3, 3, 3, 120), Dose(3, 3, 3, 120), Dose(3, 3, 3, 120)],
+            .main: [Dose(4, 6, 8, 150), Dose(4, 5, 6, 150), Dose(4, 5, 6, 150)],
+            .strength: [Dose(3, 8, 10, 90), Dose(3, 8, 10, 75), Dose(3, 8, 12, 60)],
+            .accessory: [Dose(3, 10, 12, 60), Dose(3, 12, 15, 45), Dose(4, 12, 15, 30)],
+        ],
+        days: [
+            3: [
+                Day("Full Body A", lower: true, lifts: [m("squat"), s("s1", "bench")],
+                    pairs: [pair("dbrow", "lateral"), pair("curl", "ohtri"), pair("legraise", "sideplank")], finisher: hills),
+                Day("Full Body B", lower: true, lifts: [m("deadlift"), s("s1", "ohp")],
+                    pairs: [pair("trxrow", "dbincline"), pair("bulgarian", "reardelt"), pair("trxbodysaw", "russiantwist")],
+                    finisher: swingEMOM),
+                Day("Full Body C", lifts: [m("incline"), s("s1", "pendlay")],
+                    pairs: [pair("hipthrust", "arnold"), pair("hammer", "skull"), pair("vup", "trxoblique")], finisher: dbBurner),
+            ],
+            4: [
+                Day("Upper A", lifts: [m("bench"), s("s1", "pendlay")],
+                    pairs: [pair("dbincline", "trxrow"), pair("lateral", "trxfacepull"), pair("curl", "ohtri")],
+                    finisher: absBurner),
+                Day("Lower A", lower: true, lifts: [m("squat"), s("s1", "rdl")],
+                    pairs: [pair("bulgarian", "trxhamcurl"), pair("hipthrust", "legraise")], finisher: hills),
+                Day("Upper B", lifts: [m("ohp"), s("s1", "dbrow")],
+                    pairs: [pair("dbfly", "trxhighrow"), pair("arnold", "reardelt"), pair("hammer", "skull")],
+                    finisher: absBurner),
+                Day("Lower B", lower: true, lifts: [m("deadlift"), s("s1", "fsquat")],
+                    pairs: [pair("stepup", "hollowrock"), pair("trxbodysaw", "russiantwist")], finisher: swingEMOM),
+            ],
+            5: [
+                Day("Upper A", lifts: [m("bench"), s("s1", "pendlay")],
+                    pairs: [pair("dbincline", "trxrow"), pair("lateral", "trxfacepull"), pair("curl", "ohtri")],
+                    finisher: absBurner),
+                Day("Lower A", lower: true, lifts: [m("squat"), s("s1", "rdl")],
+                    pairs: [pair("bulgarian", "trxhamcurl"), pair("hipthrust", "legraise")], finisher: hills),
+                Day("Upper B", lifts: [m("ohp"), s("s1", "dbrow")],
+                    pairs: [pair("dbfly", "trxhighrow"), pair("arnold", "reardelt"), pair("hammer", "skull")],
+                    finisher: absBurner),
+                Day("Lower B", lower: true, lifts: [m("deadlift"), s("s1", "fsquat")],
+                    pairs: [pair("stepup", "hollowrock"), pair("trxbodysaw", "russiantwist")], finisher: swingEMOM),
+                Day("Arms, Abs + Incline Walk", lifts: [],
+                    pairs: [pair("inclinecurl", "trxtricep"), pair("lateral", "reardelt"), pair("vup", "trxoblique")],
+                    engine: inclineWalk),
+            ],
+        ])
+
     static func spec(_ id: ProgramID) -> Spec? {
         switch id {
         case .hybrid12: return nil
@@ -368,6 +470,8 @@ public enum ProgramLibrary {
         case .strengthBoxing: return strengthBoxing
         case .screenReady: return screenReady
         case .agentCircuits: return agentCircuits
+        case .vo2Max: return vo2Max
+        case .ripped: return ripped
         }
     }
 
