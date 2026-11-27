@@ -12,10 +12,12 @@
 
 name: TestFlight
 
-# Manual only (Actions tab -> Run workflow). Automatic runs were turned off on Nov 24:
-# GitHub's free Mac minutes run out after a few pushes a month. Builds now come from
-# Xcode Cloud (free with the Apple Developer membership) or scripts/upload-testflight.sh.
+# Automatic again (Nov 27): the repo is public, so GitHub's Mac runners are free.
+# Xcode Cloud and scripts/upload-testflight.sh remain as backups.
 on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'docs/**']
   workflow_dispatch:
 
 concurrency:
@@ -54,6 +56,19 @@ jobs:
 
       - name: Engine tests
         run: swift test
+
+      - name: WHOOP keys
+        env:
+          WHOOP_CLIENT_ID: ${{ secrets.WHOOP_CLIENT_ID }}
+          WHOOP_CLIENT_SECRET: ${{ secrets.WHOOP_CLIENT_SECRET }}
+        run: |
+          # Repository secrets WHOOP_CLIENT_ID / WHOOP_CLIENT_SECRET; without them WHOOP is off in this build.
+          if [ -n "$WHOOP_CLIENT_ID" ] && [ -n "$WHOOP_CLIENT_SECRET" ]; then
+            printf 'WHOOP_CLIENT_ID = %s\nWHOOP_CLIENT_SECRET = %s\n' "$WHOOP_CLIENT_ID" "$WHOOP_CLIENT_SECRET" > Config/Secrets.xcconfig
+            echo "WHOOP keys added."
+          else
+            echo "::warning::No WHOOP secrets: this build has WHOOP turned off."
+          fi
 
       - name: Generate Xcode project
         run: |

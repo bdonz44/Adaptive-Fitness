@@ -1,5 +1,7 @@
 # Getting new builds onto your iPhone (free)
 
+**Now automatic again (Nov 27):** the GitHub project is public, which makes GitHub's builds free. Every change to `main` builds and uploads to TestFlight by itself. What follows are backups.
+
 GitHub keeps the code (free). It no longer builds the app: its free Mac minutes ran out
 after a few changes a month. There are two free ways to get a build into TestFlight.
 
