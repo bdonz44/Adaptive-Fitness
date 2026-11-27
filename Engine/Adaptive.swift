@@ -16,9 +16,22 @@ public struct AdaptiveSettings: Codable, Equatable, Sendable {
     public var nutrition: Bool
     /// Plateau breaker: a stuck main lift gets 3 sessions of heavy triples instead of a 5% drop.
     public var plateauBreaker: Bool
+    /// Interval paces (treadmill speed and incline) progress like lift weights.
+    public var intervalPace: Bool
+    /// Red WHOOP recovery moves a hard day back and puts an easier one first.
+    public var recoveryPicksDay: Bool
+    /// Muscles under 10 hard sets this week get an extra set on today's accessories.
+    public var muscleBalance: Bool
+    /// The round timer follows live heart rate: rest ends once you've recovered.
+    public var heartIntervals: Bool
 
     public init(effortProgression: Bool = false, timeBox: Bool = false, reEntry: Bool = false, weeklyReview: Bool = false,
-                nutrition: Bool = false, plateauBreaker: Bool = false) {
+                nutrition: Bool = false, plateauBreaker: Bool = false, intervalPace: Bool = false,
+                recoveryPicksDay: Bool = false, muscleBalance: Bool = false, heartIntervals: Bool = false) {
+        self.intervalPace = intervalPace
+        self.recoveryPicksDay = recoveryPicksDay
+        self.muscleBalance = muscleBalance
+        self.heartIntervals = heartIntervals
         self.nutrition = nutrition
         self.plateauBreaker = plateauBreaker
         self.effortProgression = effortProgression
@@ -37,13 +50,18 @@ public struct AdaptiveSettings: Codable, Equatable, Sendable {
         weeklyReview = try c.decodeIfPresent(Bool.self, forKey: .weeklyReview) ?? d.weeklyReview
         nutrition = try c.decodeIfPresent(Bool.self, forKey: .nutrition) ?? d.nutrition
         plateauBreaker = try c.decodeIfPresent(Bool.self, forKey: .plateauBreaker) ?? d.plateauBreaker
+        intervalPace = try c.decodeIfPresent(Bool.self, forKey: .intervalPace) ?? d.intervalPace
+        recoveryPicksDay = try c.decodeIfPresent(Bool.self, forKey: .recoveryPicksDay) ?? d.recoveryPicksDay
+        muscleBalance = try c.decodeIfPresent(Bool.self, forKey: .muscleBalance) ?? d.muscleBalance
+        heartIntervals = try c.decodeIfPresent(Bool.self, forKey: .heartIntervals) ?? d.heartIntervals
     }
 
     /// Everything off: the web app's rules exactly.
     public static let off = AdaptiveSettings()
     /// What a new install starts with.
     public static let starting = AdaptiveSettings(effortProgression: true, timeBox: true, reEntry: true, weeklyReview: true,
-                                                     nutrition: true, plateauBreaker: true)
+                                                     nutrition: true, plateauBreaker: true, intervalPace: true,
+                                                     recoveryPicksDay: true, muscleBalance: true, heartIntervals: true)
 }
 
 /// Effort-based progression (RIR) rules.

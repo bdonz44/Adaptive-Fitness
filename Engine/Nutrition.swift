@@ -26,12 +26,71 @@ public enum Nutrition {
         public var call: Call
         public var headline: String
         public var detail: String
+        /// Your real maintenance calories, worked out from food logged and the weight trend.
+        public var maintenance: Int? = nil
     }
 
     public static let cut = -300
     public static let add = 200
 
-    public static func advice(weighIns: [WeighIn], settings: Settings, now: Date) -> Advice {
+    public static func advice(weighIns: [WeighIn], settings: Settings, now: Date, food: [FoodEntry] = []) -> Advice {
+        var base = trendAdvice(weighIns: weighIns, settings: settings, now: now)
+        guard let m = maintenance(weighIns: weighIns, food: food, now: now) else { return base }
+        // Self-adjusting calories: aim for the loss rate from what you really burn.
+        let latest = weighIns.filter { $0.date <= now }.max { $0.date < $1.date }?.pounds ?? 0
+        let losing = settings.goalWeight.map { latest > $0 + 1 } ?? true
+        let target = calorieTarget(maintenance: m.calories, bodyweight: latest, losing: losing)
+        base.maintenance = m.calories
+        base.calorieTarget = target
+        base.calorieChange = settings.currentCalories.map { target - $0 } ?? 0
+        let rate = Double(max(0, m.calories - target)) * 7 / 3500
+        base.headline = losing ? "Eat \(target.formatted()) a day" : "Hold at \(target.formatted()) a day"
+        base.detail = "From \(m.days) days of food and weigh-ins, you burn about \(m.calories.formatted()) a day. "
+            + (losing ? "\(target.formatted()) loses about \(String(format: "%.1f", rate)) lb a week, fast enough to see and slow enough to keep muscle. "
+                      : "That holds your weight. ")
+            + "This updates every week as you log."
+        return base
+    }
+
+    /// Loss to aim for: 0.75% of bodyweight a week.
+    public static let goalRate = 0.0075
+
+    /// Maintenance calories: average calories eaten plus the weight change's worth
+    /// (3,500 per lb), over the last 28 days. Needs 14+ days with food logged and weigh-ins
+    /// spanning 14+ days. Nil otherwise, or when the answer isn't believable.
+    public static func maintenance(weighIns: [WeighIn], food: [FoodEntry], now: Date,
+                                   calendar: Calendar = .current) -> (calories: Int, days: Int)? {
+        let from = now.addingTimeInterval(-28 * 86400)
+        var byDay: [Date: Int] = [:]
+        for f in food where f.date >= from && f.date <= now { byDay[calendar.startOfDay(for: f.date), default: 0] += f.calories }
+        let logged = byDay.values.filter { $0 >= 800 }   // a day with only a snack logged isn't a full day
+        guard logged.count >= 14 else { return nil }
+        let intake = Double(logged.reduce(0, +)) / Double(logged.count)
+        let w = weighIns.filter { $0.date >= from && $0.date <= now }.sorted { $0.date < $1.date }
+        guard w.count >= 4, let first = w.first, let last = w.last, last.date.timeIntervalSince(first.date) >= 14 * 86400 else { return nil }
+        // Least-squares slope (lb per day): steadier than first-to-last.
+        let xs = w.map { $0.date.timeIntervalSince(first.date) / 86400 }
+        let ys = w.map(\.pounds)
+        let mx = xs.reduce(0, +) / Double(xs.count), my = ys.reduce(0, +) / Double(ys.count)
+        let den = zip(xs, xs).map { ($0 - mx) * ($1 - mx) }.reduce(0, +)
+        guard den > 0 else { return nil }
+        let slope = zip(xs, ys).map { ($0 - mx) * ($1 - my) }.reduce(0, +) / den
+        let m = intake - slope * 3500
+        guard m.isFinite, m >= 1400, m <= 5500 else { return nil }
+        return (Int((m / 10).rounded()) * 10, logged.count)
+    }
+
+    /// Daily target: maintenance minus enough to lose 0.75% a week (at most 750 a day),
+    /// never under 10 calories per lb of bodyweight or 1,500. Rounded to 50.
+    public static func calorieTarget(maintenance: Int, bodyweight: Double, losing: Bool) -> Int {
+        guard losing else { return Int((Double(maintenance) / 50).rounded()) * 50 }
+        let deficit = min(750, goalRate * bodyweight * 3500 / 7)
+        let floor = max(1500, bodyweight * 10)
+        let t = Int(((Double(maintenance) - deficit) / 50).rounded()) * 50
+        return max(Int((floor / 50).rounded(.up)) * 50, t)
+    }
+
+    static func trendAdvice(weighIns: [WeighIn], settings: Settings, now: Date) -> Advice {
         let recent = weighIns.filter { $0.date >= now.addingTimeInterval(-28 * 86400) && $0.date <= now }
             .sorted { $0.date < $1.date }
         let latest = weighIns.filter { $0.date <= now }.max { $0.date < $1.date }?.pounds
