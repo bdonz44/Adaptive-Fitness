@@ -26,6 +26,8 @@ public struct SessionDraft: Codable, Equatable, Sendable {
     /// The program and days-a-week this draft was built for (nil: Hybrid 12, 5 days).
     public var program: ProgramID?
     public var days: Int?
+    /// When each interval work round ended (for heart-rate recovery).
+    public var workEnds: [Date]?
 
     /// A new draft for the running program.
     public init(slot: Slot, state: ProgramState, readiness: Readiness = .normal) {
@@ -306,5 +308,6 @@ extension SessionDraft {
         lastDone = c.lenient(String.self, .lastDone)
         program = c.lenient(ProgramID.self, .program)
         days = c.lenient(Int.self, .days)
+        workEnds = c.lenient([Date].self, .workEnds)
     }
 }

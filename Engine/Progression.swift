@@ -37,6 +37,9 @@ public struct LoggedItem: Codable, Equatable, Sendable {
     public var heart: SessionHeart?
     /// The exercise this was, saved with the log (for sets per muscle).
     public var exerciseID: String?
+    /// Treadmill speed (mph) and incline (%) for paced intervals.
+    public var speed: Double?
+    public var incline: Double?
 
     public init(sets: [LoggedSet] = [], rounds: Int? = nil, ticked: Bool = false,
                 rir: Int? = nil, runRating: RunRating? = nil, miles: Double? = nil,
@@ -359,6 +362,8 @@ extension LoggedItem {
                   removedSets: c.lenient(Int.self, .removedSets), skipped: c.lenient(String.self, .skipped))
         heart = c.lenient(SessionHeart.self, .heart)
         exerciseID = c.lenient(String.self, .exerciseID)
+        speed = c.lenient(Double.self, .speed)
+        incline = c.lenient(Double.self, .incline)
     }
 }
 

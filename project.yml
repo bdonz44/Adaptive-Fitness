@@ -48,7 +48,7 @@ targets:
         NSSupportsLiveActivities: true
         WhoopClientID: $(WHOOP_CLIENT_ID)
         WhoopClientSecret: $(WHOOP_CLIENT_SECRET)
-        NSHealthShareUsageDescription: Hybrid 12 reads your workouts, sleep and heart rate to count cardio and suggest how hard to train.
+        NSHealthShareUsageDescription: Hybrid 12 reads your VO2 max (from WHOOP, a watch or another app) to chart your fitness, and your workouts and heart rate to count cardio.
         NSHealthUpdateUsageDescription: Hybrid 12 saves each finished session to Health as a workout so it shows in the Fitness app.
     configFiles:
       Debug: Config/App.xcconfig

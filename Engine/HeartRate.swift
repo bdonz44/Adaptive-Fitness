@@ -187,6 +187,8 @@ public struct SessionHeart: Codable, Equatable, Sendable {
     public var strain: Double?
     public var calories: Int?
     public var fromWhoop: Bool
+    /// Heart-rate recovery: bpm dropped in the minute after hard work (from the live strap).
+    public var recovery: Int?
 
     public init(live: HeartRate.Summary) {
         average = live.average
@@ -221,6 +223,7 @@ public struct SessionHeart: Codable, Equatable, Sendable {
         if let p = peak { parts.append("Max \(p)") }
         parts.append("Zone 4-5 \(Int(hardMinutes.rounded())) min")
         if let s = strain { parts.append(String(format: "Strain %.1f", s)) }
+        if let r = recovery { parts.append("Recovery −\(r) bpm") }
         return parts.joined(separator: " · ")
     }
 

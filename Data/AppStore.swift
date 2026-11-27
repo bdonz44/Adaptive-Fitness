@@ -34,6 +34,10 @@ struct FinishSummary: Identifiable {
     var finishedAt: Date = Date()
     var heart: HeartRate.Summary? = nil
     var milestones: [Milestone] = []
+    /// "Norwegian 4×4: all 4 rounds. Next time 7.2 mph at 8% incline."
+    var paceNotes: [String] = []
+    /// Heart-rate recovery measured this session (bpm in the first minute).
+    var recovery: Int? = nil
 }
 
 /// One row in "Recent sessions".
@@ -110,6 +114,14 @@ final class AppStore {
     private(set) var heartLogs: [(week: Int, heart: SessionHeart)] = []
     /// The coach's call after the last set ticked.
     private(set) var coachCue: (key: String, cue: CoachCues.Cue)?
+    /// Treadmill paces for interval workouts, by workout name (synced with the lifts).
+    private(set) var paces: [String: PaceRecord] = [:]
+    /// Today's WHOOP recovery (nil when not fetched today).
+    private(set) var recoveryToday: Int?
+    /// Heart-rate recovery after interval sessions, oldest first.
+    private(set) var recoveryLogs: [(date: Date, bpm: Int)] = []
+    /// Muscle sets in the 7 days before today (stable all day, so balancing doesn't shift mid-session).
+    @ObservationIgnored private var balanceCache: (day: String, sets: [Muscle: Double])?
 
     init(context: ModelContext) {
         self.context = context
@@ -140,6 +152,8 @@ final class AppStore {
         weekLogs = storedLogs.map { (slot: $0.slot, week: $0.week, date: $0.date) }
 
         lifts = loadLifts()
+        paces = loadPaces()
+        balanceCache = nil
 
         let stamps = storedLogs.compactMap { log in Slot(rawValue: log.slot).map { LogStamp(slot: $0, date: log.date) } }
         logs = stamps
@@ -147,6 +161,8 @@ final class AppStore {
             RecentLog(date: $0.date, title: $0.title, week: $0.week, heart: Self.heart(in: $0))
         }
         heartLogs = storedLogs.compactMap { log in Self.heart(in: log).map { (week: log.week, heart: $0) } }
+        recoveryLogs = storedLogs.compactMap { log in Self.heart(in: log)?.recovery.map { (date: log.date, bpm: $0) } }
+            .sorted { $0.date < $1.date }
 
         weighIns = ((try? context.fetch(FetchDescriptor<StoredWeighIn>())) ?? [])
             .map { WeighIn(date: $0.date, pounds: $0.pounds) }.sorted { $0.date < $1.date }
@@ -215,6 +231,7 @@ final class AppStore {
     private func loadLifts() -> [String: LiftRecord] {
         var best: [String: (StoredLift, LiftRecord)] = [:]
         for stored in (try? context.fetch(FetchDescriptor<StoredLift>())) ?? [] {
+            if stored.exerciseID.hasPrefix(IntervalPace.storePrefix) { continue }   // interval paces, not lifts
             guard let rec = Self.decode(LiftRecord.self, stored.json) else { continue }
             if let current = best[stored.exerciseID] {
                 let newer = (rec.history.last?.date ?? .distantPast, rec.history.count)
@@ -227,6 +244,25 @@ final class AppStore {
                 }
             } else {
                 best[stored.exerciseID] = (stored, rec)
+            }
+        }
+        return best.mapValues(\.1)
+    }
+
+    /// Interval paces: one per workout, the one with the longest history wins.
+    private func loadPaces() -> [String: PaceRecord] {
+        var best: [String: (StoredLift, PaceRecord)] = [:]
+        for stored in (try? context.fetch(FetchDescriptor<StoredLift>())) ?? [] where stored.exerciseID.hasPrefix(IntervalPace.storePrefix) {
+            guard let rec = Self.decode(PaceRecord.self, stored.json) else { continue }
+            if let current = best[rec.name] {
+                if rec.history.count > current.1.history.count {
+                    context.delete(current.0)
+                    best[rec.name] = (stored, rec)
+                } else {
+                    context.delete(stored)
+                }
+            } else {
+                best[rec.name] = (stored, rec)
             }
         }
         return best.mapValues(\.1)
@@ -276,7 +312,8 @@ final class AppStore {
         if adaptive.plateauBreaker {
             context.breakers = lifts.compactMapValues { $0.breaker }
         }
-        let built = SessionBuilder.build(slot: draft.slot, context: context, catalog: catalog)
+        var built = SessionBuilder.build(slot: draft.slot, context: context, catalog: catalog)
+        if adaptive.muscleBalance { MuscleBalance.boost(&built, weekSets: setsBeforeToday(), catalog: catalog) }
         guard adaptive.timeBox, let budget = draft.timeBudget else { return built }
         let logged = Set(draft.entries.filter { $0.value.hasCompletedWork }.keys)
         return TimeBox.fit(built, minutes: budget, keep: logged)
@@ -314,7 +351,19 @@ final class AppStore {
         saveDraft()
     }
 
-    var nextSlot: Slot { Program.nextSlot(state: program, logs: logs, now: Date()) }
+    var nextSlot: Slot { nextPick.slot }
+
+    /// The next session; with red WHOOP recovery an easier open day goes before a hard one.
+    private var nextPick: (slot: Slot, note: String?) {
+        guard adaptive.recoveryPicksDay else { return (Program.nextSlot(state: program, logs: logs, now: Date()), nil) }
+        return DayPicker.pick(state: program, logs: logs, now: Date(), recovery: recoveryToday)
+    }
+
+    /// Why today's session was moved (red recovery), while it's the one showing.
+    var dayNote: String? {
+        let pick = nextPick
+        return pick.note != nil && draft.slot == pick.slot ? pick.note : nil
+    }
 
     /// Logged cardio this program week plus WHOOP activities (runs, walks, rides...) since it started.
     var cardioThisWeek: Int { (cardioByWeek[program.week] ?? 0) + whoopCardioThisWeek }
@@ -491,7 +540,7 @@ final class AppStore {
     /// Nil when nutrition is switched off.
     var nutritionAdvice: Nutrition.Advice? {
         guard adaptive.nutrition else { return nil }
-        return Nutrition.advice(weighIns: weighIns, settings: nutritionSettings, now: Date())
+        return Nutrition.advice(weighIns: weighIns, settings: nutritionSettings, now: Date(), food: food)
     }
 
     // MARK: Cardio typed in by hand
@@ -625,6 +674,10 @@ final class AppStore {
     /// Sets readiness from WHOOP recovery, unless it was picked by hand today
     /// or the session has already started.
     func applyWhoop(_ t: WhoopToday?) {
+        if let t, WhoopReadiness.isCurrent(t, now: Date()) {
+            recoveryToday = t.recovery
+            pickDayForRecovery()
+        }
         guard let t, WhoopReadiness.isCurrent(t, now: Date()), let r = WhoopReadiness.readiness(t) else { return }
         guard UserDefaults.standard.string(forKey: "readinessChosenDay") != Self.dayKey(Date()) else { return }
         // Not once anything is typed or the workout has started.
@@ -872,13 +925,22 @@ final class AppStore {
     // MARK: Finishing
 
     /// `heart` gives the live heart rate recorded between two times (from the heart-rate monitor).
-    func finish(now: Date = Date(), heart: ((Date, Date) -> HeartRate.Summary?)? = nil) -> FinishSummary {
+    func finish(now: Date = Date(), heart: ((Date, Date) -> HeartRate.Summary?)? = nil,
+                recovery: (([Date]) -> Int?)? = nil) -> FinishSummary {
         let started = draft.startedAt
         let heartSummary = started.flatMap { heart?($0, now) }
         let s = session
         var savedEntries = draft.entries
         for item in s.items { if let id = item.exerciseID, savedEntries[item.key] != nil { savedEntries[item.key]?.exerciseID = id } }
         SessionHeart.write(heartSummary.map(SessionHeart.init(live:)), into: &savedEntries)
+        // Heart-rate recovery after the interval rounds (needs the live strap).
+        if let ends = draft.workEnds, !ends.isEmpty, let drop = recovery?(ends), var h = SessionHeart.read(savedEntries) {
+            h.recovery = drop
+            SessionHeart.write(h, into: &savedEntries)
+            recoveryLogs.append((date: now, bpm: drop))
+        }
+        let paceNotes = adaptive.intervalPace ? progressPaces(session: s, date: now) : []
+        balanceCache = nil
         let result = Progression.progress(session: s, entries: draft.entries, lifts: lifts, date: now,
                                           runMinutes: program.runMinutes, catalog: catalog, adaptive: adaptive, gear: gear)
         let workout = Workouts.record(session: s, entries: draft.entries, startedAt: draft.startedAt,
@@ -922,7 +984,8 @@ final class AppStore {
         return FinishSummary(title: s.title, changes: result.changes, cardioMinutes: result.cardioMinutes,
                              weekMessage: advance.message, minutes: workout?.minutes, setsDone: stats.setsDone,
                              volume: stats.volume, records: records, weekDone: program.doneCount, undoState: undo,
-                             startedAt: started, finishedAt: now, heart: heartSummary, milestones: newMilestones)
+                             startedAt: started, finishedAt: now, heart: heartSummary, milestones: newMilestones,
+                             paceNotes: paceNotes, recovery: SessionHeart.read(savedEntries)?.recovery)
     }
 
     /// Skip marks a slot done with no log.
@@ -989,6 +1052,8 @@ final class AppStore {
         logs = []
         weekLogs = []
         heartLogs = []
+        recoveryLogs = []
+        paces = [:]
         recentLogs = []
         cardioByWeek = [:]
         weighIns = []
@@ -1090,6 +1155,10 @@ final class AppStore {
 
     private func saveLift(_ id: String, _ rec: LiftRecord) {
         guard let data = Self.encode(rec) else { return }
+        saveLiftRow(id, data)
+    }
+
+    private func saveLiftRow(_ id: String, _ data: Data) {
         let descriptor = FetchDescriptor<StoredLift>(predicate: #Predicate { $0.exerciseID == id })
         if let stored = (try? context.fetch(descriptor))?.first {
             stored.json = data
@@ -1183,5 +1252,221 @@ extension AppStore {
         if let data = try? JSONEncoder().encode(settings) {
             UserDefaults.standard.set(data, forKey: adaptiveKey)
         }
+    }
+}
+
+// MARK: - Adaptive features (Nov 27)
+
+extension AppStore {
+    // MARK: 5. Muscle balancing
+
+    /// Hard sets per muscle in the 7 days before today (logs only, not today's session).
+    func setsBeforeToday(now: Date = Date()) -> [Muscle: Double] {
+        let day = Self.dayKey(now)
+        if let c = balanceCache, c.day == day { return c.sets }
+        let today = Calendar.current.startOfDay(for: now)
+        let from = today.addingTimeInterval(-7 * 86400)
+        let stored = (try? context.fetch(FetchDescriptor<StoredLog>(predicate: #Predicate { $0.date >= from && $0.date < today }))) ?? []
+        var done: [(exerciseID: String, sets: Int)] = []
+        for log in stored where log.slot != Slot.R.rawValue {
+            guard let entries = Self.decode([String: LoggedItem].self, log.entries), let slot = Slot(rawValue: log.slot) else { continue }
+            var rebuilt: Session? = nil
+            if entries.contains(where: { $0.key != SessionHeart.entryKey && $0.value.exerciseID == nil }) {
+                var ctx = SessionDraft(slot: slot, state: program).context(for: program)
+                ctx.week = log.week
+                ctx.gear = gear
+                rebuilt = SessionBuilder.build(slot: slot, context: ctx, catalog: catalog)
+            }
+            done += MuscleMap.done(entries: entries, session: rebuilt)
+        }
+        let sets = MuscleMap.sets(done, catalog: catalog)
+        balanceCache = (day, sets)
+        return sets
+    }
+
+    /// What muscle balancing added to today's session (shown on Today).
+    var balanceNotes: [String] {
+        guard adaptive.muscleBalance else { return [] }
+        var built = SessionBuilder.build(slot: draft.slot, context: draft.context(for: program), catalog: catalog)
+        return MuscleBalance.boost(&built, weekSets: setsBeforeToday(), catalog: catalog)
+    }
+
+    // MARK: 2. Recovery picks the day
+
+    /// Red recovery and today's session not started: put the easier day first.
+    func pickDayForRecovery() {
+        guard adaptive.recoveryPicksDay, !draft.hasAnyInput, draft.startedAt == nil else { return }
+        let plain = Program.nextSlot(state: program, logs: logs, now: Date())
+        let pick = nextPick
+        // Only when today shows the plain next session (not one picked by hand).
+        guard pick.note != nil, pick.slot != draft.slot, draft.slot == plain else { return }
+        draft = SessionDraft(slot: pick.slot, state: program, readiness: draft.readiness)
+        saveDraft()
+    }
+
+    // MARK: 1. Interval paces
+
+    func pace(for item: SessionItem) -> PaceRecord? { paces[item.name] }
+
+    /// At Finish: each paced interval's speed and incline set next time's target.
+    fileprivate func progressPaces(session s: Session, date: Date) -> [String] {
+        var notes: [String] = []
+        for item in s.items where IntervalPace.tracks(item) {
+            guard let e = draft.entries[item.key], e.speed != nil || e.incline != nil else { continue }
+            let planned = item.rounds ?? 0
+            let rounds = e.rounds ?? (e.ticked ? planned : 0)
+            let (rec, note) = IntervalPace.next(after: paces[item.name], name: item.name, speed: e.speed, incline: e.incline,
+                                                rounds: rounds, planned: planned, rating: e.runRating, date: date)
+            paces[item.name] = rec
+            if let data = Self.encode(rec) { saveLiftRow(IntervalPace.storePrefix + item.name, data) }
+            if let note { notes.append(note) }
+        }
+        return notes
+    }
+
+    // MARK: 9. Heart-rate recovery
+
+    /// The round timer calls this as each work round ends.
+    func noteWorkEnd(_ date: Date = Date()) {
+        draft.workEnds = (draft.workEnds ?? []) + [date]
+        saveDraft()
+    }
+
+    var latestRecovery: (date: Date, bpm: Int)? { recoveryLogs.last }
+
+    // MARK: 4. VO2 max
+
+    var vo2Readings: [VO2Reading] { (vo2Manual + vo2Health).sorted { $0.date < $1.date } }
+    var latestVO2: VO2Reading? { vo2Readings.last }
+
+    private var vo2Manual: [VO2Reading] {
+        get { access(keyPath: \.vo2Readings); return Self.load([VO2Reading].self, key: "fitness.vo2") ?? [] }
+        set { withMutation(keyPath: \.vo2Readings) { Self.store(newValue, key: "fitness.vo2") } }
+    }
+
+    private var vo2Health: [VO2Reading] {
+        get { access(keyPath: \.vo2Readings); return Self.load([VO2Reading].self, key: "fitness.vo2Health") ?? [] }
+        set { withMutation(keyPath: \.vo2Readings) { Self.store(newValue, key: "fitness.vo2Health") } }
+    }
+
+    /// A 12-minute run test. False when the distance isn't believable.
+    @discardableResult
+    func logCooper(miles: Double, date: Date = Date()) -> Bool {
+        guard let v = Fitness.cooper(miles: miles) else { return false }
+        vo2Manual.append(VO2Reading(date: date, value: v, source: "12-minute test"))
+        return true
+    }
+
+    func removeVO2(_ r: VO2Reading) { vo2Manual.removeAll { $0.id == r.id } }
+
+    /// Apple Health's VO2 max readings (WHOOP, a watch...). Asked once from the Progress card, then daily.
+    var healthVO2Connected: Bool { UserDefaults.standard.bool(forKey: "fitness.healthVO2") }
+
+    func refreshHealthVO2(force: Bool = false, _ fetch: () async -> [VO2Reading]?) async {
+        guard force || healthVO2Connected else { return }
+        let key = "fitness.vo2Fetched"
+        if !force, let last = UserDefaults.standard.object(forKey: key) as? Date, Date().timeIntervalSince(last) < 20 * 3600 { return }
+        guard let list = await fetch() else { return }
+        UserDefaults.standard.set(true, forKey: "fitness.healthVO2")
+        UserDefaults.standard.set(Date(), forKey: key)
+        vo2Health = list.filter { $0.value.isFinite && $0.value > 10 && $0.value < 90 }
+    }
+
+    // MARK: 10. Goals
+
+    var goal: Goal? {
+        get { access(keyPath: \.goal); return Self.load(Goal.self, key: "goal") }
+        set {
+            withMutation(keyPath: \.goal) {
+                if let newValue { Self.store(newValue, key: "goal") } else { UserDefaults.standard.removeObject(forKey: "goal") }
+            }
+        }
+    }
+
+    /// Where you are now for a goal of this kind.
+    func goalValue(_ kind: Goal.Kind, liftID: String?) -> Double? {
+        switch kind {
+        case .vo2Max: return latestVO2?.value
+        case .bodyweight: return weighIns.last?.pounds
+        case .lift: return liftID.flatMap { Suggestions.best1RM(lifts[$0]) }.map { (Suggestions.round5($0)) }
+        }
+    }
+
+    var goalStatus: GoalPlanner.Status? {
+        guard let g = goal else { return nil }
+        return GoalPlanner.status(g, current: goalValue(g.kind, liftID: g.liftID), now: Date())
+    }
+
+    var goalPlan: [GoalPlanner.Block] {
+        guard let g = goal else { return [] }
+        return GoalPlanner.plan(g, current: program.program, weeksLeftInBlock: 12 - (program.programWeek.week - 1) % 12, now: Date())
+    }
+
+    // MARK: 6. Next block
+
+    /// From week 10 of a 12-week block: what to run next, and why.
+    var nextBlock: (program: ProgramID, reason: String)? {
+        let wk = (program.programWeek.week - 1) % 12 + 1
+        guard wk >= 10 else { return nil }
+        return GoalPlanner.nextBlock(after: program.program, goal: goal, results: blockResults,
+                                     aboveGoalWeight: nutritionSettings.goalWeight.map { (weighIns.last?.pounds ?? 0) > $0 + 1 } ?? true)
+    }
+
+    /// How this 12-week block went: sessions done, weight, main lifts, fitness.
+    var blockResults: GoalPlanner.BlockResults {
+        let blockStartWeek = program.week - (program.programWeek.week - 1) % 12
+        let inBlock = weekLogs.filter { $0.week >= blockStartWeek && $0.week <= program.week && $0.slot != Slot.R.rawValue }
+        let weeks = max(1, program.week - blockStartWeek + 1)
+        let adherence = min(1, Double(inBlock.count) / Double(weeks * program.order.count))
+        let since = inBlock.map(\.date).min() ?? Date().addingTimeInterval(-Double(weeks) * 7 * 86400)
+        let w = weighIns.filter { $0.date >= since }
+        let weight = (w.first?.pounds).flatMap { f in w.last.map { ($0.pounds - f) / f * 100 } }
+        var changes: [Double] = []
+        for id in ["squat", "bench", "deadlift", "ohp"] {
+            let h = (lifts[id]?.history ?? []).filter { $0.date >= since }.compactMap { e -> Double? in
+                guard let wt = e.weight, let r = e.reps, wt > 0, r > 0 else { return nil }
+                return Suggestions.e1RM(weight: wt, reps: r)
+            }
+            if let f = h.first, let l = h.last, h.count >= 2, f > 0 { changes.append((l - f) / f * 100) }
+        }
+        let strength = changes.isEmpty ? nil : changes.reduce(0, +) / Double(changes.count)
+        let vo2 = Fitness.change(vo2Readings.map { (date: $0.date, value: $0.value) }, days: 120, now: Date())
+        let hrr = Fitness.change(recoveryLogs.filter { $0.date >= since }.map { (date: $0.date, value: Double($0.bpm)) }, days: 120, now: Date())
+        return GoalPlanner.BlockResults(adherence: adherence, weightChangePct: weight, strengthChangePct: strength,
+                                        fitnessChange: vo2 ?? hrr)
+    }
+
+    // MARK: 11. Coach memory
+
+    var coachNotes: [CoachMemoryNote] {
+        get { access(keyPath: \.coachNotes); return Self.load([CoachMemoryNote].self, key: "coach.notes") ?? [] }
+        set { withMutation(keyPath: \.coachNotes) { Self.store(newValue, key: "coach.notes") } }
+    }
+
+    /// The coach's "remember" tool.
+    func remember(_ text: String) -> String {
+        let before = coachNotes.count
+        coachNotes = CoachMemory.adding(text, to: coachNotes, date: Date())
+        return coachNotes.count >= before ? "Noted: \(text)" : "Nothing to note."
+    }
+
+    func forget(_ note: CoachMemoryNote) { coachNotes.removeAll { $0.id == note.id } }
+
+    /// Notes plus lifts skipped last time (from the logs), for the coach's context.
+    var coachMemoryLine: String? {
+        let skips = lifts.values.compactMap { rec in
+            rec.lastSkip.map { (name: catalog.exercise(rec.exerciseID)?.name ?? rec.exerciseID, reason: $0) }
+        }.sorted { $0.name < $1.name }
+        return CoachMemory.context(coachNotes, skips: skips)
+    }
+
+    // MARK: Small saved values (this phone)
+
+    fileprivate static func load<T: Decodable>(_ type: T.Type, key: String) -> T? {
+        UserDefaults.standard.data(forKey: key).flatMap { SafeJSON.decode(type, $0) }
+    }
+
+    fileprivate static func store<T: Encodable>(_ value: T, key: String) {
+        if let d = SafeJSON.encode(value) { UserDefaults.standard.set(d, forKey: key) }
     }
 }
