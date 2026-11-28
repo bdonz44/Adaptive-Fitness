@@ -3,4 +3,5 @@
 enum RestTimerControl {
     @MainActor static func addThirty() {}
     @MainActor static func done() {}
+    @MainActor static func tickNext() {}
 }

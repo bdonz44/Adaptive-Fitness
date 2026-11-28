@@ -55,6 +55,8 @@ struct Hybrid12App: App {
         #endif
         _store = State(initialValue: store)
         RestTimer.shared.contextProvider = { [store] in store.restContext() }
+        RestTimer.shared.workoutProvider = { [store] in store.lockScreenWorkoutActive }
+        RestTimer.shared.tickHandler = { [store] in store.tickNextFromLockScreen() }
     }
 
     /// Fetches today's WHOOP numbers (at most every 20 min) and sets readiness from them.
@@ -85,6 +87,8 @@ struct Hybrid12App: App {
                 .environment(progress)
                 .modelContainer(container)
                 .task {
+                    // A workout still running after a relaunch gets its Lock Screen back.
+                    RestTimer.shared.showWorkout()
                     WeeklyReviewNotice.schedule(store.adaptive.weeklyReview)
                     await syncWhoop()
                 }

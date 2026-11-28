@@ -18,6 +18,10 @@ struct RestTimerAttributes: ActivityAttributes {
         var sessionTitle: String = ""
         var setsDone: Int = 0
         var setsTotal: Int = 0
+        /// No rest running: the Lock Screen shows the next set with a Done button.
+        var working: Bool = false
+        /// Show the ✓ Done button on the rest layouts too.
+        var tick: Bool = false
     }
 }
 
@@ -52,6 +56,15 @@ struct RestAddThirtyIntent: LiveActivityIntent {
     init() {}
     func perform() async throws -> some IntentResult {
         await RestTimerControl.addThirty()
+        return .result()
+    }
+}
+
+struct TickSetIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Set done"
+    init() {}
+    func perform() async throws -> some IntentResult {
+        await RestTimerControl.tickNext()
         return .result()
     }
 }

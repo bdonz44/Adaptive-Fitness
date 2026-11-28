@@ -7,6 +7,8 @@ struct RestContext {
     var sessionTitle: String = ""
     var setsDone: Int = 0
     var setsTotal: Int = 0
+    /// Show the ✓ Done button (Lock Screen workout on, workout running).
+    var tick: Bool = false
 }
 
 /// Rest countdown. Ticking a set starts the item's rest; the first item of a
@@ -23,6 +25,10 @@ final class RestTimer {
 
     /// Set by the app so the Lock Screen can show the next set and session progress.
     @ObservationIgnored var contextProvider: () -> RestContext = { RestContext() }
+    /// True while a workout is running and the Lock Screen workout is on.
+    @ObservationIgnored var workoutProvider: () -> Bool = { false }
+    /// The Lock Screen's Done button (ticks the next set).
+    @ObservationIgnored var tickHandler: (() -> Void)?
     @ObservationIgnored private let alerts = RestAlerts()
 
     var isActive: Bool { endDate != nil }
@@ -56,9 +62,27 @@ final class RestTimer {
     }
 
     func done() {
-        if endDate != nil { alerts.clear() }
+        let wasResting = endDate != nil
         endDate = nil
         label = ""
+        if workoutProvider() {
+            alerts.showWorkout(context: contextProvider())   // back to "next set" on the Lock Screen
+        } else if wasResting {
+            alerts.clear()
+        }
+    }
+
+    /// Lock Screen workout: shows the next set while no rest is running.
+    func showWorkout() {
+        guard endDate == nil, workoutProvider() else { return }
+        alerts.showWorkout(context: contextProvider())
+    }
+
+    /// The workout is over (finished, restarted or switched): nothing left on the Lock Screen.
+    func endWorkout() {
+        endDate = nil
+        label = ""
+        alerts.clear()
     }
 
     func remaining(at date: Date) -> TimeInterval {
@@ -86,4 +110,5 @@ final class RestTimer {
 enum RestTimerControl {
     @MainActor static func addThirty() { RestTimer.shared.addThirty() }
     @MainActor static func done() { RestTimer.shared.done() }
+    @MainActor static func tickNext() { RestTimer.shared.tickHandler?() }
 }

@@ -39,6 +39,10 @@ struct GoalView: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(s.onTrack ? Theme.done : Color(hex: 0xF59E0B))
                         .fixedSize(horizontal: false, vertical: true)
+                    if let f = store.goalForecast {
+                        Text("At your recent pace you get there around \(f.formatted(.dateTime.month(.abbreviated).day().year())).")
+                            .font(.subheadline).foregroundStyle(look.secondary)
+                    }
                 } else {
                     Text(goal.kind == .vo2Max ? "Log a VO2 max (Progress > Fitness) to track this."
                                               : "Log a weigh-in or the lift to track this.")

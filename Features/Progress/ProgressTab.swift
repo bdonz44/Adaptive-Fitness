@@ -370,6 +370,11 @@ struct WorkingWeightsCard: View {
                                 .font(.caption)
                                 .foregroundStyle(Theme.secondary)
                         }
+                        if let f = store.forecast(row.id) {
+                            Text("\(lb(f.target)) by \(f.date.formatted(.dateTime.month(.abbreviated).day()))")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Theme.accent)
+                        }
                     }
                     Spacer()
                     if row.history.count >= 2 {

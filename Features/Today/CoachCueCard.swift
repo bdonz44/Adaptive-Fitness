@@ -20,7 +20,17 @@ struct CoachCueCard: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
-                if let w = cue.newWeight {
+                if let undo = store.adjustUndo, undo.key == store.coachCue?.key {
+                    Button { store.undoAdjust() } label: {
+                        Text("Undo")
+                            .font(.system(size: 17, weight: .black))
+                            .foregroundStyle(style.fill)
+                            .padding(.horizontal, 14)
+                            .frame(minHeight: 48)
+                            .background(style.text, in: RoundedRectangle(cornerRadius: max(look.radius - 8, 4)))
+                    }
+                    .buttonStyle(.plain)
+                } else if let w = cue.newWeight {
                     Button { store.applyCoachWeight() } label: {
                         Text("Use \(lb(w))")
                             .font(.system(size: 17, weight: .black))

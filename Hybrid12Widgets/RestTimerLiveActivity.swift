@@ -54,6 +54,56 @@ private struct RestButtons: View {
     }
 }
 
+/// The ✓ button that ticks the next set (runs in the app: TickSetIntent).
+private struct TickButton: View {
+    let accent: Color
+    var body: some View {
+        Button(intent: TickSetIntent()) {
+            Label("Done", systemImage: "checkmark")
+                .font(.headline.weight(.heavy)).foregroundStyle(.black)
+                .frame(minWidth: 84, minHeight: 44)
+        }
+        .buttonStyle(.borderedProminent)
+        .buttonBorderShape(.capsule)
+        .tint(accent)
+    }
+}
+
+/// Between rests: what to do now, sets done, and Done.
+private struct WorkView: View {
+    let state: RestTimerAttributes.ContentState
+
+    var body: some View {
+        let accent = state.accentColor
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(state.sessionTitle).font(.headline).lineLimit(1)
+                Spacer()
+                if state.setsTotal > 0 {
+                    Text("\(state.setsDone) of \(state.setsTotal) sets").font(.subheadline).foregroundStyle(.secondary)
+                }
+            }
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("NOW").font(.caption.weight(.heavy)).foregroundStyle(accent)
+                    Text(state.next.isEmpty ? "All sets done. Finish in the app." : state.next)
+                        .font(.title3.weight(.heavy)).lineLimit(2).minimumScaleFactor(0.7)
+                }
+                Spacer()
+                if state.tick { TickButton(accent: accent) }
+            }
+            if state.setsTotal > 0 {
+                HStack(spacing: 3) {
+                    ForEach(0..<min(state.setsTotal, 30), id: \.self) { i in
+                        Capsule().fill(i < state.setsDone ? accent : Color.gray.opacity(0.5)).frame(height: 6)
+                    }
+                }
+            }
+        }
+        .padding()
+    }
+}
+
 /// The three Lock Screen layouts the user can pick.
 private struct LockScreenView: View {
     let state: RestTimerAttributes.ContentState
@@ -83,6 +133,7 @@ private struct LockScreenView: View {
                         Text(state.next.isEmpty ? state.label : "Next: \(state.next)")
                             .font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                         Spacer()
+                        if state.tick { TickButton(accent: accent) }
                         Countdown(state: state, isStale: isStale)
                             .font(.system(size: 30, weight: .heavy, design: .rounded))
                             .foregroundStyle(accent)
@@ -119,10 +170,13 @@ private struct LockScreenView: View {
                             .tint(accent)
                         }
                     }
-                    Countdown(state: state, isStale: isStale)
-                        .font(.system(size: 46, weight: .heavy, design: .rounded))
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 120, alignment: .trailing)
+                    VStack(alignment: .trailing, spacing: 6) {
+                        Countdown(state: state, isStale: isStale)
+                            .font(.system(size: 46, weight: .heavy, design: .rounded))
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 120, alignment: .trailing)
+                        if state.tick { TickButton(accent: accent) }
+                    }
                 }
             }
         }
@@ -133,42 +187,66 @@ private struct LockScreenView: View {
 struct RestTimerLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: RestTimerAttributes.self) { context in
-            LockScreenView(state: context.state, isStale: context.isStale)
-                .activityBackgroundTint(Color.black.opacity(0.75))
-                .activitySystemActionForegroundColor(.white)
+            Group {
+                if context.state.working {
+                    WorkView(state: context.state)
+                } else {
+                    LockScreenView(state: context.state, isStale: context.isStale)
+                }
+            }
+            .activityBackgroundTint(Color.black.opacity(0.75))
+            .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
             let accent = context.state.accentColor
+            let working = context.state.working
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Label(context.state.label, systemImage: "timer")
+                    Label(working ? "Now" : context.state.label, systemImage: working ? "figure.strengthtraining.traditional" : "timer")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(accent)
                         .lineLimit(1)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Countdown(state: context.state, isStale: context.isStale)
-                        .font(.title2.weight(.bold))
-                        .multilineTextAlignment(.trailing)
+                    if working {
+                        Text("\(context.state.setsDone)/\(context.state.setsTotal)").font(.title3.weight(.bold)).monospacedDigit()
+                    } else {
+                        Countdown(state: context.state, isStale: context.isStale)
+                            .font(.title2.weight(.bold))
+                            .multilineTextAlignment(.trailing)
+                    }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(spacing: 8) {
                         if !context.state.next.isEmpty {
-                            Text("Next: \(context.state.next)").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                            Text(working ? context.state.next : "Next: \(context.state.next)")
+                                .font(working ? .headline : .caption).foregroundStyle(working ? .primary : .secondary).lineLimit(1)
                         }
-                        RestButtons(accent: accent)
+                        if working {
+                            if context.state.tick { TickButton(accent: accent) }
+                        } else {
+                            RestButtons(accent: accent)
+                        }
                     }
                 }
             } compactLeading: {
-                Image(systemName: "timer").foregroundStyle(accent)
+                Image(systemName: working ? "figure.strengthtraining.traditional" : "timer").foregroundStyle(accent)
             } compactTrailing: {
-                Countdown(state: context.state, isStale: context.isStale)
-                    .foregroundStyle(accent)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 44)
+                if working {
+                    Text("\(context.state.setsDone)/\(context.state.setsTotal)").monospacedDigit().foregroundStyle(accent)
+                } else {
+                    Countdown(state: context.state, isStale: context.isStale)
+                        .foregroundStyle(accent)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 44)
+                }
             } minimal: {
-                Countdown(state: context.state, isStale: context.isStale)
-                    .font(.caption2)
-                    .multilineTextAlignment(.center)
+                if working {
+                    Image(systemName: "figure.strengthtraining.traditional").foregroundStyle(accent)
+                } else {
+                    Countdown(state: context.state, isStale: context.isStale)
+                        .font(.caption2)
+                        .multilineTextAlignment(.center)
+                }
             }
             .keylineTint(accent)
         }

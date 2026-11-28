@@ -16,8 +16,22 @@ final class RestAlerts {
         let state = RestTimerAttributes.ContentState(
             label: label, start: start, end: end, style: style, accent: Look.current.accentHex,
             next: context.next, sessionTitle: context.sessionTitle,
-            setsDone: context.setsDone, setsTotal: context.setsTotal)
-        let content = ActivityContent(state: state, staleDate: end)
+            setsDone: context.setsDone, setsTotal: context.setsTotal, tick: context.tick)
+        present(ActivityContent(state: state, staleDate: end))
+    }
+
+    /// Between rests: the next set and a Done button (no countdown, no alert).
+    func showWorkout(context: RestContext) {
+        center.removePendingNotificationRequests(withIdentifiers: [Self.notificationID])
+        let now = Date()
+        let state = RestTimerAttributes.ContentState(
+            label: "Workout", start: now, end: now, style: "big", accent: Look.current.accentHex,
+            next: context.next, sessionTitle: context.sessionTitle,
+            setsDone: context.setsDone, setsTotal: context.setsTotal, working: true, tick: context.tick)
+        present(ActivityContent(state: state, staleDate: nil))
+    }
+
+    private func present(_ content: ActivityContent<RestTimerAttributes.ContentState>) {
         // A rest that ran past zero goes stale; it can still be updated, and must never be
         // left behind on the Lock Screen while a second one is started.
         if let activity, activity.activityState == .active || activity.activityState == .stale {

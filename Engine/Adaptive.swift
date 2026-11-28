@@ -24,10 +24,17 @@ public struct AdaptiveSettings: Codable, Equatable, Sendable {
     public var muscleBalance: Bool
     /// The round timer follows live heart rate: rest ends once you've recovered.
     public var heartIntervals: Bool
+    /// The coach's weight change after a set goes straight onto the remaining sets (with Undo).
+    public var liveAdjust: Bool
+    /// The whole workout on the Lock Screen: next set and a Done button.
+    public var lockScreenWorkout: Bool
 
     public init(effortProgression: Bool = false, timeBox: Bool = false, reEntry: Bool = false, weeklyReview: Bool = false,
                 nutrition: Bool = false, plateauBreaker: Bool = false, intervalPace: Bool = false,
-                recoveryPicksDay: Bool = false, muscleBalance: Bool = false, heartIntervals: Bool = false) {
+                recoveryPicksDay: Bool = false, muscleBalance: Bool = false, heartIntervals: Bool = false,
+                liveAdjust: Bool = false, lockScreenWorkout: Bool = false) {
+        self.liveAdjust = liveAdjust
+        self.lockScreenWorkout = lockScreenWorkout
         self.intervalPace = intervalPace
         self.recoveryPicksDay = recoveryPicksDay
         self.muscleBalance = muscleBalance
@@ -54,6 +61,8 @@ public struct AdaptiveSettings: Codable, Equatable, Sendable {
         recoveryPicksDay = try c.decodeIfPresent(Bool.self, forKey: .recoveryPicksDay) ?? d.recoveryPicksDay
         muscleBalance = try c.decodeIfPresent(Bool.self, forKey: .muscleBalance) ?? d.muscleBalance
         heartIntervals = try c.decodeIfPresent(Bool.self, forKey: .heartIntervals) ?? d.heartIntervals
+        liveAdjust = try c.decodeIfPresent(Bool.self, forKey: .liveAdjust) ?? d.liveAdjust
+        lockScreenWorkout = try c.decodeIfPresent(Bool.self, forKey: .lockScreenWorkout) ?? d.lockScreenWorkout
     }
 
     /// Everything off: the web app's rules exactly.
@@ -61,7 +70,8 @@ public struct AdaptiveSettings: Codable, Equatable, Sendable {
     /// What a new install starts with.
     public static let starting = AdaptiveSettings(effortProgression: true, timeBox: true, reEntry: true, weeklyReview: true,
                                                      nutrition: true, plateauBreaker: true, intervalPace: true,
-                                                     recoveryPicksDay: true, muscleBalance: true, heartIntervals: true)
+                                                     recoveryPicksDay: true, muscleBalance: true, heartIntervals: true,
+                                                     liveAdjust: true, lockScreenWorkout: true)
 }
 
 /// Effort-based progression (RIR) rules.

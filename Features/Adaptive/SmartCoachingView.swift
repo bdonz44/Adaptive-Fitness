@@ -66,6 +66,24 @@ struct SmartCoachingView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
+                Card(title: "Live adjustments") {
+                    Toggle(isOn: $store.adaptive.liveAdjust) {
+                        Text("Change the weight mid-workout").font(.headline)
+                    }
+                    Text("When a set comes in short of the reps, or way too easy, the rest of that exercise's sets change weight right away (one step down or up, using your plates and bells). The coach card shows it with an Undo button.")
+                        .font(.subheadline).foregroundStyle(look.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Card(title: "Lock Screen workout") {
+                    Toggle(isOn: $store.adaptive.lockScreenWorkout) {
+                        Text("Whole workout on the Lock Screen").font(.headline)
+                    }
+                    Text("Once you start a workout, the Lock Screen and Dynamic Island show the next set (weight × reps) and sets done, with a ✓ Done button that logs the set at the planned weight and reps and starts the rest. Live heart rate stays in the app: the Lock Screen can't refresh every second.")
+                        .font(.subheadline).foregroundStyle(look.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 Card(title: "Muscle balancing") {
                     Toggle(isOn: $store.adaptive.muscleBalance) {
                         Text("Top up muscles under 10 sets").font(.headline)

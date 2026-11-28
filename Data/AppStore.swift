@@ -114,6 +114,8 @@ final class AppStore {
     private(set) var heartLogs: [(week: Int, heart: SessionHeart)] = []
     /// The coach's call after the last set ticked.
     private(set) var coachCue: (key: String, cue: CoachCues.Cue)?
+    /// A weight change applied automatically after a set: the weights it replaced, for Undo.
+    private(set) var adjustUndo: (key: String, weights: [Int: Double?])?
     /// Treadmill paces for interval workouts, by workout name (synced with the lifts).
     private(set) var paces: [String: PaceRecord] = [:]
     /// Today's WHOOP recovery (nil when not fetched today).
@@ -313,6 +315,11 @@ final class AppStore {
             context.breakers = lifts.compactMapValues { $0.breaker }
         }
         var built = SessionBuilder.build(slot: draft.slot, context: context, catalog: catalog)
+        let sore = Set(soreSpots.map(\.area))
+        if !sore.isEmpty {
+            PainMap.adjust(&built, sore: sore, keep: Set(draft.entries.filter { $0.value.hasCompletedWork }.keys),
+                           catalog: catalog, gear: gear)
+        }
         if adaptive.muscleBalance { MuscleBalance.boost(&built, weekSets: setsBeforeToday(), catalog: catalog) }
         guard adaptive.timeBox, let budget = draft.timeBudget else { return built }
         let logged = Set(draft.entries.filter { $0.value.hasCompletedWork }.keys)
@@ -669,8 +676,10 @@ final class AppStore {
         let s = session
         let stats = SessionInsights.stats(session: s, entries: draft.entries)
         var next = ""
+        var nextIsLift = false
         if let open = SessionInsights.nextOpenSet(session: s, entries: draft.entries, after: draft.lastDone),
            let item = s.item(open.key) {
+            nextIsLift = item.isLift
             if item.isCardio {
                 next = "\(item.name) · \(item.rounds.map { item.unit == .min ? "\($0) min" : "\($0) rounds" } ?? "")"
             } else {
@@ -679,7 +688,8 @@ final class AppStore {
                 next = "\(item.name) set \(open.set + 1) · \(amount)"
             }
         }
-        return RestContext(next: next, sessionTitle: s.title, setsDone: stats.setsDone, setsTotal: stats.setsPlanned)
+        return RestContext(next: next, sessionTitle: s.title, setsDone: stats.setsDone, setsTotal: stats.setsPlanned,
+                           tick: lockScreenWorkoutActive && nextIsLift)
     }
 
     // MARK: Draft changes (saved on every change)
@@ -790,6 +800,26 @@ final class AppStore {
         let cue = CoachCues.afterSet(item: item, reps: sets[index].reps, weight: sets[index].weight, effort: effort,
                                      setsLeft: left, lightDay: session.isLightDay, gear: gear)
         coachCue = (item.key, cue)
+        adjustUndo = nil
+        // Live adjustment: the new weight goes straight onto the sets left (Undo puts them back).
+        if adaptive.liveAdjust, let w = cue.newWeight {
+            var before: [Int: Double?] = [:]
+            for (i, s) in entry(item.key).sets.enumerated() where !s.isDone { before[i] = s.weight }
+            applyCoachWeight()
+            adjustUndo = (item.key, before)
+            let why = w < (sets[index].weight ?? w) ? "Short of \(item.low)." : "Too easy."
+            coachCue = (item.key, CoachCues.Cue(tone: cue.tone, text: "\(why) Rest of the sets: \(lb(w)) lb. Make it count.", newWeight: nil))
+        }
+    }
+
+    /// Puts back the weights a live adjustment replaced.
+    func undoAdjust() {
+        guard let (key, weights) = adjustUndo, let item = session.item(key) else { return }
+        update(key, sets: item.sets) { e in
+            for (i, w) in weights where i < e.sets.count && !e.sets[i].isDone { e.sets[i].weight = w }
+        }
+        adjustUndo = nil
+        coachCue = (key, CoachCues.Cue(tone: .steady, text: "Back to the planned weight. Your call: own it.", newWeight: nil))
     }
 
     /// The coach's "Use 240" button: later unfinished sets take the new weight.
@@ -801,7 +831,10 @@ final class AppStore {
         coachCue = (key, CoachCues.Cue(tone: cue.tone, text: "Set to \(lb(w)) lb. Make it count.", newWeight: nil))
     }
 
-    func clearCoachCue() { coachCue = nil }
+    func clearCoachCue() {
+        coachCue = nil
+        adjustUndo = nil
+    }
 
     /// Fills the item's later blank sets from a finished set.
     func carryForward(_ item: SessionItem, from index: Int) {
@@ -893,6 +926,7 @@ final class AppStore {
         guard draft.startedAt == nil else { return }
         draft.startedAt = date
         saveDraft()
+        RestTimer.shared.showWorkout()
     }
 
     /// WHOOP scored the session: save its strain and zones with the log.
@@ -948,6 +982,7 @@ final class AppStore {
     func restartSession() {
         draft = SessionDraft(slot: draft.slot, state: program, readiness: draft.readiness)
         saveDraft()
+        RestTimer.shared.endWorkout()
     }
 
     // MARK: Finishing
@@ -1158,6 +1193,7 @@ final class AppStore {
     private func resetDraft() {
         draft = SessionDraft(slot: nextSlot, state: program)
         saveDraft()
+        RestTimer.shared.endWorkout()
     }
 
     private func setProgram(_ state: ProgramState) {
@@ -1498,4 +1534,89 @@ extension AppStore {
     fileprivate static func store<T: Encodable>(_ value: T, key: String) {
         if let d = SafeJSON.encode(value) { UserDefaults.standard.set(d, forKey: key) }
     }
+}
+
+// MARK: - Pain map, forecasts, fitness age, Lock Screen workout (Nov 28)
+
+extension AppStore {
+    // MARK: Pain map
+
+    var soreSpots: [SoreSpot] {
+        get { access(keyPath: \.soreSpots); return Self.load([SoreSpot].self, key: "pain.spots") ?? [] }
+        set { withMutation(keyPath: \.soreSpots) { Self.store(newValue, key: "pain.spots") } }
+    }
+
+    func toggleSore(_ area: BodyArea) {
+        if soreSpots.contains(where: { $0.area == area }) {
+            soreSpots.removeAll { $0.area == area }
+        } else {
+            soreSpots.append(SoreSpot(area: area, since: Date()))
+            coachNotes = CoachMemory.adding("\(area.name) sore (from \(Date().formatted(.dateTime.month(.abbreviated).day())))",
+                                            to: coachNotes, date: Date())
+        }
+    }
+
+    enum SoreAnswer { case better, same, worse }
+
+    /// The every-3-days check: better clears it, same or worse keeps training around it.
+    func checkSore(_ area: BodyArea, _ answer: SoreAnswer) {
+        guard let i = soreSpots.firstIndex(where: { $0.area == area }) else { return }
+        if answer == .better {
+            soreSpots.remove(at: i)
+        } else {
+            soreSpots[i].lastCheck = Date()
+        }
+    }
+
+    var soreToCheck: SoreSpot? { soreSpots.first { PainMap.needsCheck($0, now: Date()) } }
+
+    /// What the pain map changed in today's session.
+    var painNotes: [String] {
+        let sore = Set(soreSpots.map(\.area))
+        guard !sore.isEmpty else { return [] }
+        var built = SessionBuilder.build(slot: draft.slot, context: draft.context(for: program), catalog: catalog)
+        return PainMap.adjust(&built, sore: sore, keep: Set(draft.entries.filter { $0.value.hasCompletedWork }.keys),
+                              catalog: catalog, gear: gear)
+    }
+
+    // MARK: Forecasts
+
+    /// The lift history page's projection (next round number at the recent pace), for any lift.
+    func forecast(_ exerciseID: String) -> (target: Double, date: Date)? {
+        let stats = LiftStats(lifts[exerciseID])
+        return HomeInsights.projection(stats.sessions.map { ($0.date, $0.e1RM) }, now: Date())
+    }
+
+    /// For a lift goal: when the trend reaches the target.
+    var goalForecast: Date? {
+        guard let g = goal, g.kind == .lift, let id = g.liftID else { return nil }
+        return Forecast.date(lifts[id], reaching: g.target, now: Date())
+    }
+
+    // MARK: Fitness age
+
+    var fitnessAge: Int? {
+        guard let age, let vo2 = latestVO2?.value else { return nil }
+        var tiers: [Double] = []
+        if let bw = weighIns.last?.pounds {
+            for id in StrengthStandards.lifts {
+                guard let best = Suggestions.best1RM(lifts[id]) else { continue }
+                let st = StrengthStandards.standing(id, e1RM: best, bodyweight: bw, age: age)
+                if let t = st.tier, let i = StrengthStandards.tiers.firstIndex(of: t) { tiers.append(Double(i)) }
+            }
+        }
+        let tier = tiers.isEmpty ? nil : tiers.reduce(0, +) / Double(tiers.count)
+        return Fitness.fitnessAge(vo2: vo2, age: age, strengthTier: tier, recovery: latestRecovery?.bpm)
+    }
+
+    // MARK: Lock Screen workout
+
+    /// The Lock Screen "Done" button: ticks the next lift set and starts its rest.
+    func tickNextFromLockScreen() {
+        let s = session
+        guard let open = nextOpenSet, let item = s.item(open.key), item.isLift else { return }
+        SetTick.toggle(item, set: open.set, in: s, store: self, timer: RestTimer.shared)
+    }
+
+    var lockScreenWorkoutActive: Bool { adaptive.lockScreenWorkout && draft.startedAt != nil }
 }

@@ -44,6 +44,19 @@ struct FitnessCard: View {
                 let n = Fitness.norms(age: age)
                 Text("Men your age: average about \(lb(n.average)), good \(lb(n.good)).")
                     .font(.caption).foregroundStyle(look.secondary)
+                if let fa = store.fitnessAge {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text("FITNESS AGE").font(.caption.weight(.heavy)).foregroundStyle(look.secondary)
+                        Text("\(fa)").font(look.number(32)).foregroundStyle(fa <= age ? Theme.done : look.text)
+                        Text(fa < age ? "\(age - fa) years younger than you are" : fa == age ? "right on your age" : "\(fa - age) years older: room to gain")
+                            .font(.caption).foregroundStyle(look.secondary)
+                    }
+                    Text("From your VO2 max against age norms, nudged by your strength and heart-rate recovery.")
+                        .font(.caption2).foregroundStyle(look.secondary)
+                }
+            } else {
+                Text("Add your birthday (Progress > Strength standards) for your fitness age.")
+                    .font(.caption).foregroundStyle(look.secondary)
             }
             HStack {
                 Button("Log a 12-minute test") { showTest = true }

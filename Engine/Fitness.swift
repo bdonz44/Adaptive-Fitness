@@ -105,3 +105,59 @@ public enum CoachMemory {
         return parts.isEmpty ? nil : "Notes from earlier: " + parts.joined(separator: "; ") + "."
     }
 }
+
+// MARK: - Lift forecasts
+
+public enum Forecast {
+    /// Estimated max over time for a lift (last 120 days, sessions with weight and reps).
+    static func points(_ record: LiftRecord?, now: Date) -> [(x: Double, y: Double, date: Date)] {
+        (record?.history ?? []).compactMap { e -> (x: Double, y: Double, date: Date)? in
+            guard let w = e.weight, w > 0, let r = e.reps, r > 0, e.date <= now,
+                  e.date >= now.addingTimeInterval(-120 * 86400) else { return nil }
+            return (e.date.timeIntervalSince1970 / 86400, Suggestions.e1RM(weight: w, reps: r), e.date)
+        }
+    }
+
+    /// When the trend reaches `target` (estimated max). Needs 4+ sessions over 14+ days, still
+    /// rising; nil past a year out.
+    public static func date(_ record: LiftRecord?, reaching target: Double, now: Date) -> Date? {
+        let p = points(record, now: now)
+        guard p.count >= 4, let first = p.map(\.x).min(), let last = p.map(\.x).max(), last - first >= 14 else { return nil }
+        let mx = p.map(\.x).reduce(0, +) / Double(p.count), my = p.map(\.y).reduce(0, +) / Double(p.count)
+        let den = p.map { ($0.x - mx) * ($0.x - mx) }.reduce(0, +)
+        guard den > 0 else { return nil }
+        let slope = p.map { ($0.x - mx) * ($0.y - my) }.reduce(0, +) / den   // lb per day
+        guard slope > 0.02 else { return nil }
+        let nowX = now.timeIntervalSince1970 / 86400
+        let fittedNow = my + slope * (nowX - mx)
+        let days = max(0, (target - fittedNow) / slope)
+        guard days <= 365 else { return nil }
+        return now.addingTimeInterval(days * 86400)
+    }
+}
+
+// MARK: - Fitness age
+
+extension Fitness {
+    /// Age whose average VO2 max matches yours (ACSM norms for men, straight lines between
+    /// the decades, extended past them), nudged a year or two by strength and heart-rate recovery.
+    /// `strengthTier`: 0 Beginner ... 4 Elite (average over the main lifts).
+    public static func fitnessAge(vo2: Double, age: Int, strengthTier: Double? = nil, recovery: Int? = nil) -> Int? {
+        guard vo2.isFinite, vo2 > 10, vo2 < 90, age > 0 else { return nil }
+        let pts: [(age: Double, vo2: Double)] = [(25, 43), (35, 41), (45, 38), (55, 35), (65, 31)]
+        var a: Double
+        if vo2 >= pts[0].vo2 {
+            a = pts[0].age - (vo2 - pts[0].vo2) / 0.25        // about 0.25 per year below 25
+        } else if vo2 <= pts[pts.count - 1].vo2 {
+            a = pts[pts.count - 1].age + (pts[pts.count - 1].vo2 - vo2) / 0.4
+        } else {
+            a = pts[0].age
+            for (p, q) in zip(pts, pts.dropFirst()) where vo2 <= p.vo2 && vo2 >= q.vo2 {
+                a = p.age + (p.vo2 - vo2) / (p.vo2 - q.vo2) * (q.age - p.age)
+            }
+        }
+        if let t = strengthTier { a += t >= 3 ? -2 : t >= 2 ? -1 : t < 1 ? 1 : 0 }
+        if let r = recovery { a += r >= 30 ? -1 : r < 12 ? 1 : 0 }
+        return Int(min(85, max(20, a)).rounded())
+    }
+}
