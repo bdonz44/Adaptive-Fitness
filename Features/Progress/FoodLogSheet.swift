@@ -35,6 +35,8 @@ struct FoodLogSheet: View {
                     .padding(16)
                     .lookCard(highlight: true)
 
+                    MyFitnessPalCard()
+
                     // Quick add
                     Text("Add protein").font(.headline)
                     HStack(spacing: 8) {
@@ -70,13 +72,16 @@ struct FoodLogSheet: View {
                         Card(title: "Logged today") {
                             ForEach(store.foodToday) { e in
                                 HStack {
-                                    Text(e.date.formatted(date: .omitted, time: .shortened)).foregroundStyle(look.secondary)
+                                    Text(Nutrition.isFromHealth(e) ? "MyFitnessPal" : e.date.formatted(date: .omitted, time: .shortened))
+                                        .foregroundStyle(look.secondary)
                                     Text([e.protein > 0 ? "\(e.protein) g protein" : nil, e.calories > 0 ? "\(e.calories) cal" : nil]
                                         .compactMap { $0 }.joined(separator: " · "))
                                     Spacer()
-                                    Button { store.removeFood(e) } label: { Image(systemName: "xmark.circle.fill") }
-                                        .buttonStyle(.plain).foregroundStyle(look.secondary)
-                                        .accessibilityLabel("Remove entry")
+                                    if !Nutrition.isFromHealth(e) {
+                                        Button { store.removeFood(e) } label: { Image(systemName: "xmark.circle.fill") }
+                                            .buttonStyle(.plain).foregroundStyle(look.secondary)
+                                            .accessibilityLabel("Remove entry")
+                                    }
                                 }
                                 .font(.subheadline)
                             }
@@ -131,6 +136,49 @@ struct NutritionTargets: View {
                 Text(now).font(.subheadline).foregroundStyle(Theme.secondary)
             }
             LogField(placeholder: placeholder, unit: unit, onLog: set)
+        }
+    }
+}
+
+/// Food from MyFitnessPal, through Apple Health.
+struct MyFitnessPalCard: View {
+    @Environment(AppStore.self) private var store
+    @State private var busy = false
+
+    var body: some View {
+        let look = Theme.look
+        Card(title: "MyFitnessPal") {
+            if store.healthFoodConnected {
+                Text("Calories and protein come from MyFitnessPal through Apple Health. A day logged there replaces anything typed here, so log in one place.")
+                    .font(.subheadline).foregroundStyle(look.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if store.healthFood.isEmpty {
+                    Text("Nothing from Apple Health yet. In MyFitnessPal, connect Apple Health and let it write nutrition, then refresh.")
+                        .font(.caption).foregroundStyle(look.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Button(busy ? "Refreshing…" : "Refresh now") { load() }.disabled(busy)
+                    .font(.subheadline.weight(.semibold))
+            } else {
+                Text("Log food in MyFitnessPal instead of here: in MyFitnessPal's settings, connect Apple Health and let it write nutrition. Then tap below and allow Hybrid 12 to read it.")
+                    .font(.subheadline).foregroundStyle(look.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button { load() } label: {
+                    Text(busy ? "Connecting…" : "Get food from MyFitnessPal").accentButton(height: 48)
+                }
+                .buttonStyle(.plain)
+                .disabled(busy)
+            }
+        }
+    }
+
+    private func load() {
+        busy = true
+        Task {
+            await store.refreshHealthFood(force: true) {
+                await HealthService.shared.foodDays(since: Date().addingTimeInterval(-60 * 86400))
+            }
+            busy = false
         }
     }
 }

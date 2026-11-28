@@ -516,9 +516,34 @@ final class AppStore {
             .flatMap { try? JSONDecoder().decode([FoodEntry].self, from: $0) } ?? []
     }()
 
-    var foodToday: [FoodEntry] { food.filter { Calendar.current.isDateInToday($0.date) }.sorted { $0.date > $1.date } }
-    var proteinToday: Int { Nutrition.totals(food, on: Date()).protein }
-    var caloriesToday: Int { Nutrition.totals(food, on: Date()).calories }
+    /// Daily totals from Apple Health (MyFitnessPal), last 60 days, saved on the phone.
+    private(set) var healthFood: [HealthFoodDay] = {
+        UserDefaults.standard.data(forKey: "nutrition.healthFood")
+            .flatMap { SafeJSON.decode([HealthFoodDay].self, $0) } ?? []
+    }()
+
+    /// Typed food plus MyFitnessPal days (a day in Health replaces what was typed that day).
+    var allFood: [FoodEntry] { Nutrition.merged(food, health: healthFood) }
+
+    var foodToday: [FoodEntry] { allFood.filter { Calendar.current.isDateInToday($0.date) }.sorted { $0.date > $1.date } }
+    var proteinToday: Int { Nutrition.totals(allFood, on: Date()).protein }
+    var caloriesToday: Int { Nutrition.totals(allFood, on: Date()).calories }
+
+    /// Food comes from Apple Health (asked once from the food screen, then on every open).
+    var healthFoodConnected: Bool { UserDefaults.standard.bool(forKey: "nutrition.healthConnected") }
+
+    /// Today's food from MyFitnessPal changes all day: refreshed on every open, at most every 5 minutes.
+    func refreshHealthFood(force: Bool = false, _ fetch: () async -> [HealthFoodDay]?) async {
+        guard force || healthFoodConnected else { return }
+        let key = "nutrition.healthFetched"
+        if !force, let last = UserDefaults.standard.object(forKey: key) as? Date, Date().timeIntervalSince(last) < 300 { return }
+        guard let days = await fetch() else { return }
+        UserDefaults.standard.set(true, forKey: "nutrition.healthConnected")
+        UserDefaults.standard.set(Date(), forKey: key)
+        healthFood = days.filter { $0.day >= Date().addingTimeInterval(-60 * 86400) }
+        if let d = SafeJSON.encode(healthFood) { UserDefaults.standard.set(d, forKey: "nutrition.healthFood") }
+        refreshWidget()
+    }
 
     func logFood(protein: Int, calories: Int = 0, date: Date = Date()) {
         guard protein > 0 || calories > 0, protein <= 1_000, calories <= 20_000 else { return }
@@ -529,6 +554,7 @@ final class AppStore {
     }
 
     func removeFood(_ entry: FoodEntry) {
+        guard !Nutrition.isFromHealth(entry) else { return }   // fix those in MyFitnessPal
         food.removeAll { $0.id == entry.id }
         saveFood()
     }
@@ -540,7 +566,7 @@ final class AppStore {
     /// Nil when nutrition is switched off.
     var nutritionAdvice: Nutrition.Advice? {
         guard adaptive.nutrition else { return nil }
-        return Nutrition.advice(weighIns: weighIns, settings: nutritionSettings, now: Date(), food: food)
+        return Nutrition.advice(weighIns: weighIns, settings: nutritionSettings, now: Date(), food: allFood)
     }
 
     // MARK: Cardio typed in by hand

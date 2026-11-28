@@ -28,6 +28,39 @@ final class HealthService {
         }
     }
 
+    /// Calories and protein eaten per day since `start`, from any app that writes nutrition to
+    /// Apple Health (MyFitnessPal...). Asks for permission the first time. Nil if Health isn't available.
+    func foodDays(since start: Date) async -> [HealthFoodDay]? {
+        guard HKHealthStore.isHealthDataAvailable(),
+              let energy = HKQuantityType.quantityType(forIdentifier: .dietaryEnergyConsumed),
+              let protein = HKQuantityType.quantityType(forIdentifier: .dietaryProtein) else { return nil }
+        do {
+            try await store.requestAuthorization(toShare: [], read: [energy, protein])
+            let anchor = Calendar.current.startOfDay(for: start)
+            let kcal = try await dailySums(energy, unit: .kilocalorie(), from: anchor)
+            let grams = try await dailySums(protein, unit: .gram(), from: anchor)
+            return Set(kcal.keys).union(grams.keys).sorted().map { day in
+                HealthFoodDay(day: day, calories: Int((kcal[day] ?? 0).rounded()), protein: Int((grams[day] ?? 0).rounded()))
+            }
+        } catch {
+            print("Could not read food from Health: \(error)")
+            return nil
+        }
+    }
+
+    private func dailySums(_ type: HKQuantityType, unit: HKUnit, from anchor: Date) async throws -> [Date: Double] {
+        let predicate = HKQuery.predicateForSamples(withStart: anchor, end: Date())
+        let query = HKStatisticsCollectionQueryDescriptor(predicate: .quantitySample(type: type, predicate: predicate),
+                                                          options: .cumulativeSum, anchorDate: anchor,
+                                                          intervalComponents: DateComponents(day: 1))
+        let collection = try await query.result(for: store)
+        var out: [Date: Double] = [:]
+        collection.enumerateStatistics(from: anchor, to: Date()) { stats, _ in
+            if let v = stats.sumQuantity()?.doubleValue(for: unit), v > 0 { out[stats.startDate] = v }
+        }
+        return out
+    }
+
     /// Asks for permission the first time; after a "no" it quietly does nothing.
     func save(_ record: WorkoutRecord) async {
         guard HKHealthStore.isHealthDataAvailable() else { return }

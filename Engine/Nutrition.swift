@@ -150,3 +150,33 @@ extension Nutrition {
         target.map { "\(done) / \($0) \(unit)" } ?? "\(done) \(unit)"
     }
 }
+
+// MARK: - Food from Apple Health (MyFitnessPal or any app that writes nutrition there)
+
+/// One day's totals from Apple Health.
+public struct HealthFoodDay: Codable, Equatable, Sendable {
+    public var day: Date
+    public var calories: Int
+    public var protein: Int
+    public init(day: Date, calories: Int, protein: Int) { self.day = day; self.calories = calories; self.protein = protein }
+}
+
+extension Nutrition {
+    public static let healthPrefix = "health-"
+
+    /// Food typed in the app plus days from Apple Health. A day with anything in Health uses
+    /// only Health's totals (no double counting); other days keep what was typed here.
+    public static func merged(_ typed: [FoodEntry], health: [HealthFoodDay], calendar: Calendar = .current) -> [FoodEntry] {
+        let days = health.filter { $0.calories > 0 || $0.protein > 0 }
+        let covered = Set(days.map { calendar.startOfDay(for: $0.day) })
+        var out = typed.filter { !covered.contains(calendar.startOfDay(for: $0.date)) }
+        for d in days {
+            let start = calendar.startOfDay(for: d.day)
+            out.append(FoodEntry(id: healthPrefix + String(Int(start.timeIntervalSince1970)), date: start.addingTimeInterval(12 * 3600),
+                                 protein: max(0, d.protein), calories: max(0, d.calories)))
+        }
+        return out.sorted { $0.date < $1.date }
+    }
+
+    public static func isFromHealth(_ e: FoodEntry) -> Bool { e.id.hasPrefix(healthPrefix) }
+}
