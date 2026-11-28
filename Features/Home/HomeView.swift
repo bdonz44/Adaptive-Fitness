@@ -10,6 +10,7 @@ struct HomeView: View {
     @State private var logFood = false
     @State private var quick: QuickAction?
     @State private var askCoach = false
+    @AppStorage("home.moreOpen") private var moreOpen = false
 
     enum QuickAction: String, Identifiable { case weight, cardio, time; var id: String { rawValue } }
 
@@ -20,18 +21,26 @@ struct HomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     greeting
-                    brief(session)
-                    quickActions
-                    ReadinessRing()
                     missionCard(session)
+                    ReadinessRing()
                     weekStrip
+                    quickActions
                     scoreboard
+                    LiftedCard()
                     coachLine
-                    muscleLine
-                    InsightsCard(limit: 2)
-                    heatmap
-                    liftTrends
-                    sinceStart
+                    DisclosureGroup(isExpanded: $moreOpen) {
+                        VStack(alignment: .leading, spacing: 18) {
+                            muscleLine
+                            InsightsCard(limit: 2)
+                            heatmap
+                            liftTrends
+                            sinceStart
+                        }
+                        .padding(.top, 10)
+                    } label: {
+                        Text("More stats").font(.headline)
+                    }
+                    .tint(look.accent)
                 }
                 .padding()
             }
@@ -86,6 +95,14 @@ struct HomeView: View {
                     .font(look.title(44)).minimumScaleFactor(0.5).lineLimit(2)
                 Text("Day \(day) of \(program.order.count) · Week \(week.wk) · \(program.program.phaseName(week.phase)) · about \(TimeBox.minutes(session)) min")
                     .font(.subheadline).foregroundStyle(look.secondary)
+                if let note = store.dayNote {
+                    Label(note, systemImage: "heart.text.square.fill").font(.subheadline.weight(.semibold))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if !store.soreSpots.isEmpty {
+                    Label("Training around: " + store.soreSpots.map { $0.area.name.lowercased() }.joined(separator: ", "),
+                          systemImage: "bandage.fill").font(.subheadline)
+                }
                 if let main, let id = main.exerciseID {
                     let w = store.suggestion(for: main, in: session).weight
                     let last = store.lifts[id]?.history.last
@@ -237,18 +254,6 @@ struct HomeView: View {
     }
 
     // MARK: Brief and quick actions
-
-    private func brief(_ session: Session) -> some View {
-        let main = session.items.first { $0.kind == .main }
-        let w = main.flatMap { store.suggestion(for: $0, in: session).weight }
-        let line = main.map { m in w.map { "\(m.name) \(lb($0)) × \(m.high)" } ?? m.name }
-        let pr = main.flatMap { m in HomeInsights.prChase(item: m, weight: w, record: store.lifts[m.exerciseID ?? ""]) } != nil
-        let t = whoop.today
-        return Text(HomeInsights.brief(recovery: t?.recovery, sleepHours: t?.sleepHours, title: session.title, mainLine: line,
-                                       isPR: pr, minutes: TimeBox.minutes(session), doneToday: store.loggedToday))
-            .font(.headline)
-            .fixedSize(horizontal: false, vertical: true)
-    }
 
     private var quickActions: some View {
         let look = Theme.look

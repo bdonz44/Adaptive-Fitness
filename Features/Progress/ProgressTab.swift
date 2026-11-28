@@ -21,6 +21,7 @@ struct ProgressTab: View {
                     BodyweightCard()
                     WaistCard()
                     MeasurementsCard()
+                    LiftedCard()
                     WorkingWeightsCard()
                     StandardsCard()
                     TrophiesCard()

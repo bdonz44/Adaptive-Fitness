@@ -122,6 +122,8 @@ final class AppStore {
     private(set) var recoveryToday: Int?
     /// Heart-rate recovery after interval sessions, oldest first.
     private(set) var recoveryLogs: [(date: Date, bpm: Int)] = []
+    /// Pounds lifted per logged session, oldest first.
+    private(set) var sessionVolumes: [(date: Date, pounds: Double)] = []
     /// Muscle sets in the 7 days before today (stable all day, so balancing doesn't shift mid-session).
     @ObservationIgnored private var balanceCache: (day: String, sets: [Muscle: Double])?
 
@@ -165,6 +167,7 @@ final class AppStore {
         heartLogs = storedLogs.compactMap { log in Self.heart(in: log).map { (week: log.week, heart: $0) } }
         recoveryLogs = storedLogs.compactMap { log in Self.heart(in: log)?.recovery.map { (date: log.date, bpm: $0) } }
             .sorted { $0.date < $1.date }
+        sessionVolumes = loadVolumes(storedLogs)
 
         weighIns = ((try? context.fetch(FetchDescriptor<StoredWeighIn>())) ?? [])
             .map { WeighIn(date: $0.date, pounds: $0.pounds) }.sorted { $0.date < $1.date }
@@ -1003,6 +1006,9 @@ final class AppStore {
             recoveryLogs.append((date: now, bpm: drop))
         }
         let paceNotes = adaptive.intervalPace ? progressPaces(session: s, date: now) : []
+        let sessionPounds = SessionInsights.stats(session: s, entries: draft.entries).volume
+        sessionVolumes.append((date: now, pounds: sessionPounds))
+        cacheVolume(sessionPounds, for: now)
         balanceCache = nil
         let result = Progression.progress(session: s, entries: draft.entries, lifts: lifts, date: now,
                                           runMinutes: program.runMinutes, catalog: catalog, adaptive: adaptive, gear: gear)
@@ -1116,6 +1122,8 @@ final class AppStore {
         weekLogs = []
         heartLogs = []
         recoveryLogs = []
+        sessionVolumes = []
+        UserDefaults.standard.removeObject(forKey: "volume.cache")
         paces = [:]
         recentLogs = []
         cardioByWeek = [:]
@@ -1150,6 +1158,7 @@ final class AppStore {
                                      entries: Self.encode(log.entries) ?? Data()))
         }
         let newestFirst = r.logs.sorted { $0.date > $1.date }
+        sessionVolumes = r.logs.map { (date: $0.date, pounds: Volume.of(entries: $0.entries)) }.sorted { $0.date < $1.date }
         logs = newestFirst.map { LogStamp(slot: $0.slot, date: $0.date) }
         weekLogs = newestFirst.map { (slot: $0.slot.rawValue, week: $0.week, date: $0.date) }
         recentLogs = newestFirst.prefix(Tracking.recentSessionLimit).map { RecentLog(date: $0.date, title: $0.title, week: $0.week) }
@@ -1619,4 +1628,46 @@ extension AppStore {
     }
 
     var lockScreenWorkoutActive: Bool { adaptive.lockScreenWorkout && draft.startedAt != nil }
+}
+
+// MARK: - Pounds lifted (Nov 28)
+
+extension AppStore {
+    /// Each log's pounds, worked out once and remembered (keyed by the log's time).
+    fileprivate func loadVolumes(_ logs: [StoredLog]) -> [(date: Date, pounds: Double)] {
+        var cache = UserDefaults.standard.dictionary(forKey: "volume.cache") as? [String: Double] ?? [:]
+        var changed = false
+        var out: [(date: Date, pounds: Double)] = []
+        for log in logs where log.slot != Slot.R.rawValue {
+            let key = String(Int(log.date.timeIntervalSince1970))
+            if let v = cache[key] { out.append((log.date, v)); continue }
+            guard let entries = Self.decode([String: LoggedItem].self, log.entries) else { continue }
+            var highs: [String: Int] = [:]
+            let needsHighs = entries.values.contains { $0.sets.contains { $0.isDone && $0.reps == nil && $0.plannedReps == nil } }
+            if needsHighs, let slot = Slot(rawValue: log.slot) {
+                var ctx = SessionDraft(slot: slot, state: program).context(for: program)
+                ctx.week = log.week
+                ctx.gear = gear
+                for item in SessionBuilder.build(slot: slot, context: ctx, catalog: catalog).items { highs[item.key] = item.high }
+            }
+            let v = Volume.of(entries: entries) { highs[$0] }
+            cache[key] = v
+            changed = true
+            out.append((log.date, v))
+        }
+        if changed { UserDefaults.standard.set(cache, forKey: "volume.cache") }
+        return out.sorted { $0.date < $1.date }
+    }
+
+    fileprivate func cacheVolume(_ pounds: Double, for date: Date) {
+        var cache = UserDefaults.standard.dictionary(forKey: "volume.cache") as? [String: Double] ?? [:]
+        cache[String(Int(date.timeIntervalSince1970))] = pounds
+        UserDefaults.standard.set(cache, forKey: "volume.cache")
+    }
+
+    var poundsLifetime: Double { sessionVolumes.reduce(0) { $0 + $1.pounds } }
+    var poundsByWeek: [(start: Date, pounds: Double)] { Volume.byWeek(sessionVolumes, now: Date(), weeks: 12) }
+    var poundsThisWeek: Double { poundsByWeek.last?.pounds ?? 0 }
+    var poundsLastWeek: Double { poundsByWeek.dropLast().last?.pounds ?? 0 }
+    var bestSessionPounds: (date: Date, pounds: Double)? { sessionVolumes.max { $0.pounds < $1.pounds } }
 }
