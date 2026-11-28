@@ -28,6 +28,8 @@ public struct SessionDraft: Codable, Equatable, Sendable {
     public var days: Int?
     /// When each interval work round ended (for heart-rate recovery).
     public var workEnds: [Date]?
+    /// A workout you built: today's session is this instead of the program's (slot R: never counts).
+    public var custom: CustomWorkout?
 
     /// A new draft for the running program.
     public init(slot: Slot, state: ProgramState, readiness: Readiness = .normal) {
@@ -309,5 +311,6 @@ extension SessionDraft {
         program = c.lenient(ProgramID.self, .program)
         days = c.lenient(Int.self, .days)
         workEnds = c.lenient([Date].self, .workEnds)
+        custom = c.lenient(CustomWorkout.self, .custom)
     }
 }

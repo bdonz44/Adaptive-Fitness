@@ -38,6 +38,8 @@ struct FinishSummary: Identifiable {
     var paceNotes: [String] = []
     /// Heart-rate recovery measured this session (bpm in the first minute).
     var recovery: Int? = nil
+    /// Pounds lifted the last time this same session was done.
+    var lastPounds: Double? = nil
 }
 
 /// One row in "Recent sessions".
@@ -123,7 +125,7 @@ final class AppStore {
     /// Heart-rate recovery after interval sessions, oldest first.
     private(set) var recoveryLogs: [(date: Date, bpm: Int)] = []
     /// Pounds lifted per logged session, oldest first.
-    private(set) var sessionVolumes: [(date: Date, pounds: Double)] = []
+    private(set) var sessionVolumes: [(date: Date, pounds: Double, title: String)] = []
     /// Muscle sets in the 7 days before today (stable all day, so balancing doesn't shift mid-session).
     @ObservationIgnored private var balanceCache: (day: String, sets: [Muscle: Double])?
 
@@ -311,6 +313,9 @@ final class AppStore {
     }
 
     var session: Session {
+        if let custom = draft.custom {
+            return SessionBuilder.buildCustom(custom, week: program.programWeek, readiness: draft.readiness, catalog: catalog)
+        }
         var context = draft.context(for: program)
         context.reEntry = reEntry
         context.gear = gear
@@ -1007,7 +1012,8 @@ final class AppStore {
         }
         let paceNotes = adaptive.intervalPace ? progressPaces(session: s, date: now) : []
         let sessionPounds = SessionInsights.stats(session: s, entries: draft.entries).volume
-        sessionVolumes.append((date: now, pounds: sessionPounds))
+        let lastSame = lastPounds(title: s.title, before: now)
+        sessionVolumes.append((date: now, pounds: sessionPounds, title: s.title))
         cacheVolume(sessionPounds, for: now)
         balanceCache = nil
         let result = Progression.progress(session: s, entries: draft.entries, lifts: lifts, date: now,
@@ -1054,7 +1060,8 @@ final class AppStore {
                              weekMessage: advance.message, minutes: workout?.minutes, setsDone: stats.setsDone,
                              volume: stats.volume, records: records, weekDone: program.doneCount, undoState: undo,
                              startedAt: started, finishedAt: now, heart: heartSummary, milestones: newMilestones,
-                             paceNotes: paceNotes, recovery: SessionHeart.read(savedEntries)?.recovery)
+                             paceNotes: paceNotes, recovery: SessionHeart.read(savedEntries)?.recovery,
+                             lastPounds: lastSame)
     }
 
     /// Skip marks a slot done with no log.
@@ -1158,7 +1165,7 @@ final class AppStore {
                                      entries: Self.encode(log.entries) ?? Data()))
         }
         let newestFirst = r.logs.sorted { $0.date > $1.date }
-        sessionVolumes = r.logs.map { (date: $0.date, pounds: Volume.of(entries: $0.entries)) }.sorted { $0.date < $1.date }
+        sessionVolumes = r.logs.map { (date: $0.date, pounds: Volume.of(entries: $0.entries), title: $0.title) }.sorted { $0.date < $1.date }
         logs = newestFirst.map { LogStamp(slot: $0.slot, date: $0.date) }
         weekLogs = newestFirst.map { (slot: $0.slot.rawValue, week: $0.week, date: $0.date) }
         recentLogs = newestFirst.prefix(Tracking.recentSessionLimit).map { RecentLog(date: $0.date, title: $0.title, week: $0.week) }
@@ -1634,13 +1641,13 @@ extension AppStore {
 
 extension AppStore {
     /// Each log's pounds, worked out once and remembered (keyed by the log's time).
-    fileprivate func loadVolumes(_ logs: [StoredLog]) -> [(date: Date, pounds: Double)] {
+    fileprivate func loadVolumes(_ logs: [StoredLog]) -> [(date: Date, pounds: Double, title: String)] {
         var cache = UserDefaults.standard.dictionary(forKey: "volume.cache") as? [String: Double] ?? [:]
         var changed = false
-        var out: [(date: Date, pounds: Double)] = []
-        for log in logs where log.slot != Slot.R.rawValue {
+        var out: [(date: Date, pounds: Double, title: String)] = []
+        for log in logs {   // includes workouts you built (slot R); runs come to 0
             let key = String(Int(log.date.timeIntervalSince1970))
-            if let v = cache[key] { out.append((log.date, v)); continue }
+            if let v = cache[key] { out.append((log.date, v, log.title)); continue }
             guard let entries = Self.decode([String: LoggedItem].self, log.entries) else { continue }
             var highs: [String: Int] = [:]
             let needsHighs = entries.values.contains { $0.sets.contains { $0.isDone && $0.reps == nil && $0.plannedReps == nil } }
@@ -1653,7 +1660,7 @@ extension AppStore {
             let v = Volume.of(entries: entries) { highs[$0] }
             cache[key] = v
             changed = true
-            out.append((log.date, v))
+            out.append((log.date, v, log.title))
         }
         if changed { UserDefaults.standard.set(cache, forKey: "volume.cache") }
         return out.sorted { $0.date < $1.date }
@@ -1666,8 +1673,59 @@ extension AppStore {
     }
 
     var poundsLifetime: Double { sessionVolumes.reduce(0) { $0 + $1.pounds } }
-    var poundsByWeek: [(start: Date, pounds: Double)] { Volume.byWeek(sessionVolumes, now: Date(), weeks: 12) }
+    var poundsByWeek: [(start: Date, pounds: Double)] {
+        Volume.byWeek(sessionVolumes.map { (date: $0.date, pounds: $0.pounds) }, now: Date(), weeks: 12)
+    }
     var poundsThisWeek: Double { poundsByWeek.last?.pounds ?? 0 }
     var poundsLastWeek: Double { poundsByWeek.dropLast().last?.pounds ?? 0 }
-    var bestSessionPounds: (date: Date, pounds: Double)? { sessionVolumes.max { $0.pounds < $1.pounds } }
+    var bestSessionPounds: (date: Date, pounds: Double)? {
+        sessionVolumes.max { $0.pounds < $1.pounds }.map { (date: $0.date, pounds: $0.pounds) }
+    }
+
+    /// Pounds the last time this session (same title) was done, before `date`. Nil for 0 or never.
+    func lastPounds(title: String, before date: Date = Date()) -> Double? {
+        sessionVolumes.last { $0.title == title && $0.date < date && $0.pounds > 0 }?.pounds
+    }
+
+    /// Pounds for the log finished at `date` (recent sessions list).
+    func pounds(at date: Date) -> Double? {
+        sessionVolumes.first { abs($0.date.timeIntervalSince(date)) < 1 }?.pounds
+    }
+
+    /// Today's session so far, and the last time you did it.
+    var poundsNow: (now: Double, last: Double?) {
+        let s = session
+        return (SessionInsights.stats(session: s, entries: draft.entries).volume, lastPounds(title: s.title))
+    }
+}
+
+// MARK: - Build your own workout (Nov 28)
+
+extension AppStore {
+    /// Workouts you built and saved (this phone).
+    var customWorkouts: [CustomWorkout] {
+        get { access(keyPath: \.customWorkouts); return Self.load([CustomWorkout].self, key: "custom.workouts") ?? [] }
+        set { withMutation(keyPath: \.customWorkouts) { Self.store(newValue, key: "custom.workouts") } }
+    }
+
+    func saveCustom(_ w: CustomWorkout) {
+        if let i = customWorkouts.firstIndex(where: { $0.id == w.id }) { customWorkouts[i] = w } else { customWorkouts.append(w) }
+    }
+
+    func deleteCustom(_ w: CustomWorkout) { customWorkouts.removeAll { $0.id == w.id } }
+
+    /// Today's session becomes this workout (an extra: it never counts toward the week).
+    func startCustom(_ w: CustomWorkout) {
+        RestTimer.shared.endWorkout()
+        coachCue = nil
+        draft = SessionDraft(slot: .R, state: program, readiness: draft.readiness)
+        draft.custom = w
+        saveDraft()
+    }
+
+    /// Back to the program's next session.
+    func leaveCustom() {
+        guard draft.custom != nil else { return }
+        resetDraft()
+    }
 }

@@ -299,6 +299,16 @@ struct WorkoutStatusBar: View {
                         }
                         .accessibilityElement(children: .combine)
                         .accessibilityLabel("Workout time \(WorkoutClock.elapsed(from: start, to: context.date))")
+                        let lifted = store.poundsNow
+                        if lifted.now > 0 {
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text("\(Int(lifted.now.rounded()).formatted()) lb").font(look.number(20)).monospacedDigit()
+                                if let last = lifted.last {
+                                    Text("last time \(Volume.short(last))").font(.caption2).foregroundStyle(look.secondary)
+                                }
+                            }
+                            .accessibilityElement(children: .combine)
+                        }
                     }
                     Spacer(minLength: 0)
                     if heart.isEnabled {

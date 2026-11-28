@@ -17,6 +17,7 @@ struct TodayView: View {
     @State private var showFocus = false
     @State private var showRest = false
     @State private var showAddExercise = false
+    @State private var showBuild = false
     @State private var askCoach = false
 
     var body: some View {
@@ -28,6 +29,17 @@ struct TodayView: View {
                     if store.isEmpty { ImportPromptCard() }
                     WeekHeader(title: session.title)
                     if let plan = session.reEntry { ReEntryBanner(plan: plan) }
+                    if store.draft.custom != nil {
+                        HStack {
+                            Label("Your own workout: an extra, it doesn't count toward the week", systemImage: "square.and.pencil")
+                                .font(.subheadline.weight(.semibold))
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer()
+                            Button("Back to the plan") { timer.done(); store.leaveCustom() }.font(.subheadline.weight(.bold))
+                        }
+                        .padding(12)
+                        .background(look.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: max(look.radius - 4, 2)))
+                    }
                     WhoopCard()
                     if look.readinessFirst { ReadinessPicker() }
                     SlotChips()
@@ -49,6 +61,13 @@ struct TodayView: View {
                     }
                     Button { showAddExercise = true } label: {
                         Label("Add exercises", systemImage: "plus.circle.fill")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, minHeight: 50)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(Theme.accent)
+                    Button { showBuild = true } label: {
+                        Label("Build your own workout", systemImage: "square.and.pencil")
                             .font(.headline)
                             .frame(maxWidth: .infinity, minHeight: 50)
                     }
@@ -90,6 +109,7 @@ struct TodayView: View {
             }
             .toolbarBackground(look.background, for: .navigationBar)
             .sheet(isPresented: $askCoach) { CoachChatView() }
+            .sheet(isPresented: $showBuild) { CustomWorkoutView() }
             .sheet(isPresented: $showAddExercise) {
                 AddExerciseSheet(session: session)
             }
@@ -276,7 +296,7 @@ struct SlotChips: View {
     }
 
     private func chip(_ slot: Slot, isNext: Bool) -> some View {
-        let selected = store.draft.slot == slot
+        let selected = store.draft.slot == slot && store.draft.custom == nil
         let done = store.program.isDone(slot)
         let day = store.program.order.firstIndex(of: slot).map { $0 + 1 }
         return Button {

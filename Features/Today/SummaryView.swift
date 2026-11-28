@@ -172,7 +172,14 @@ struct SummaryView: View {
         var parts: [String] = []
         if let m = summary.minutes { parts.append("\(m) min") }
         if summary.setsDone > 0 { parts.append("\(summary.setsDone) sets") }
-        if summary.volume > 0 { parts.append("\(summary.volume.formatted(.number.precision(.fractionLength(0)))) lb moved") }
+        if summary.volume > 0 {
+            var lifted = "\(Int(summary.volume.rounded()).formatted()) lb lifted"
+            if let last = summary.lastPounds, last > 0 {
+                let pct = (summary.volume - last) / last * 100
+                lifted += String(format: " (%+.0f%% vs last time)", pct)
+            }
+            parts.append(lifted)
+        }
         return parts.joined(separator: " · ")
     }
 

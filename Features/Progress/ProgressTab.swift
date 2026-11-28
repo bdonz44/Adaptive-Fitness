@@ -416,6 +416,11 @@ struct RecentSessionsCard: View {
                                 .font(.caption)
                                 .foregroundStyle(Theme.secondary)
                         }
+                        if let lb = store.pounds(at: log.date), lb > 0 {
+                            Label("\(Int(lb.rounded()).formatted()) lb lifted", systemImage: "scalemass.fill")
+                                .font(.caption)
+                                .foregroundStyle(Theme.secondary)
+                        }
                     }
                     Spacer()
                     Text("Week \(store.displayWeek(log.week))")
