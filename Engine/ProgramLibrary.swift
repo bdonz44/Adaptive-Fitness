@@ -473,6 +473,162 @@ public enum ProgramLibrary {
             ],
         ])
 
+    // MARK: Lift specialization (Squat, Bench, Deadlift Builder) and Olympic Lifts
+    // Main = the heavy day, strength = the volume day, power = technique (pause / front / deficit).
+    // Weeks 4 and 8 back off (the builder's deload rules); week 12 is the peak.
+
+    static let liftFocusDoses: [Role: [Dose]] = [
+        .power: [Dose(5, 3, 3, 150), Dose(5, 3, 3, 150), Dose(4, 2, 2, 180)],
+        .main: [Dose(5, 5, 5, 180), Dose(5, 3, 3, 210), Dose(5, 1, 2, 240)],
+        .strength: [Dose(4, 8, 8, 150), Dose(4, 6, 6, 150), Dose(3, 4, 5, 180)],
+        .accessory: [Dose(3, 10, 12, 75), Dose(3, 8, 10, 75), Dose(3, 8, 10, 60)],
+    ]
+
+    static let squatFocus = Spec(
+        doses: liftFocusDoses,
+        days: [
+            3: [
+                Day("Heavy Squat", lower: true, lifts: [m("squat"), s("s1", "rdl")],
+                    pairs: [pair("bulgarian", "legraise")]),
+                Day("Upper + Front Squat", lifts: [p("power", "fsquat"), m("bench"), s("s1", "bbrow")],
+                    pairs: [pair("dbpress", "pullup")]),
+                Day("Volume Squat", lower: true, lifts: [s("s1", "squat"), s("s2", "pendlay")],
+                    pairs: [pair("hipthrust", "sideplank")]),
+            ],
+            4: [
+                Day("Heavy Squat", lower: true, lifts: [m("squat"), s("s1", "rdl")],
+                    pairs: [pair("bulgarian", "legraise")]),
+                Day("Upper Strength", lifts: [m("bench"), s("s1", "bbrow")],
+                    pairs: [pair("dbpress", "pullup"), pair("curl", "ohtri")]),
+                Day("Volume Squat", lower: true, lifts: [s("s1", "squat")],
+                    pairs: [pair("stepup", "trxhamcurl"), pair("hollowrock", "russiantwist")]),
+                Day("Pause Squat + Press", lower: true, lifts: [p("power", "pausesquat"), m("ohp"), s("s1", "pendlay")],
+                    pairs: [pair("trxfacepull", "sideplank")]),
+            ],
+            5: [
+                Day("Heavy Squat", lower: true, lifts: [m("squat"), s("s1", "rdl")],
+                    pairs: [pair("bulgarian", "legraise")]),
+                Day("Upper Strength", lifts: [m("bench"), s("s1", "bbrow")],
+                    pairs: [pair("dbpress", "pullup"), pair("curl", "ohtri")]),
+                Day("Volume Squat", lower: true, lifts: [s("s1", "squat")],
+                    pairs: [pair("stepup", "trxhamcurl"), pair("hollowrock", "russiantwist")]),
+                Day("Pause Squat + Press", lower: true, lifts: [p("power", "pausesquat"), m("ohp"), s("s1", "pendlay")],
+                    pairs: [pair("trxfacepull", "sideplank")]),
+                Day("Front Squat + Zone 2", lifts: [p("power", "fsquat")],
+                    pairs: [pair("trxrow", "deadbug")], engine: zone2),
+            ],
+        ])
+
+    static let benchFocus = Spec(
+        doses: liftFocusDoses,
+        days: [
+            3: [
+                Day("Heavy Bench", lifts: [m("bench"), s("s1", "bbrow")],
+                    pairs: [pair("dbpress", "trxfacepull"), pair("ohtri", "curl")]),
+                Day("Squat + Pause Bench", lower: true, lifts: [p("power", "pausebench"), m("squat"), s("s1", "rdl")],
+                    pairs: [pair("pullup", "legraise")]),
+                Day("Volume Bench", lifts: [s("s1", "bench"), s("s2", "cgbench")],
+                    pairs: [pair("dbrow", "lateral"), pair("skull", "hammer")]),
+            ],
+            4: [
+                Day("Heavy Bench", lifts: [m("bench"), s("s1", "bbrow")],
+                    pairs: [pair("dbpress", "trxfacepull"), pair("ohtri", "curl")]),
+                Day("Lower Strength", lower: true, lifts: [m("squat"), s("s1", "rdl")],
+                    pairs: [pair("bulgarian", "legraise")]),
+                Day("Volume Bench", lifts: [s("s1", "bench"), s("s2", "cgbench")],
+                    pairs: [pair("dbrow", "lateral"), pair("skull", "reardelt")]),
+                Day("Pause Bench + Pull", lower: true, lifts: [p("power", "pausebench"), m("deadlift"), s("s1", "pullup")],
+                    pairs: [pair("dbincline", "trxfacepull")]),
+            ],
+            5: [
+                Day("Heavy Bench", lifts: [m("bench"), s("s1", "bbrow")],
+                    pairs: [pair("dbpress", "trxfacepull"), pair("ohtri", "curl")]),
+                Day("Lower Strength", lower: true, lifts: [m("squat"), s("s1", "rdl")],
+                    pairs: [pair("bulgarian", "legraise")]),
+                Day("Volume Bench", lifts: [s("s1", "bench"), s("s2", "cgbench")],
+                    pairs: [pair("dbrow", "lateral"), pair("skull", "reardelt")]),
+                Day("Pause Bench + Pull", lower: true, lifts: [p("power", "pausebench"), m("deadlift"), s("s1", "pullup")],
+                    pairs: [pair("dbincline", "trxfacepull")]),
+                Day("Press, Shoulders + Arms", lifts: [s("s1", "floorpress"), s("s2", "ohp")],
+                    pairs: [pair("ohtri", "curl"), pair("lateral", "reardelt")]),
+            ],
+        ])
+
+    static let deadliftFocus = Spec(
+        doses: liftFocusDoses,
+        days: [
+            3: [
+                Day("Heavy Deadlift", lower: true, lifts: [m("deadlift"), s("s1", "pendlay")],
+                    pairs: [pair("hipthrust", "sideplank")]),
+                Day("Squat + Upper", lower: true, lifts: [m("squat"), s("s1", "bench")],
+                    pairs: [pair("pullup", "dbpress")]),
+                Day("Deficit Pulls", lower: true, lifts: [p("power", "deficitdl"), m("ohp")],
+                    pairs: [pair("trxhamcurl", "dbrow"), pair("legraise", "suitcase")]),
+            ],
+            4: [
+                Day("Heavy Deadlift", lower: true, lifts: [m("deadlift"), s("s1", "pendlay")],
+                    pairs: [pair("hipthrust", "sideplank")]),
+                Day("Upper Strength", lifts: [m("bench"), s("s1", "pullup")],
+                    pairs: [pair("dbrow", "trxfacepull"), pair("curl", "ohtri")]),
+                Day("Squat + Hinge", lower: true, lifts: [m("squat"), s("s1", "rdl")],
+                    pairs: [pair("hipthrust", "legraise")]),
+                Day("Deficit Pulls + Press", lower: true, lifts: [p("power", "deficitdl"), m("ohp")],
+                    pairs: [pair("trxhamcurl", "dbrow"), pair("suitcase", "hollowrock")]),
+            ],
+            5: [
+                Day("Heavy Deadlift", lower: true, lifts: [m("deadlift"), s("s1", "pendlay")],
+                    pairs: [pair("hipthrust", "sideplank")]),
+                Day("Upper Strength", lifts: [m("bench"), s("s1", "pullup")],
+                    pairs: [pair("dbrow", "trxfacepull"), pair("curl", "ohtri")]),
+                Day("Squat + Hinge", lower: true, lifts: [m("squat"), s("s1", "rdl")],
+                    pairs: [pair("hipthrust", "legraise")]),
+                Day("Deficit Pulls + Press", lower: true, lifts: [p("power", "deficitdl"), m("ohp")],
+                    pairs: [pair("trxhamcurl", "dbrow"), pair("suitcase", "hollowrock")]),
+                Day("Back + Zone 2", lifts: [s("s1", "bbrow")],
+                    pairs: [pair("pullup", "reardelt"), pair("kbswingh", "trxbodysaw")], engine: zone2),
+            ],
+        ])
+
+    static let olympic = Spec(
+        doses: [
+            .power: [Dose(6, 3, 3, 120), Dose(6, 2, 2, 150), Dose(6, 1, 2, 150)],
+            .main: [Dose(4, 5, 5, 150), Dose(4, 3, 3, 180), Dose(4, 2, 3, 180)],
+            .strength: [Dose(3, 3, 5, 120), Dose(4, 3, 3, 150), Dose(4, 2, 3, 150)],
+            .accessory: [Dose(3, 8, 10, 60), Dose(3, 8, 10, 60), Dose(3, 6, 8, 60)],
+        ],
+        days: [
+            3: [
+                Day("Snatch + Squat", lower: true, lifts: [p("power", "hangsnatch", "hangsnatch", "powersnatch"), m("squat"), s("s1", "ohp")],
+                    pairs: [pair("trxfacepull", "hollowrock")]),
+                Day("Clean + Press", lower: true, lifts: [p("power", "hangclean", "powerclean", "powerclean"), m("pushpress"), s("s1", "cleanpull")],
+                    pairs: [pair("pullup", "legraise")]),
+                Day("Full Lifts + Front Squat", lower: true, lifts: [p("power", "hangsnatch", "powersnatch", "powersnatch"), m("fsquat"), s("s1", "powerclean")],
+                    pairs: [pair("bulgarian", "sideplank")]),
+            ],
+            4: [
+                Day("Snatch + Squat", lower: true, lifts: [p("power", "hangsnatch", "hangsnatch", "powersnatch"), m("squat"), s("s1", "ohp")],
+                    pairs: [pair("trxfacepull", "hollowrock")]),
+                Day("Clean + Press", lower: true, lifts: [p("power", "hangclean", "powerclean", "powerclean"), m("pushpress"), s("s1", "cleanpull")],
+                    pairs: [pair("pullup", "legraise")]),
+                Day("Upper Strength", lifts: [m("bench"), s("s1", "pendlay")],
+                    pairs: [pair("dbpress", "pullup"), pair("trxfacepull", "legraise")]),
+                Day("Full Lifts + Front Squat", lower: true, lifts: [p("power", "hangsnatch", "powersnatch", "powersnatch"), m("fsquat"), s("s1", "powerclean")],
+                    pairs: [pair("bulgarian", "sideplank")]),
+            ],
+            5: [
+                Day("Snatch + Squat", lower: true, lifts: [p("power", "hangsnatch", "hangsnatch", "powersnatch"), m("squat"), s("s1", "ohp")],
+                    pairs: [pair("trxfacepull", "hollowrock")]),
+                Day("Clean + Press", lower: true, lifts: [p("power", "hangclean", "powerclean", "powerclean"), m("pushpress"), s("s1", "cleanpull")],
+                    pairs: [pair("pullup", "legraise")]),
+                Day("Upper Strength", lifts: [m("bench"), s("s1", "pendlay")],
+                    pairs: [pair("dbpress", "pullup"), pair("trxfacepull", "legraise")]),
+                Day("Full Lifts + Front Squat", lower: true, lifts: [p("power", "hangsnatch", "powersnatch", "powersnatch"), m("fsquat"), s("s1", "powerclean")],
+                    pairs: [pair("bulgarian", "sideplank")]),
+                Day("Pulls + Zone 2", lifts: [s("s1", "cleanpull"), s("s2", "rdl")],
+                    pairs: [pair("trxbodysaw", "suitcase")], engine: zone2),
+            ],
+        ])
+
     static func spec(_ id: ProgramID) -> Spec? {
         switch id {
         case .hybrid12: return nil
@@ -483,6 +639,10 @@ public enum ProgramLibrary {
         case .agentCircuits: return agentCircuits
         case .vo2Max: return vo2Max
         case .ripped: return ripped
+        case .squatFocus: return squatFocus
+        case .benchFocus: return benchFocus
+        case .deadliftFocus: return deadliftFocus
+        case .olympic: return olympic
         }
     }
 

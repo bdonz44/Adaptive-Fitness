@@ -82,7 +82,7 @@ public struct GearProfile: Codable, Equatable, Sendable {
     /// Exercises done lying or sitting on a bench (or with a foot or arm on one).
     public static let benchExercises: Set<String> = [
         "bench", "incline", "dbincline", "dbfly", "skull", "inclinecurl", "dbpress", "csrow", "dbrow",
-        "hipthrust", "bulgarian", "stepup", "copenhagen", "arnold",
+        "hipthrust", "bulgarian", "stepup", "copenhagen", "arnold", "pausebench", "cgbench",
     ]
 
     public func has(_ ex: Exercise) -> Bool {

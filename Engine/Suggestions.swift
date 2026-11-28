@@ -61,6 +61,11 @@ public enum Suggestions {
     /// Related-lift ratios: lift -> (estimated from, ratio).
     public static let related: [String: (from: String, ratio: Double)] = [
         "fsquat": ("squat", 0.80),
+        "pausesquat": ("squat", 0.85),
+        "pausebench": ("bench", 0.90),
+        "cgbench": ("bench", 0.90),
+        "deficitdl": ("deadlift", 0.90),
+        "cleanpull": ("deadlift", 0.60),
         "squat": ("fsquat", 1.25),
         "incline": ("bench", 0.82),
         "floorpress": ("bench", 0.90),

@@ -37,6 +37,9 @@ public enum MuscleMap {
         "dbhangclean": [.glutes: 1, .back: 0.5], "dbsnatch": [.glutes: 1, .shoulders: 0.5], "kbclean": [.glutes: 1, .back: 0.5],
         "kbsnatch": [.glutes: 1, .shoulders: 0.5], "getup": [.core: 1, .shoulders: 0.5], "kbwindmill": [.core: 1, .shoulders: 0.5],
         "pullup": [.back: 1, .biceps: 0.5], "chinup": [.back: 1, .biceps: 1], "suitcase": [.core: 1],
+        "pausesquat": [.quads: 1, .glutes: 0.5, .core: 0.5], "pausebench": [.chest: 1, .triceps: 0.5, .shoulders: 0.5],
+        "cgbench": [.triceps: 1, .chest: 0.5], "deficitdl": [.hamstrings: 1, .glutes: 1, .back: 0.5],
+        "cleanpull": [.glutes: 1, .hamstrings: 0.5, .back: 1],
     ]
 
     static let byCategory: [String: Work] = [

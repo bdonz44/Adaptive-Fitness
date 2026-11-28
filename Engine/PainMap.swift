@@ -61,6 +61,10 @@ public enum PainMap {
         "russiantwist": [.lowerBack], "woodchop": [.lowerBack, .shoulder], "kbwindmill": [.shoulder, .lowerBack],
         "getup": [.shoulder, .wrist], "shouldertap": [.wrist, .shoulder], "copenhagen": [.hip], "bearhold": [.wrist, .shoulder],
         "pullup": [.shoulder, .elbow], "chinup": [.shoulder, .elbow],
+        "pausesquat": [.knee, .hip, .lowerBack], "pausebench": [.shoulder, .elbow, .wrist], "cgbench": [.elbow, .wrist, .shoulder],
+        "deficitdl": [.lowerBack, .hip], "cleanpull": [.lowerBack, .hip, .wrist],
+        "powerclean": [.wrist, .shoulder, .elbow, .lowerBack, .knee], "hangclean": [.wrist, .shoulder, .elbow, .lowerBack],
+        "powersnatch": [.wrist, .shoulder, .lowerBack, .knee], "hangsnatch": [.wrist, .shoulder, .lowerBack],
     ]
 
     static let byCategory: [String: Set<BodyArea>] = [

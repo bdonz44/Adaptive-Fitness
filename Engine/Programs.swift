@@ -3,7 +3,8 @@ import Foundation
 /// The programs you can run. Hybrid 12 is the original (web app) program;
 /// the others are built from `ProgramLibrary` day plans.
 public enum ProgramID: String, Codable, CaseIterable, Sendable {
-    case hybrid12, engineStrength, define45, strengthBoxing, screenReady, agentCircuits, vo2Max, ripped
+    case hybrid12, engineStrength, define45, strengthBoxing, screenReady, agentCircuits, vo2Max, ripped,
+         squatFocus, benchFocus, deadliftFocus, olympic
 
     public var name: String {
         switch self {
@@ -15,6 +16,10 @@ public enum ProgramID: String, Codable, CaseIterable, Sendable {
         case .agentCircuits: return "Agent Circuits"
         case .vo2Max: return "VO2 Max"
         case .ripped: return "Ripped"
+        case .squatFocus: return "Squat Builder"
+        case .benchFocus: return "Bench Builder"
+        case .deadliftFocus: return "Deadlift Builder"
+        case .olympic: return "Olympic Lifts"
         }
     }
 
@@ -36,6 +41,14 @@ public enum ProgramID: String, Codable, CaseIterable, Sendable {
             return "Cardio first: two hard interval days a week (Norwegian 4×4 and 30/30s), the rest easy Zone 2, plus short heavy lifting to keep your strength. Built to raise VO2 max."
         case .ripped:
             return "Get lean and show the muscle: heavy lifts kept heavy, every muscle twice a week in fast supersets, abs every day and finishers that burn fat."
+        case .squatFocus:
+            return "Raise your squat: squat 3-4 times a week (heavy, volume, pause and front squats), building from 5s to heavy doubles over 12 weeks."
+        case .benchFocus:
+            return "Raise your bench: bench 3-4 times a week (heavy, volume, pause and close-grip), with the back, shoulders and triceps that move it."
+        case .deadliftFocus:
+            return "Raise your deadlift: a heavy pull and a deficit pull every week, plus the squats, hinges and back work that build it."
+        case .olympic:
+            return "Learn and build the cleans and snatches: technique from the hang first, then full power lifts, on a front squat and pulling base."
         }
     }
 
@@ -53,6 +66,8 @@ public enum ProgramID: String, Codable, CaseIterable, Sendable {
         case .agentCircuits: return ["Base", "Operator", "Mission"][phase.rawValue]
         case .vo2Max: return ["Base", "Build", "Peak"][phase.rawValue]
         case .ripped: return ["Lean Out", "Carve", "Ripped"][phase.rawValue]
+        case .squatFocus, .benchFocus, .deadliftFocus: return ["Volume", "Strength", "Peak"][phase.rawValue]
+        case .olympic: return ["Technique", "Power", "Peak"][phase.rawValue]
         }
     }
 
@@ -80,6 +95,15 @@ public enum ProgramID: String, Codable, CaseIterable, Sendable {
         case (.ripped, .foundation): return "Heavy 6-8s, 10-12 rep supersets on 60 sec rest. Deficit starts."
         case (.ripped, .build): return "Heavy 5-6s, 12-15 reps on 45 sec rest. Longer finishers."
         case (.ripped, .define): return "Main lifts stay heavy; 4 × 12-15 on 30 sec rest, max finishers."
+        case (.squatFocus, .foundation), (.benchFocus, .foundation), (.deadliftFocus, .foundation):
+            return "Heavy 5s, volume 8s, technique triples. Build the base."
+        case (.squatFocus, .build), (.benchFocus, .build), (.deadliftFocus, .build):
+            return "Heavy triples, volume 6s. Heavier every week."
+        case (.squatFocus, .define), (.benchFocus, .define), (.deadliftFocus, .define):
+            return "Heavy doubles and singles, less volume. Test a new max in week 12."
+        case (.olympic, .foundation): return "Hang snatches and cleans, triples. Positions and speed before weight."
+        case (.olympic, .build): return "Doubles; full power cleans and snatches come in. Front squat triples."
+        case (.olympic, .define): return "Heavy singles and doubles on the full lifts. Test them in week 12."
         }
     }
 
@@ -101,6 +125,14 @@ public enum ProgramID: String, Codable, CaseIterable, Sendable {
             return "Mostly easy, some very hard: most of your cardio time (70-80%) is easy Zone 2 (you can talk in full sentences, about 105-125 bpm), 20% is hard intervals at 90%+ of max heart rate (158+ bpm at a max of 176). Hard days are never back to back; the app puts an easy day between them. Warm up 10 min before intervals. Lifting is short and heavy to keep strength, never before the intervals. Treadmill, bike, rower or the heavy bag all count: heart rate is what matters. Test your VO2 max at weeks 1, 6 and 12 (Apple Watch Cardio Fitness, or the farthest you can run in 12 minutes). Weeks 4 and 8 back off."
         case .ripped:
             return "Muscle is kept by lifting heavy while you diet, so the first lift stays heavy all 12 weeks. Every muscle is trained twice a week, about 12-20 hard sets, in supersets that keep each session to about 50-60 minutes. Rest shrinks each phase. Stop sets 1-2 reps short of failure; lower every rep over 2-3 seconds. Eat 300-500 calories under maintenance, protein 1 g per lb of goal weight, 10k steps a day, 7+ hours of sleep; lose 0.5-1% of bodyweight a week. Abs show when you're lean enough: the daily ab work makes them thicker, the deficit reveals them. Weeks 4 and 8 back off."
+        case .squatFocus:
+            return "Squatting 3-4 times a week builds more practice and strength than once, and the weeks move from volume (5s and 8s) to strength (triples) to peak (doubles and singles). Heavy day: leave 1-2 reps in the tank. Pause squats fix the hole, front squats fix the upright torso. Use the rack's safety arms on every heavy set: you train alone. Weeks 4 and 8 back off; in week 12, work up to a heavy single you could do again (no grinders) for your new max."
+        case .benchFocus:
+            return "Benching 3-4 times a week with different rep ranges: heavy, volume, pause (no bounce: strength off the chest) and close-grip (lockout). Rows and face pulls every week keep the shoulders healthy. Shoulder blades pinned, feet down, bar to the lower chest. Use safety arms or pins: you bench alone. Weeks 4 and 8 back off; test a heavy single in week 12."
+        case .deadliftFocus:
+            return "A heavy pull and a deficit pull each week (more is hard to recover from), plus squats, RDLs and hip thrusts for the legs and hips, and rows for the back. Reset every rep: no touch-and-go on heavy sets. Stop a set when the back rounds. Weeks 4 and 8 back off; test a heavy single in week 12."
+        case .olympic:
+            return "Olympic lifts reward speed and position over weight. Learn from the hang (above the knee) before lifting from the floor, and stop a set when the bar slows or drifts forward. Bumper plates and a platform if you have them; learn to dump a snatch forward or back. Front squats and pulls build the strength to catch heavier. Filming a set from the side is the best coach you have at home. Weeks 4 and 8 back off."
         }
     }
 }

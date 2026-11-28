@@ -313,6 +313,8 @@ public enum SessionBuilder {
         "powerclean": ["dbhangclean", "kbclean"], "hangclean": ["dbhangclean", "kbclean"],
         "powersnatch": ["dbsnatch", "kbsnatch"], "hangsnatch": ["dbsnatch", "kbsnatch"], "copenhagen": ["sideplank", "hipdip"],
         "pullup": ["trxrow", "dbrow"], "chinup": ["trxrow", "dbrow"],
+        "pausesquat": ["gobletsq", "bulgarian", "trxsquat"], "pausebench": ["dbfloor", "pushup"], "cgbench": ["dbfloor", "cgpushup"],
+        "deficitdl": ["slrdl", "kbswingh"], "cleanpull": ["kbswingh", "dbhangclean"],
     ]
 
     /// Replaces planned lifts that need gear you don't own (stand-ins first, then the same category).

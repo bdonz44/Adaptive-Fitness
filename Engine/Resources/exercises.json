@@ -118,6 +118,11 @@
     { "id": "kbswing", "name": "KB Swing", "category": "full", "eq": "kb", "unit": "reps", "side": false, "cue": "Snap the hips, arms are just ropes." },
     { "id": "burpee", "name": "Burpee", "category": "full", "eq": "bw", "unit": "reps", "side": false, "cue": "Chest to the floor, jump at the top." },
     { "id": "pullup", "name": "Pull-Up", "category": "pull", "eq": "bw", "unit": "reps", "side": false, "cue": "Dead hang, pull your chest to the bar, lower all the way." },
-    { "id": "chinup", "name": "Chin-Up", "category": "pull", "eq": "bw", "unit": "reps", "side": false, "cue": "Palms facing you, chin over the bar, full hang at the bottom." }
+    { "id": "chinup", "name": "Chin-Up", "category": "pull", "eq": "bw", "unit": "reps", "side": false, "cue": "Palms facing you, chin over the bar, full hang at the bottom." },
+    { "id": "pausesquat", "name": "Pause Squat", "category": "squatvar", "eq": "bb", "inc": 10, "unit": "reps", "side": false, "cue": "Sit to the bottom, hold 2 seconds without relaxing, then drive up hard." },
+    { "id": "pausebench", "name": "Pause Bench Press", "category": "benchvar", "eq": "bb", "inc": 5, "unit": "reps", "side": false, "cue": "Touch the chest, hold still for 1-2 seconds, then press. Stay tight the whole pause." },
+    { "id": "cgbench", "name": "Close-Grip Bench Press", "category": "benchvar", "eq": "bb", "inc": 5, "unit": "reps", "side": false, "cue": "Hands shoulder width, elbows tucked, touch the lower chest. Builds the lockout." },
+    { "id": "deficitdl", "name": "Deficit Deadlift", "category": "dlvar", "eq": "bb", "inc": 10, "unit": "reps", "side": false, "cue": "Stand on a 1-2 inch plate. Same setup as the deadlift; push the floor away off the start." },
+    { "id": "cleanpull", "name": "Clean Pull", "category": "olyvar", "eq": "bb", "inc": 10, "unit": "reps", "side": false, "cue": "Clean start position, stay over the bar, then explode the hips and shrug onto your toes. No catch." }
   ]
 }
